@@ -1,5 +1,5 @@
 import { BaseEntity } from '../domain/model/base-entity';
-import { BaseResource, BaseResponse } from './base-response';
+import { BaseResource } from './base-response';
 import { BaseAssembler } from './base-assembler';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, Observable } from 'rxjs';
@@ -19,7 +19,7 @@ import { ErrorHandlingEnabledBaseType } from './error-handling-enabled-base-type
 export abstract class BaseApiEndpoint<
   TEntity extends BaseEntity,
   TResource extends BaseResource,
-  TResponse extends BaseResponse,
+  TResponse,
   TAssembler extends BaseAssembler<TEntity, TResource, TResponse>,
 > extends ErrorHandlingEnabledBaseType {
   /**
@@ -41,13 +41,8 @@ export abstract class BaseApiEndpoint<
    * @returns An observable of an array of domain entities.
    */
   getAll(): Observable<TEntity[]> {
-    return this.http.get<TResponse | TResource[]>(this.endpointUrl).pipe(
-      map((response) => {
-        if (Array.isArray(response)) {
-          return response.map((resource) => this.assembler.toEntityFromResource(resource));
-        }
-        return this.assembler.toEntitiesFromResponse(response as TResponse);
-      }),
+    return this.http.get<TResource[]>(this.endpointUrl).pipe(
+      map((response) => response.map((resource) => this.assembler.toEntityFromResource(resource))),
       catchError(this.handleError('Failed to fetch entities')),
     );
   }
@@ -57,7 +52,7 @@ export abstract class BaseApiEndpoint<
    * @param id - The UUID of the entity to retrieve.
    * @returns An observable of the domain entity.
    */
-  getById(id: string): Observable<TEntity> {
+  getById(id: number): Observable<TEntity> {
     return this.http.get<TResource>(`${this.endpointUrl}/${id}`).pipe(
       map((resource) => this.assembler.toEntityFromResource(resource)),
       catchError(this.handleError(`Failed to fetch entity with id ${id}`)),
@@ -83,7 +78,7 @@ export abstract class BaseApiEndpoint<
    * @param id     - The UUID of the entity to update.
    * @returns An observable of the updated domain entity.
    */
-  update(entity: TEntity, id: string): Observable<TEntity> {
+  update(entity: TEntity, id: number): Observable<TEntity> {
     const resource = this.assembler.toResourceFromEntity(entity);
     return this.http.put<TResource>(`${this.endpointUrl}/${id}`, resource).pipe(
       map((updatedResource) => this.assembler.toEntityFromResource(updatedResource)),
@@ -96,7 +91,7 @@ export abstract class BaseApiEndpoint<
    * @param id - The UUID of the entity to delete.
    * @returns An observable that completes when deletion is done.
    */
-  delete(id: string): Observable<void> {
+  delete(id: number): Observable<void> {
     return this.http
       .delete<void>(`${this.endpointUrl}/${id}`)
       .pipe(catchError(this.handleError(`Failed to delete entity with id ${id}`)));

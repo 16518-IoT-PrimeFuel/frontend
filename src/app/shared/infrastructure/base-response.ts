@@ -8,7 +8,7 @@ export interface BaseResource {
   /**
    * The unique identifier of the resource (UUID string).
    */
-  id: string;
+  id: number;
 }
 
 /**

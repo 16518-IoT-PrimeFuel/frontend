@@ -16,25 +16,16 @@ export abstract class ErrorHandlingEnabledBaseType {
    */
   protected handleError(operation: string) {
     return (error: HttpErrorResponse): Observable<never> => {
-      let errorMessage = operation;
-
-      if (error.status === 400) {
-        errorMessage = `${operation}: Invalid request data`;
-      } else if (error.status === 401) {
-        errorMessage = `${operation}: Unauthorized. Please sign in again`;
-      } else if (error.status === 403) {
-        errorMessage = `${operation}: Forbidden. Insufficient permissions`;
-      } else if (error.status === 404) {
-        errorMessage = `Resource not found: ${operation}`;
-      } else if (error.status === 409) {
-        errorMessage = `${operation}: Conflict. The resource already exists`;
-      } else if (error.status === 422) {
-        errorMessage = `${operation}: Unprocessable entity. Insufficient data`;
-      } else if (error.error instanceof ErrorEvent) {
-        errorMessage = `${operation}: ${error.error.message}`;
-      } else {
-        errorMessage = `${operation}: ${error.statusText || 'Unexpected server error'}`;
-      }
+      const errorMessage = error.error?.message ?? error.error?.code ?? (
+        error.error instanceof ErrorEvent ? error.error.message :
+          error.status === 400 ? 'Request validation failed.' :
+          error.status === 401 ? 'Your session has expired. Sign in again.' :
+          error.status === 403 ? 'You do not have permission to do this.' :
+          error.status === 404 ? 'The requested resource was not found.' :
+          error.status === 409 ? 'This conflicts with an existing record.' :
+          error.status === 422 ? 'This request cannot be processed.' :
+          error.status === 0 ? 'The server could not be reached.' : error.statusText || 'Unexpected server error'
+      );
 
       console.error(`[FullTank API Error] ${errorMessage}`, error);
       return throwError(() => new Error(errorMessage));

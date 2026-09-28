@@ -1,5 +1,5 @@
 import { BaseEntity } from '../domain/model/base-entity';
-import { BaseResource, BaseResponse } from './base-response';
+import { BaseResource } from './base-response';
 
 /**
  * Base assembler interface for FullTank bounded contexts.
@@ -14,7 +14,7 @@ import { BaseResource, BaseResponse } from './base-response';
 export interface BaseAssembler<
   TEntity extends BaseEntity,
   TResource extends BaseResource,
-  TResponse extends BaseResponse,
+  TResponse,
 > {
   /**
    * Converts an API resource to a domain entity.
