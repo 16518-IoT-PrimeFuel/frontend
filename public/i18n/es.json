@@ -1,17 +1,36 @@
 {
   "nav": {
     "dashboard": "Tablero",
+    "profile": "Perfil",
+    "equipment": "Clientes y tanques",
     "inventory": "Inventario",
     "ordering": "Pedidos",
     "fulfillment": "Despacho",
     "notifications": "Notificaciones",
     "reports": "Reportes"
   },
+  "profile": {
+    "title": "Perfil",
+    "loading": "Cargando perfil…",
+    "user": "Cuenta de usuario",
+    "username": "Usuario",
+    "roles": "Roles",
+    "company": "Datos de la empresa",
+    "contact-email": "Correo de contacto",
+    "organizations": "Organizaciones",
+    "no-organizations": "No hay organizaciones activas",
+    "save": "Guardar datos de la empresa",
+    "saving": "Guardando…",
+    "saved": "Se actualizaron los datos de la empresa.",
+    "load-error": "No se pudo cargar el perfil. Verifica el acceso e inténtalo de nuevo.",
+    "save-error": "No se pudieron guardar los datos. Verifica los campos e inténtalo de nuevo."
+  },
   "inventory": {
     "products": "Productos",
     "add-product": "Agregar Producto",
     "inventory": "Inventario",
-    "product-inventory": "Inventario de Productos"
+    "product-inventory": "Mis productos de combustible",
+    "catalog": "Catálogo de combustibles"
   },
   "ordering": {
     "requests": "Solicitudes",
@@ -21,11 +40,61 @@
   "fulfillment": {
     "vehicles": "Vehículos",
     "drivers": "Conductores",
-    "dispatch": "Despacho"
+    "dispatch": "Despacho",
+    "assign": "Asignar entrega",
+    "driver": "Conductor",
+    "tanker": "Cisterna",
+    "window-start": "Inicio de ventana (opcional)",
+    "window-end": "Fin de ventana (opcional)",
+    "submit-assignment": "Crear entrega",
+    "assignment-failed": "No se pudo asignar la entrega",
+    "delivery": "Entrega",
+    "physical-state": "Estado físico",
+    "start": "Iniciar",
+    "arrive": "Llegada",
+    "complete": "Completar",
+    "delivered-volume": "Volumen entregado",
+    "reason": "Motivo",
+    "fail": "Marcar como fallida",
+    "cancel-delivery": "Cancelar entrega",
+    "command-failed": "No se pudo actualizar la entrega",
+    "tracking": "Seguimiento",
+    "loaded": "Cargado",
+    "not-loaded": "No cargado",
+    "no-tracking": "Aún no hay datos de seguimiento",
+    "dossier": "Expediente imprimible",
+    "transitions": "Transiciones de estado",
+    "timeline": "Cronología",
+    "samples": "Muestras de seguimiento",
+    "geofence": "Geocerca",
+    "latitude": "Latitud",
+    "longitude": "Longitud",
+    "radius": "Radio (metros)",
+    "save-geofence": "Guardar geocerca",
+    "geofence-saved": "Geocerca guardada",
+    "geofence-exists": "Ya existe una política de geocerca",
+    "geofence-failed": "No se pudo guardar la geocerca"
   },
-  "reporting": {
-    "supplier-dashboard": "Reporte General",
-    "client-portfolio": "Reportes de tus clientes"
+  "analytics": {
+    "buyer-title": "Panel de compras",
+    "provider-title": "Panel de ventas",
+    "report-title": "Reporte de ventas",
+    "buyer-subtitle": "Tus pedidos, pagos y consumo mensual de combustible",
+    "provider-subtitle": "Tus pedidos, pagos y ventas mensuales de combustible",
+    "print": "Imprimir reporte",
+    "loading": "Cargando analítica…",
+    "error": "No se pudo cargar la analítica. Inténtalo más tarde.",
+    "total-orders": "Pedidos totales",
+    "total-spent": "Gasto total",
+    "completed-payments": "Pagos completados",
+    "pending-payments": "Pagos pendientes",
+    "confirmed-orders": "Pedidos confirmados",
+    "cancelled-orders": "Pedidos cancelados",
+    "total-revenue": "Ingresos totales",
+    "orders-by-status": "Pedidos por estado",
+    "monthly-spending": "Gasto mensual",
+    "monthly-revenue": "Ingresos mensuales",
+    "no-monthly-data": "No hay datos mensuales disponibles."
   },
   "home": {
     "title": "Plataforma FullTank",
@@ -45,6 +114,11 @@
   "product-inventory": {
     "title": "Inventario de Productos",
     "subtitle": "Gestiona tus productos de combustible",
+    "catalog-title": "Catálogo de Combustibles",
+    "catalog-subtitle": "Consulta los productos de combustible disponibles",
+    "refresh": "Actualizar productos",
+    "stock-input": "Stock disponible",
+    "update-stock": "Actualizar stock",
     "show-all": "Mostrar Todos",
     "add-button": "Agregar Producto",
     "edit-tooltip": "Editar Producto",
@@ -53,7 +127,8 @@
     "fields": {
       "name": "Nombre del Producto",
       "type": "Tipo de Combustible",
-      "price": "Precio por Litro",
+      "price": "Precio por Unidad",
+      "available": "Stock Disponible",
       "unit": "Unidad",
       "status": "Estado"
     }
@@ -69,8 +144,8 @@
     "fields": {
       "name": "Nombre del Producto",
       "type": "Tipo de Combustible",
-      "description": "Descripción",
-      "price": "Precio por Litro",
+      "price": "Precio por Unidad",
+      "capacity": "Capacidad de Almacenamiento",
       "unit": "Unidad",
       "active": "Producto Activo"
     },
@@ -78,21 +153,6 @@
       "name": "ej., Diesel Premium",
       "description": "Describe las características del producto",
       "price": "0.00"
-    }
-  },
-  "inventory-list": {
-    "title": "Gestión de Inventario",
-    "subtitle": "Monitorea tus niveles de stock de combustible",
-    "low-stock-alert": "Alerta de Stock Bajo",
-    "items-below-threshold": "ítems por debajo del umbral",
-    "update-tooltip": "Actualizar Stock",
-    "empty": "No hay ítems de inventario disponibles",
-    "fields": {
-      "product": "Producto",
-      "available": "Disponible",
-      "reserved": "Reservado",
-      "unit": "Unidad",
-      "last-updated": "Última Actualización"
     }
   },
   "supplier-dashboard": {
@@ -144,9 +204,13 @@
   },
   "fuel-type": {
     "diesel": "Diesel",
+    "gasoline": "Gasolina",
+    "gasoline_84": "Gasolina 84",
     "gasoline_90": "Gasolina 90",
     "gasoline_95": "Gasolina 95",
-    "gasoline_97": "Gasolina 97"
+    "gasoline_97": "Gasolina 97",
+    "glp": "GLP",
+    "gnv": "GNV"
   },
   "unit": {
     "liters": "Litros",
@@ -156,15 +220,17 @@
     "active": "Activo",
     "inactive": "Inactivo"
   },
-  "vehicle-list": {
-    "title": "Flota de Vehículos",
-    "subtitle": "Gestiona los vehículos de entrega de combustible",
+  "tanker-list": {
+    "title": "Flota de Cisternas",
+    "subtitle": "Gestiona las cisternas de entrega de combustible",
     "show-all": "Mostrar Todos",
-    "show-available": "Solo Disponibles",
-    "add-button": "Registrar Vehículo",
-    "edit-tooltip": "Editar Vehículo",
-    "delete-tooltip": "Eliminar Vehículo",
-    "empty": "No hay vehículos registrados",
+    "show-available": "Solo Elegibles",
+    "add-button": "Registrar Cisterna",
+    "edit-tooltip": "Editar cisterna",
+    "delete-tooltip": "Activar o desactivar cisterna",
+    "activate": "Activar",
+    "deactivate": "Desactivar",
+    "empty": "No hay cisternas registradas",
     "fields": {
       "license-plate": "Placa",
       "brand": "Marca",
@@ -173,11 +239,11 @@
       "status": "Estado"
     }
   },
-  "vehicle-form": {
-    "title": "Registrar Vehículo",
-    "subtitle": "Agrega un nuevo vehículo a tu flota de entregas",
+  "tanker-form": {
+    "title": "Registrar Cisterna",
+    "subtitle": "Agrega una nueva cisterna a tu flota de entregas",
     "cancel": "Cancelar",
-    "register": "Registrar Vehículo",
+    "register": "Registrar Cisterna",
     "fields": {
       "license-plate": "Placa",
       "brand": "Marca",
@@ -196,18 +262,20 @@
     "title": "Registro de Conductores",
     "subtitle": "Gestiona los conductores autorizados para entregas",
     "show-all": "Mostrar Todos",
-    "show-available": "Solo Disponibles",
+    "show-available": "Solo Elegibles",
     "add-button": "Registrar Conductor",
     "edit-tooltip": "Editar Conductor",
-    "delete-tooltip": "Eliminar Conductor",
+    "delete-tooltip": "Activar o desactivar conductor",
     "empty": "No hay conductores registrados",
     "fields": {
       "full-name": "Nombre Completo",
       "license-number": "Nº de Licencia",
       "phone": "Teléfono",
       "email": "Correo",
-      "status": "Estado"
-    }
+      "status": "Estado",
+      "eligibility": "Consultar elegibilidad"
+    },
+    "eligibility": "Ver elegibilidad"
   },
   "driver-form": {
     "title": "Registrar Conductor",
@@ -215,6 +283,7 @@
     "cancel": "Cancelar",
     "register": "Registrar Conductor",
     "fields": {
+      "user-id": "ID de usuario (opcional)",
       "first-name": "Nombre",
       "last-name": "Apellido",
       "license-number": "Nº de Licencia",
@@ -284,7 +353,16 @@
     "reject-reason": "Motivo del Rechazo",
     "reject-placeholder": "Explica por qué se rechaza esta solicitud",
     "reject-cancel": "Cancelar",
-    "reject-confirm": "Confirmar Rechazo"
+    "reject-confirm": "Confirmar Rechazo",
+    "empty": "No se encontraron solicitudes.",
+    "automatic": "Automática",
+    "provider-inbox-pending": "Bandeja del distribuidor pendiente del backend (B1). No se simulan solicitudes.",
+    "provider-actions": "Procesar una solicitud por ID",
+    "request-id": "ID de solicitud",
+    "accept-by-id": "Aceptar solicitud",
+    "reject-by-id": "Rechazar solicitud",
+    "reason": "Motivo del rechazo",
+    "rejection-reason": "Motivo del rechazo"
   },
   "request-form": {
     "create-title": "Nueva Solicitud",
@@ -299,7 +377,11 @@
     "create": "Crear Solicitud",
     "update": "Actualizar Solicitud",
     "cancel": "Cancelar",
-    "required": "Este campo es obligatorio"
+    "required": "Este campo es obligatorio",
+    "customer": "Cliente",
+    "tank": "Tanque",
+    "provider": "Distribuidor",
+    "product": "Producto de combustible"
   },
   "order-list": {
     "title": "Órdenes",
@@ -310,7 +392,11 @@
     "status": "Estado",
     "actions": "Acciones",
     "view": "Ver Detalle",
-    "delete": "Eliminar"
+    "delete": "Eliminar",
+    "search-id": "Buscar ID de orden",
+    "filter-status": "Filtrar por estado",
+    "all-statuses": "Todos los estados",
+    "empty": "No se encontraron órdenes."
   },
   "order-detail": {
     "title": "Detalle de Orden",
@@ -326,20 +412,42 @@
     "dispatched-at": "Despachada",
     "delivered-at": "Entregada",
     "closed-at": "Cerrada",
+    "scheduled-date": "Fecha programada",
+    "confirm": "Confirmar orden",
+    "cancel": "Cancelar orden",
     "dispatch": "Despachar Orden",
     "confirm-delivery": "Confirmar Entrega",
     "close": "Cerrar Orden",
-    "not-found": "Orden no encontrada"
+    "not-found": "Orden no encontrada",
+    "payment": "Pago",
+    "payment-status": "Estado del pago",
+    "payment-method": "Método de pago",
+    "transaction-reference": "Referencia de transacción",
+    "submit-payment": "Registrar pago",
+    "complete-payment": "Completar pago",
+    "payment-error": "No se pudo procesar el pago",
+    "method-bank_transfer": "Transferencia bancaria",
+    "method-credit_card": "Tarjeta de crédito",
+    "method-debit_card": "Tarjeta de débito",
+    "method-cash": "Efectivo"
   },
   "request-status": {
     "pending_approval": "Pendiente de Aprobación",
+    "pending": "Pendiente",
+    "accepted": "Aceptada",
+    "automatic": "Automática",
     "approved": "Aprobada",
     "rejected": "Rechazada",
     "cancelled": "Cancelada"
   },
   "order-status": {
     "created": "Creada",
+    "pending": "Pendiente",
+    "confirmed": "Confirmada",
+    "pending_payment": "Pago pendiente",
+    "paid": "Pagada",
     "dispatched": "Despachada",
+    "in_progress": "En progreso",
     "delivered": "Entregada",
     "closed": "Cerrada",
     "cancelled": "Cancelada"
@@ -367,6 +475,93 @@
       "created-at": "Fecha"
     }
   },
+  "auth": {
+    "login": {
+      "title": "Iniciar sesión",
+      "submit": "Iniciar sesión",
+      "link": "Volver al inicio de sesión"
+    },
+    "register": {
+      "buyer-link": "Crear cuenta solicitante",
+      "provider-link": "Registrarse como distribuidor",
+      "buyer-title": "Registro de solicitante",
+      "provider-title": "Registro de distribuidor",
+      "submit": "Crear cuenta"
+    },
+    "username": "Correo electrónico",
+    "password": "Contraseña",
+    "company": "Nombre de la empresa",
+    "ruc": "RUC (11 dígitos)",
+    "address": "Dirección",
+    "phone": "Teléfono",
+    "sector": "Sector comercial",
+    "fuel-types": "Combustibles ofrecidos (separados por comas)",
+    "description": "Descripción",
+    "new-password": "Nueva contraseña",
+    "forgot": "¿Olvidaste tu contraseña?",
+    "forgot-title": "Recuperar contraseña",
+    "logout": "Cerrar sesión",
+    "reset": {
+      "title": "Establecer nueva contraseña",
+      "submit": "Continuar",
+      "sent": "Si la cuenta existe, se enviaron las instrucciones de recuperación.",
+      "done": "Se actualizó la contraseña."
+    },
+    "denied": {
+      "title": "Sin acceso",
+      "message": "Esta cuenta no tiene un rol compatible de solicitante o distribuidor."
+    },
+    "error": {
+      "user-conflict": "Ya existe una cuenta con este correo.",
+      "buyer-conflict": "Ya existe una empresa solicitante con este RUC.",
+      "provider-conflict": "Ya existe una empresa distribuidora con este RUC.",
+      "connection": "No se pudo conectar con el servidor.",
+      "bad-request": "Revisa los datos enviados.",
+      "unauthorized": "No se aceptaron las credenciales.",
+      "conflict": "El registro entra en conflicto con una cuenta existente.",
+      "generic": "No se pudo completar la solicitud."
+    }
+  },
+  "equipment": {
+    "title": "Clientes, sitios y tanques",
+    "customers": "Clientes",
+    "sites": "Sitios",
+    "tanks": "Tanques",
+    "name": "Nombre",
+    "ruc": "RUC (11 dígitos)",
+    "address": "Dirección",
+    "email": "Correo de contacto",
+    "phone": "Teléfono",
+    "add-customer": "Agregar cliente",
+    "add-site": "Agregar sitio",
+    "no-customers": "Aún no hay clientes",
+    "no-sites": "Aún no hay sitios",
+    "select-customer": "Primero selecciona un cliente",
+    "add-tank": "Registrar tanque",
+    "site": "Sitio",
+    "fuel-type": "Tipo de combustible",
+    "capacity": "Capacidad",
+    "unit": "Unidad",
+    "initial-level": "Nivel inicial",
+    "create-tank": "Crear tanque",
+    "no-tanks": "Este cliente no tiene tanques",
+    "device-pending": "Vínculo del dispositivo IoT: pendiente de backend",
+    "back": "Volver a clientes y tanques",
+    "level-source": "Origen del nivel",
+    "policy": "Política de reposición",
+    "low-level": "Nivel bajo (%)",
+    "hysteresis": "Histéresis (%)",
+    "target-level": "Nivel objetivo (%)",
+    "provider-id": "ID del distribuidor",
+    "product-id": "ID del producto",
+    "auto-generate": "Permitir generación automática de solicitudes",
+    "save-policy": "Guardar política",
+    "episodes": "Episodios de reposición",
+    "request-emitted": "Solicitud generada",
+    "no-episodes": "Sin episodios de reposición",
+    "missing-company": "El comprador no tiene un ID de empresa en la sesión; no se puede asociar el cliente a una orden.",
+    "request-failed": "No se pudo completar la solicitud."
+  },
   "notification-type": {
     "order_created": "Orden Creada",
     "order_approved": "Orden Aprobada",
@@ -377,6 +572,12 @@
     "payment_registered": "Pago Registrado",
     "payment_approved": "Pago Aprobado",
     "delivery_assigned": "Entrega Asignada",
-    "delivery_in_transit": "Entrega en Tránsito"
+    "delivery_in_transit": "Entrega en Tránsito",
+    "order_accepted": "Pedido Aceptado",
+    "delivery_completed": "Entrega Completada",
+    "delivery_failed": "Entrega Fallida"
+  },
+  "common": {
+    "loading": "Cargando…"
   }
 }

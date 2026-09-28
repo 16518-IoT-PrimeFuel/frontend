@@ -1,17 +1,36 @@
 {
   "nav": {
     "dashboard": "Dashboard",
+    "profile": "Profile",
+    "equipment": "Customers & Tanks",
     "inventory": "Inventory",
     "ordering": "Orders",
     "fulfillment": "Fulfillment",
     "notifications": "Notifications",
     "reports": "Reports"
   },
+  "profile": {
+    "title": "Profile",
+    "loading": "Loading profile…",
+    "user": "User account",
+    "username": "Username",
+    "roles": "Roles",
+    "company": "Company details",
+    "contact-email": "Contact email",
+    "organizations": "Organizations",
+    "no-organizations": "No active organizations",
+    "save": "Save company details",
+    "saving": "Saving…",
+    "saved": "Company details updated.",
+    "load-error": "Could not load your profile. Check your access and try again.",
+    "save-error": "Could not save company details. Check the values and try again."
+  },
   "inventory": {
     "products": "Products",
     "add-product": "Add Product",
     "inventory": "Inventory",
-    "product-inventory": "Product Inventory"
+    "product-inventory": "My Fuel Products",
+    "catalog": "Fuel Product Catalog"
   },
   "ordering": {
     "requests": "Requests",
@@ -21,11 +40,61 @@
   "fulfillment": {
     "vehicles": "Vehicles",
     "drivers": "Drivers",
-    "dispatch": "Dispatch"
+    "dispatch": "Dispatch",
+    "assign": "Assign delivery",
+    "driver": "Driver",
+    "tanker": "Tanker",
+    "window-start": "Window start (optional)",
+    "window-end": "Window end (optional)",
+    "submit-assignment": "Create delivery",
+    "assignment-failed": "Could not assign delivery",
+    "delivery": "Delivery",
+    "physical-state": "Physical state",
+    "start": "Start",
+    "arrive": "Arrive",
+    "complete": "Complete",
+    "delivered-volume": "Delivered volume",
+    "reason": "Reason",
+    "fail": "Mark failed",
+    "cancel-delivery": "Cancel delivery",
+    "command-failed": "Could not update delivery",
+    "tracking": "Tracking",
+    "loaded": "Loaded",
+    "not-loaded": "Not loaded",
+    "no-tracking": "No tracking data yet",
+    "dossier": "Printable dossier",
+    "transitions": "State transitions",
+    "timeline": "Timeline",
+    "samples": "Tracking samples",
+    "geofence": "Geofence",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "radius": "Radius (meters)",
+    "save-geofence": "Save geofence",
+    "geofence-saved": "Geofence saved",
+    "geofence-exists": "A geofence policy already exists",
+    "geofence-failed": "Could not save geofence"
   },
-  "reporting": {
-    "supplier-dashboard": "General Report",
-    "client-portfolio": "Your Clients Reports"
+  "analytics": {
+    "buyer-title": "Purchasing dashboard",
+    "provider-title": "Sales dashboard",
+    "report-title": "Sales report",
+    "buyer-subtitle": "Your orders, payments, and monthly fuel spending",
+    "provider-subtitle": "Your orders, payments, and monthly fuel sales",
+    "print": "Print report",
+    "loading": "Loading analytics…",
+    "error": "Analytics could not be loaded. Please try again later.",
+    "total-orders": "Total orders",
+    "total-spent": "Total spent",
+    "completed-payments": "Completed payments",
+    "pending-payments": "Pending payments",
+    "confirmed-orders": "Confirmed orders",
+    "cancelled-orders": "Cancelled orders",
+    "total-revenue": "Total revenue",
+    "orders-by-status": "Orders by status",
+    "monthly-spending": "Monthly spending",
+    "monthly-revenue": "Monthly revenue",
+    "no-monthly-data": "No monthly data available."
   },
   "home": {
     "title": "FullTank Platform",
@@ -45,6 +114,11 @@
   "product-inventory": {
     "title": "Product Inventory",
     "subtitle": "Manage your fuel products",
+    "catalog-title": "Fuel Product Catalog",
+    "catalog-subtitle": "Browse available fuel products",
+    "refresh": "Refresh products",
+    "stock-input": "Available stock",
+    "update-stock": "Update stock",
     "show-all": "Show All",
     "add-button": "Add Product",
     "edit-tooltip": "Edit Product",
@@ -53,7 +127,8 @@
     "fields": {
       "name": "Product Name",
       "type": "Fuel Type",
-      "price": "Price per Liter",
+      "price": "Price per Unit",
+      "available": "Available Stock",
       "unit": "Unit",
       "status": "Status"
     }
@@ -69,8 +144,8 @@
     "fields": {
       "name": "Product Name",
       "type": "Fuel Type",
-      "description": "Description",
-      "price": "Price per Liter",
+      "price": "Price per Unit",
+      "capacity": "Storage Capacity",
       "unit": "Unit",
       "active": "Active Product"
     },
@@ -78,21 +153,6 @@
       "name": "e.g., Premium Diesel",
       "description": "Describe the product characteristics",
       "price": "0.00"
-    }
-  },
-  "inventory-list": {
-    "title": "Inventory Management",
-    "subtitle": "Monitor your fuel stock levels",
-    "low-stock-alert": "Low Stock Alert",
-    "items-below-threshold": "items below threshold",
-    "update-tooltip": "Update Stock",
-    "empty": "No inventory items available",
-    "fields": {
-      "product": "Product",
-      "available": "Available",
-      "reserved": "Reserved",
-      "unit": "Unit",
-      "last-updated": "Last Updated"
     }
   },
   "supplier-dashboard": {
@@ -144,9 +204,13 @@
   },
   "fuel-type": {
     "diesel": "Diesel",
+    "gasoline": "Gasoline",
+    "gasoline_84": "Gasoline 84",
     "gasoline_90": "Gasoline 90",
     "gasoline_95": "Gasoline 95",
-    "gasoline_97": "Gasoline 97"
+    "gasoline_97": "Gasoline 97",
+    "glp": "LPG",
+    "gnv": "CNG"
   },
   "unit": {
     "liters": "Liters",
@@ -156,15 +220,17 @@
     "active": "Active",
     "inactive": "Inactive"
   },
-  "vehicle-list": {
-    "title": "Vehicle Fleet",
+  "tanker-list": {
+    "title": "Tanker Fleet",
     "subtitle": "Manage your fuel delivery fleet",
     "show-all": "Show All",
-    "show-available": "Available Only",
-    "add-button": "Register Vehicle",
-    "edit-tooltip": "Edit Vehicle",
-    "delete-tooltip": "Delete Vehicle",
-    "empty": "No vehicles registered",
+    "show-available": "Eligible Only",
+    "add-button": "Register Tanker",
+    "edit-tooltip": "Edit tanker",
+    "delete-tooltip": "Deactivate or activate tanker",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "empty": "No tankers registered",
     "fields": {
       "license-plate": "License Plate",
       "brand": "Brand",
@@ -173,11 +239,11 @@
       "status": "Status"
     }
   },
-  "vehicle-form": {
-    "title": "Register Vehicle",
-    "subtitle": "Add a new vehicle to your delivery fleet",
+  "tanker-form": {
+    "title": "Register Tanker",
+    "subtitle": "Add a new tanker to your delivery fleet",
     "cancel": "Cancel",
-    "register": "Register Vehicle",
+    "register": "Register Tanker",
     "fields": {
       "license-plate": "License Plate",
       "brand": "Brand",
@@ -196,18 +262,20 @@
     "title": "Driver Registry",
     "subtitle": "Manage authorized drivers for fuel delivery",
     "show-all": "Show All",
-    "show-available": "Available Only",
+    "show-available": "Eligible Only",
     "add-button": "Register Driver",
     "edit-tooltip": "Edit Driver",
-    "delete-tooltip": "Delete Driver",
+    "delete-tooltip": "Deactivate or activate driver",
     "empty": "No drivers registered",
     "fields": {
       "full-name": "Full Name",
       "license-number": "License Number",
       "phone": "Phone",
       "email": "Email",
-      "status": "Status"
-    }
+      "status": "Status",
+      "eligibility": "Check eligibility"
+    },
+    "eligibility": "Check eligibility"
   },
   "driver-form": {
     "title": "Register Driver",
@@ -215,6 +283,7 @@
     "cancel": "Cancel",
     "register": "Register Driver",
     "fields": {
+      "user-id": "User ID (optional)",
       "first-name": "First Name",
       "last-name": "Last Name",
       "license-number": "License Number",
@@ -284,7 +353,16 @@
     "reject-reason": "Rejection Reason",
     "reject-placeholder": "Explain why this request is being rejected",
     "reject-cancel": "Cancel",
-    "reject-confirm": "Confirm Reject"
+    "reject-confirm": "Confirm Reject",
+    "empty": "No requests found.",
+    "automatic": "Automatic",
+    "provider-inbox-pending": "Provider request inbox pending backend support (B1). No requests are simulated.",
+    "provider-actions": "Process a request by ID",
+    "request-id": "Request ID",
+    "accept-by-id": "Accept request",
+    "reject-by-id": "Reject request",
+    "reason": "Rejection reason",
+    "rejection-reason": "Rejection reason"
   },
   "request-form": {
     "create-title": "New Fuel Request",
@@ -299,7 +377,11 @@
     "create": "Create Request",
     "update": "Update Request",
     "cancel": "Cancel",
-    "required": "This field is required"
+    "required": "This field is required",
+    "customer": "Customer",
+    "tank": "Tank",
+    "provider": "Provider",
+    "product": "Fuel product"
   },
   "order-list": {
     "title": "Orders",
@@ -310,7 +392,11 @@
     "status": "Status",
     "actions": "Actions",
     "view": "View Details",
-    "delete": "Delete"
+    "delete": "Delete",
+    "search-id": "Search order ID",
+    "filter-status": "Filter by status",
+    "all-statuses": "All statuses",
+    "empty": "No orders found."
   },
   "order-detail": {
     "title": "Order Detail",
@@ -326,20 +412,42 @@
     "dispatched-at": "Dispatched",
     "delivered-at": "Delivered",
     "closed-at": "Closed",
+    "scheduled-date": "Scheduled date",
+    "confirm": "Confirm order",
+    "cancel": "Cancel order",
     "dispatch": "Dispatch Order",
     "confirm-delivery": "Confirm Delivery",
     "close": "Close Order",
-    "not-found": "Order not found"
+    "not-found": "Order not found",
+    "payment": "Payment",
+    "payment-status": "Payment status",
+    "payment-method": "Payment method",
+    "transaction-reference": "Transaction reference",
+    "submit-payment": "Register payment",
+    "complete-payment": "Complete payment",
+    "payment-error": "The payment could not be processed",
+    "method-bank_transfer": "Bank transfer",
+    "method-credit_card": "Credit card",
+    "method-debit_card": "Debit card",
+    "method-cash": "Cash"
   },
   "request-status": {
     "pending_approval": "Pending Approval",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "automatic": "Automatic",
     "approved": "Approved",
     "rejected": "Rejected",
     "cancelled": "Cancelled"
   },
   "order-status": {
     "created": "Created",
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "pending_payment": "Pending Payment",
+    "paid": "Paid",
     "dispatched": "Dispatched",
+    "in_progress": "In progress",
     "delivered": "Delivered",
     "closed": "Closed",
     "cancelled": "Cancelled"
@@ -367,6 +475,93 @@
       "created-at": "Date"
     }
   },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "submit": "Sign in",
+      "link": "Back to sign in"
+    },
+    "register": {
+      "buyer-link": "Create a buyer account",
+      "provider-link": "Register as a distributor",
+      "buyer-title": "Buyer registration",
+      "provider-title": "Distributor registration",
+      "submit": "Create account"
+    },
+    "username": "Email",
+    "password": "Password",
+    "company": "Company name",
+    "ruc": "RUC (11 digits)",
+    "address": "Address",
+    "phone": "Phone",
+    "sector": "Business sector",
+    "fuel-types": "Fuel types offered (comma-separated)",
+    "description": "Description",
+    "new-password": "New password",
+    "forgot": "Forgot password?",
+    "forgot-title": "Recover password",
+    "logout": "Sign out",
+    "reset": {
+      "title": "Set a new password",
+      "submit": "Continue",
+      "sent": "If the account exists, reset instructions have been sent.",
+      "done": "Your password has been updated."
+    },
+    "denied": {
+      "title": "Access denied",
+      "message": "This account does not have a supported buyer or distributor role."
+    },
+    "error": {
+      "user-conflict": "An account already exists for this email.",
+      "buyer-conflict": "A buyer company with this RUC already exists.",
+      "provider-conflict": "A distributor company with this RUC already exists.",
+      "connection": "The server could not be reached.",
+      "bad-request": "Check the submitted information.",
+      "unauthorized": "The credentials were not accepted.",
+      "conflict": "This record conflicts with an existing account.",
+      "generic": "The request could not be completed."
+    }
+  },
+  "equipment": {
+    "title": "Customers, sites and tanks",
+    "customers": "Customers",
+    "sites": "Sites",
+    "tanks": "Tanks",
+    "name": "Name",
+    "ruc": "RUC (11 digits)",
+    "address": "Address",
+    "email": "Contact email",
+    "phone": "Phone",
+    "add-customer": "Add customer",
+    "add-site": "Add site",
+    "no-customers": "No customers yet",
+    "no-sites": "No sites yet",
+    "select-customer": "Select a customer first",
+    "add-tank": "Register a tank",
+    "site": "Site",
+    "fuel-type": "Fuel type",
+    "capacity": "Capacity",
+    "unit": "Unit",
+    "initial-level": "Initial level",
+    "create-tank": "Create tank",
+    "no-tanks": "No tanks for this customer",
+    "device-pending": "IoT device association: pending backend",
+    "back": "Back to customers and tanks",
+    "level-source": "Level source",
+    "policy": "Refill policy",
+    "low-level": "Low level (%)",
+    "hysteresis": "Hysteresis (%)",
+    "target-level": "Target level (%)",
+    "provider-id": "Distributor ID",
+    "product-id": "Fuel product ID",
+    "auto-generate": "Allow automatic request generation",
+    "save-policy": "Save policy",
+    "episodes": "Refill episodes",
+    "request-emitted": "Request generated",
+    "no-episodes": "No refill episodes",
+    "missing-company": "The signed-in buyer has no company ID; the customer cannot be mapped to an order.",
+    "request-failed": "The request could not be completed."
+  },
   "notification-type": {
     "order_created": "Order Created",
     "order_approved": "Order Approved",
@@ -377,7 +572,12 @@
     "payment_registered": "Payment Registered",
     "payment_approved": "Payment Approved",
     "delivery_assigned": "Delivery Assigned",
-    "delivery_in_transit": "Delivery in Transit"
+    "delivery_in_transit": "Delivery in Transit",
+    "order_accepted": "Order Accepted",
+    "delivery_completed": "Delivery Completed",
+    "delivery_failed": "Delivery Failed"
+  },
+  "common": {
+    "loading": "Loading…"
   }
-
 }
