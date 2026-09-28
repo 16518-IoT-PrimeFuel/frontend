@@ -21,7 +21,7 @@ export class Login {
   submit(): void {
     this.error.set('');
     this.iam.signIn(this.username, this.password).subscribe({
-      next: () => void this.router.navigateByUrl(this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard'),
+      next: () => void this.router.navigateByUrl(this.route.snapshot.queryParamMap.get('returnUrl') || (this.iam.role() === 'ADMIN' ? '/admin' : '/dashboard')),
       error: (error) => this.error.set(displayAuthError(error)),
     });
   }

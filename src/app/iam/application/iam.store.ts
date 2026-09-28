@@ -24,6 +24,7 @@ export class IamStore {
   readonly isAuthenticated = computed(() => !!this.current()?.token);
   readonly isBuyer = computed(() => this.role() === 'BUYER');
   readonly isProvider = computed(() => this.role() === 'PROVIDER');
+  readonly isAdmin = computed(() => !!this.current()?.roles.includes('ROLE_ADMIN'));
   readonly userId = computed(() => this.current()?.id ?? null);
   readonly companyId = computed(() => this.current()?.companyId ?? null);
   readonly providerId = computed(() => this.current()?.providerId ?? null);

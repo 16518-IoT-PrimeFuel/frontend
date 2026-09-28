@@ -30,8 +30,8 @@ export interface SignUpForm {
 
 export function sessionRole(session: Session | null): UserRole | null {
   if (!session) return null;
-  if (session.roles.includes('ROLE_ADMIN')) return 'ADMIN';
   if (session.roles.includes('ROLE_PROVIDER')) return 'PROVIDER';
   if (session.roles.includes('ROLE_BUYER')) return 'BUYER';
+  if (session.roles.includes('ROLE_ADMIN')) return 'ADMIN';
   return null;
 }
