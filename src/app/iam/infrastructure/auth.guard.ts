@@ -20,6 +20,12 @@ export const providerGuard: CanActivateFn = () => {
   return iam.isProvider() ? true : router.parseUrl(iam.isAuthenticated() ? '/access-denied' : '/login');
 };
 
+export const adminGuard: CanActivateFn = () => {
+  const iam = inject(IamStore);
+  const router = inject(Router);
+  return iam.isAdmin() ? true : router.parseUrl(iam.isAuthenticated() ? '/access-denied' : '/login');
+};
+
 export const supportedRoleGuard: CanActivateFn = () => {
   const iam = inject(IamStore);
   const router = inject(Router);
