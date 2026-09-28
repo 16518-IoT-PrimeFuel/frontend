@@ -1,0 +1,25 @@
+@if (delivery(); as d) {
+  <header><h1>{{ 'fulfillment.delivery' | translate }} #{{ d.id }}</h1><button (click)="print()">{{ 'fulfillment.dossier' | translate }}</button></header>
+  @if (message()) { <p role="status">{{ message() | translate }}</p> }
+  <section><h2>{{ 'fulfillment.physical-state' | translate }}: {{ d.physicalState }}</h2>
+    @if (can('start')) { <button (click)="command('start')">{{ 'fulfillment.start' | translate }}</button> }
+    @if (can('arrive')) { <button (click)="command('arrive')">{{ 'fulfillment.arrive' | translate }}</button> }
+    @if (can('complete')) { <label>{{ 'fulfillment.delivered-volume' | translate }} <input type="number" min="0.001" step="any" [(ngModel)]="deliveredVolume"></label><button [disabled]="!deliveredVolume || deliveredVolume <= 0" (click)="command('complete')">{{ 'fulfillment.complete' | translate }}</button> }
+    @if (can('fail') || can('cancel')) { <label>{{ 'fulfillment.reason' | translate }} <input [(ngModel)]="reason"></label> }
+    @if (can('fail')) { <button [disabled]="!reason.trim()" (click)="command('fail')">{{ 'fulfillment.fail' | translate }}</button> }
+    @if (can('cancel')) { <button [disabled]="!reason.trim()" (click)="command('cancel')">{{ 'fulfillment.cancel-delivery' | translate }}</button> }
+  </section>
+  <section><h2>{{ 'fulfillment.tracking' | translate }}</h2>
+    @if (tracking(); as t) { <p>{{ t.lastLatitude }}, {{ t.lastLongitude }} · {{ t.lastPositionAt | date:'medium' }} · {{ t.loaded ? ('fulfillment.loaded' | translate) : ('fulfillment.not-loaded' | translate) }}</p> }
+    @else { <p>{{ 'fulfillment.no-tracking' | translate }}</p> }
+  </section>
+  <section><h2>{{ 'fulfillment.geofence' | translate }}</h2>
+    <label>{{ 'fulfillment.latitude' | translate }} <input type="number" [(ngModel)]="centerLatitude"></label>
+    <label>{{ 'fulfillment.longitude' | translate }} <input type="number" [(ngModel)]="centerLongitude"></label>
+    <label>{{ 'fulfillment.radius' | translate }} <input type="number" min="1" [(ngModel)]="radiusMeters"></label>
+    <button [disabled]="centerLatitude == null || centerLongitude == null || !radiusMeters || radiusMeters <= 0" (click)="saveGeofence()">{{ 'fulfillment.save-geofence' | translate }}</button>
+  </section>
+  <section><h2>{{ 'fulfillment.transitions' | translate }}</h2>@for (item of transitions(); track item.id) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.fromState || '—' }} → {{ item.toState }} · v{{ item.aggregateVersion }}</p> }</section>
+  <section><h2>{{ 'fulfillment.timeline' | translate }}</h2>@for (item of timeline(); track item.refId + item.type) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.type }} · {{ item.summary }}</p> }</section>
+  <section><h2>{{ 'fulfillment.samples' | translate }}</h2>@for (item of samples(); track item.evidenceId) { <p>{{ item.recordedAt | date:'medium' }} · {{ item.kind }} · {{ item.latitude }}, {{ item.longitude }} · {{ item.milestone }} {{ item.volume }} {{ item.unit }}</p> }</section>
+}

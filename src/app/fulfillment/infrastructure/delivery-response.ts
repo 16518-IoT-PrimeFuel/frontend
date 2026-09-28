@@ -1,4 +1,5 @@
 import { BaseResource, BaseResponse } from '../../shared/infrastructure/base-response';
+import { DeliveryStatus } from '../domain/model/delivery.entity';
 
 /**
  * @summary Resource DTO para entregas.
@@ -6,11 +7,11 @@ import { BaseResource, BaseResponse } from '../../shared/infrastructure/base-res
  * @author FullTank Platform
  */
 export interface DeliveryResource extends BaseResource {
-  id: string;
-  orderId: string;
-  vehicleId: string;
-  driverId: string;
-  status: string;
+  id: number;
+  orderId: number;
+  vehicleId: number;
+  driverId: number;
+  status: DeliveryStatus;
   scheduledDate: string;
   actualDeliveryDate: string | null;
   notes: string;

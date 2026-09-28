@@ -1,3 +1,5 @@
+export type DeliveryStatus = 'ASSIGNED' | 'STARTED' | 'ARRIVED' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'IN_TRANSIT' | 'DELIVERED';
+
 import { BaseEntity } from '../../../shared/domain/model/base-entity';
 
 /**
@@ -7,22 +9,22 @@ import { BaseEntity } from '../../../shared/domain/model/base-entity';
  * @author FullTank Platform
  */
 export class Delivery implements BaseEntity {
-  id: string;
-  orderId: string;
-  vehicleId: string;
-  driverId: string;
-  status: string; // ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED
+  id: number;
+  orderId: number;
+  vehicleId: number;
+  driverId: number;
+  status: DeliveryStatus; // ASSIGNED, IN_TRANSIT, DELIVERED, CANCELLED
   scheduledDate: string;
   actualDeliveryDate: string | null;
   notes: string;
   createdAt: string;
 
   constructor(params: {
-    id: string;
-    orderId: string;
-    vehicleId: string;
-    driverId: string;
-    status: string;
+    id: number;
+    orderId: number;
+    vehicleId: number;
+    driverId: number;
+    status: DeliveryStatus;
     scheduledDate: string;
     actualDeliveryDate: string | null;
     notes: string;
