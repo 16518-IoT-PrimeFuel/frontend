@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { InventoryStore } from '../../../application/inventory.store';
+import { IamStore } from '../../../../iam/application/iam.store';
 
 /**
  * @summary Vista de catálogo de productos de combustible.
@@ -35,25 +36,38 @@ import { InventoryStore } from '../../../application/inventory.store';
 })
 export class ProductInventory implements OnInit {
   protected readonly store = inject(InventoryStore);
+  protected readonly iam = inject(IamStore);
+  protected readonly stockValues: Record<number, number> = {};
+  protected readonly isProvider = this.iam.isProvider;
 
   protected readonly displayedColumns: string[] = [
     'name',
-    'type',
-    'pricePerLiter',
+    'fuelType',
+    'pricePerUnit',
+    'availableStock',
     'unit',
-    'status',
-    'actions',
+    'active',
+    ...(this.isProvider() ? ['actions'] : []),
   ];
 
   ngOnInit(): void {
-    this.store.loadAllProducts();
+    this.loadProducts();
   }
 
   protected onRefresh(): void {
-    this.store.loadAllProducts();
+    this.loadProducts();
   }
 
-  protected onDelete(productId: string): void {
+  private loadProducts(): void {
+    this.store.loadAllProducts(this.iam.isProvider() ? this.iam.providerId() ?? undefined : undefined);
+  }
+
+  protected saveStock(productId: number): void {
+    const stock = this.stockValues[productId];
+    if (Number.isFinite(stock) && stock >= 0) this.store.updateStock(productId, stock);
+  }
+
+  protected onDelete(productId: number): void {
     this.store.deleteProduct(productId);
   }
 }

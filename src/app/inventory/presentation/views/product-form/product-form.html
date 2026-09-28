@@ -1,114 +1,18 @@
 <div class="product-form-container">
-  <header class="page-header">
-    <div class="header-content">
-      <h1>{{ (isEditMode ? 'product-form.edit-title' : 'product-form.create-title') | translate }}</h1>
-      <p>{{ (isEditMode ? 'product-form.edit-subtitle' : 'product-form.create-subtitle') | translate }}</p>
+  <header class="page-header"><div class="header-content"><h1>{{ (isEditMode ? 'product-form.edit-title' : 'product-form.create-title') | translate }}</h1><p>{{ (isEditMode ? 'product-form.edit-subtitle' : 'product-form.create-subtitle') | translate }}</p></div></header>
+  @if (store.error()) { <div class="error-container"><mat-icon>error_outline</mat-icon><p>{{ store.error() }}</p></div> }
+  <mat-card class="form-card"><mat-card-content><form [formGroup]="productForm" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline"><mat-label>{{ 'product-form.fields.name' | translate }}</mat-label><input matInput formControlName="name"></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>{{ 'product-form.fields.type' | translate }}</mat-label><mat-select formControlName="fuelType">@for (type of fuelTypes; track type.value) { <mat-option [value]="type.value">{{ type.label | translate }}</mat-option> }</mat-select></mat-form-field>
+    <div class="form-row">
+      <mat-form-field appearance="outline"><mat-label>{{ 'product-form.fields.price' | translate }}</mat-label><input matInput type="number" formControlName="pricePerUnit" step="0.01" min="0.01"><span matPrefix>S/&nbsp;</span></mat-form-field>
+      <mat-form-field appearance="outline"><mat-label>{{ 'product-form.fields.unit' | translate }}</mat-label><mat-select formControlName="unit">@for (unit of units; track unit.value) { <mat-option [value]="unit.value">{{ unit.label | translate }}</mat-option> }</mat-select></mat-form-field>
     </div>
-  </header>
-
-  @if (store.error()) {
-    <div class="error-container">
-      <mat-icon>error_outline</mat-icon>
-      <p>{{ store.error() }}</p>
+    <div class="form-row">
+      <mat-form-field appearance="outline"><mat-label>{{ 'product-inventory.fields.available' | translate }}</mat-label><input matInput type="number" formControlName="availableStock" min="0"></mat-form-field>
+      <mat-form-field appearance="outline"><mat-label>{{ 'product-form.fields.capacity' | translate }}</mat-label><input matInput type="number" formControlName="capacity" min="0.01"></mat-form-field>
     </div>
-  }
-
-  @if (store.successMsg()) {
-    <div class="success-container">
-      <mat-icon>check_circle</mat-icon>
-      <p>{{ store.successMsg() }}</p>
-    </div>
-  }
-
-  <mat-card class="form-card">
-    <mat-card-content>
-      <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
-
-        <!-- Name Field -->
-        <mat-form-field appearance="outline">
-          <mat-label>{{ 'product-form.fields.name' | translate }}</mat-label>
-          <input matInput formControlName="name" [placeholder]="'product-form.placeholders.name' | translate">
-          <mat-icon matPrefix>label</mat-icon>
-          @if (productForm.get('name')?.invalid && productForm.get('name')?.touched) {
-            <mat-error>{{ getErrorMessage('name') }}</mat-error>
-          }
-        </mat-form-field>
-
-        <!-- Type Field -->
-        <mat-form-field appearance="outline">
-          <mat-label>{{ 'product-form.fields.type' | translate }}</mat-label>
-          <mat-select formControlName="type" [disabled]="isEditMode">
-            @for (type of fuelTypes; track type.value) {
-              <mat-option [value]="type.value">{{ type.label | translate }}</mat-option>
-            }
-          </mat-select>
-          <mat-icon matPrefix>local_gas_station</mat-icon>
-          @if (productForm.get('type')?.invalid && productForm.get('type')?.touched) {
-            <mat-error>{{ getErrorMessage('type') }}</mat-error>
-          }
-        </mat-form-field>
-
-        <!-- Description Field -->
-        <mat-form-field appearance="outline">
-          <mat-label>{{ 'product-form.fields.description' | translate }}</mat-label>
-          <textarea matInput formControlName="description" rows="3"
-                    [placeholder]="'product-form.placeholders.description' | translate"></textarea>
-          <mat-icon matPrefix>description</mat-icon>
-          @if (productForm.get('description')?.invalid && productForm.get('description')?.touched) {
-            <mat-error>{{ getErrorMessage('description') }}</mat-error>
-          }
-        </mat-form-field>
-
-        <!-- Price and Unit Row -->
-        <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'product-form.fields.price' | translate }}</mat-label>
-            <input matInput type="number" formControlName="pricePerLiter" step="0.01"
-                   [placeholder]="'product-form.placeholders.price' | translate">
-            <span matPrefix>S/&nbsp;</span>
-            <mat-icon matSuffix>attach_money</mat-icon>
-            @if (productForm.get('pricePerLiter')?.invalid && productForm.get('pricePerLiter')?.touched) {
-              <mat-error>{{ getErrorMessage('pricePerLiter') }}</mat-error>
-            }
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'product-form.fields.unit' | translate }}</mat-label>
-            <mat-select formControlName="unit" [disabled]="isEditMode">
-              @for (unit of units; track unit.value) {
-                <mat-option [value]="unit.value">{{ unit.label | translate }}</mat-option>
-              }
-            </mat-select>
-            <mat-icon matPrefix>straighten</mat-icon>
-          </mat-form-field>
-        </div>
-
-        <!-- Active Toggle (only in edit mode) -->
-        @if (isEditMode) {
-          <div class="toggle-field">
-            <mat-slide-toggle formControlName="isActive">
-              {{ 'product-form.fields.active' | translate }}
-            </mat-slide-toggle>
-          </div>
-        }
-
-        <!-- Form Actions -->
-        <div class="form-actions">
-          <button mat-button type="button" (click)="onCancel()" [disabled]="store.isLoading()">
-            <mat-icon>cancel</mat-icon>
-            {{ 'product-form.cancel' | translate }}
-          </button>
-          <button mat-raised-button color="primary" type="submit" [disabled]="store.isLoading()">
-            @if (store.isLoading()) {
-              <mat-spinner diameter="20"></mat-spinner>
-            } @else {
-              <mat-icon>save</mat-icon>
-            }
-            {{ (isEditMode ? 'product-form.update' : 'product-form.create') | translate }}
-          </button>
-        </div>
-
-      </form>
-    </mat-card-content>
-  </mat-card>
+    @if (isEditMode) { <mat-slide-toggle formControlName="active">{{ 'product-form.fields.active' | translate }}</mat-slide-toggle> }
+    <div class="form-actions"><button mat-button type="button" (click)="onCancel()" [disabled]="store.isLoading()">{{ 'product-form.cancel' | translate }}</button><button mat-raised-button color="primary" type="submit" [disabled]="store.isLoading() || productForm.invalid">{{ (isEditMode ? 'product-form.update' : 'product-form.create') | translate }}</button></div>
+  </form></mat-card-content></mat-card>
 </div>

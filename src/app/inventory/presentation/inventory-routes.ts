@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import {Layout} from '../../shared/presentation/component/layout/layout';
+import { providerGuard } from '../../iam/infrastructure/auth.guard';
 
 // Lazy loading de las vistas del BC Catalog
 const productInventory = () =>
@@ -8,17 +9,16 @@ const productInventory = () =>
 const productForm = () =>
   import('./views/product-form/product-form').then((m) => m.ProductForm);
 
-const inventoryRoutes: Routes = [
+const fuelProductRoutes: Routes = [
   {
     path: '',
     component: Layout,
     children: [
-      { path: 'product-inventory', loadComponent: productInventory },
-      { path: 'product-form', loadComponent: productForm },
-      { path: 'product-form/:id', loadComponent: productForm },
-      { path: '', redirectTo: 'product-inventory', pathMatch: 'full' },
+      { path: '', loadComponent: productInventory },
+      { path: 'product-form', canActivate: [providerGuard], loadComponent: productForm },
+      { path: 'product-form/:id', canActivate: [providerGuard], loadComponent: productForm },
     ],
   },
 ];
 
-export { inventoryRoutes };
+export { fuelProductRoutes };
