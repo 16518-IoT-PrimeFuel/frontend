@@ -1,0 +1,9 @@
+.title { margin: 16px 0; color: #2c3e50; }
+.filters { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; margin-bottom: 16px; }
+.empty { padding: 16px 0; color: #455a64; }
+.notice { color: #1b5e20; }
+.error { color: #a32121; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.mono { font-family: 'Courier New', monospace; }

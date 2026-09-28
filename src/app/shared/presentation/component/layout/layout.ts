@@ -87,9 +87,10 @@ export class Layout implements OnInit {
       link: '/reporting/report-main',
       roles: ['PROVIDER'],
     },
+    { label: 'nav.admin', icon: 'admin_panel_settings', link: '/admin', roles: [], admin: true },
   ];
 
-  get visibleOptions() { return this.options.filter((option) => option.roles.includes(this.iam.role() ?? '')); }
+  get visibleOptions() { return this.options.filter((option: any) => option.admin ? this.iam.isAdmin() : option.roles.includes(this.iam.role() ?? '')); }
   visibleChildren(option: any) { return option.children?.filter((child: any) => !child.roles || child.roles.includes(this.iam.role() ?? '')) ?? []; }
 
   constructor(
