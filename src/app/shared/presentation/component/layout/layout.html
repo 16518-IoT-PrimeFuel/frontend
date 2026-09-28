@@ -9,10 +9,13 @@
   <span class="toolbar-title">FullTank</span>
   <span class="spacer"></span>
   <app-language-switcher/>
+  <button mat-button (click)="logout()">{{ 'auth.logout' | translate }}</button>
   <button mat-icon-button
-          aria-label="Notifications"
+          [attr.aria-label]="'notification-list.title' | translate"
           routerLink="/notification/notification-list"
-          matTooltip="Notifications"
+          [matBadge]="notifications.unreadCount() || null"
+          matBadgeColor="warn"
+          [matTooltip]="'notification-list.title' | translate"
           class="notif-btn">
     <svg width="20" height="20" viewBox="0 0 24 24"
          fill="black"
@@ -39,7 +42,7 @@
 
       <!-- Navigation Menu -->
       <nav class="nav-menu" aria-label="Main navigation">
-        @for (option of options; track option.label) {
+        @for (option of visibleOptions; track option.label) {
 
           @if (!option.children) {
             <!-- OPCIÓN SIMPLE (Sin sub-menú) -->
@@ -73,7 +76,7 @@
 
               <!-- Lista de Sub-elementos sin iconos -->
               <div class="sub-menu-container">
-                @for (child of option.children; track child.link) {
+                @for (child of visibleChildren(option); track child.link) {
                   <div class="sub-nav-item"
                        [class.sub-active]="isActive(child.link)"
                        (click)="navigateTo(child.link)">

@@ -1,1 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
+/* Initial authentication screens */
+.iam-page { min-height: 75vh; display: grid; place-items: center; padding: 24px; }
+.iam-card { width: min(100%, 440px); display: grid; gap: 16px; padding: 28px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px #00000012; }
+.iam-card h1 { margin: 0; }
+.iam-card label { display: grid; gap: 6px; font-weight: 500; }
+.iam-card input, .iam-card textarea { box-sizing: border-box; width: 100%; padding: 10px 12px; border: 1px solid #b8c0cc; border-radius: 6px; font: inherit; }
+.iam-card button { min-height: 42px; border: 0; border-radius: 6px; background: #1e3a8a; color: white; font: inherit; cursor: pointer; }
+.iam-card a { color: #1e3a8a; }
+.iam-error { color: #a32121; }

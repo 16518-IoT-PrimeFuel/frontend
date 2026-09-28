@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -11,6 +11,9 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { LanguageSwitcher } from '../language-switcher/language-switcher';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { IamStore } from '../../../../iam/application/iam.store';
+import { MatBadgeModule } from '@angular/material/badge';
+import { NotificationStore } from '../../../../notification/application/notification.store';
 
 @Component({
   selector: 'app-layout',
@@ -23,6 +26,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
     MatIconModule,
     MatButtonModule,
     MatTooltipModule,
+    MatBadgeModule,
     TranslatePipe,
     RouterOutlet,
     RouterLink,
@@ -31,27 +35,36 @@ import { MatExpansionModule } from '@angular/material/expansion';
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })
-export class Layout {
+export class Layout implements OnInit {
+  private readonly iam = inject(IamStore);
+  protected readonly notifications = inject(NotificationStore);
   @ViewChild(MatSidenav) drawer!: MatSidenav;
 
   sidenavMode: 'side' | 'over' = 'side';
   sidenavOpened = true;
 
+  ngOnInit(): void { this.notifications.refreshUnreadCount(); }
+
   options = [
-    { label: 'nav.dashboard', icon: 'dashboard', link: '/dashboard' },
+    { label: 'nav.profile', icon: 'person', link: '/profile', roles: ['BUYER', 'PROVIDER'] },
+    { label: 'nav.equipment', icon: 'oil_barrel', link: '/tanks', roles: ['BUYER'] },
+    { label: 'nav.dashboard', icon: 'dashboard', link: '/dashboard', roles: ['BUYER', 'PROVIDER'] },
     {
       label: 'nav.inventory',
       icon: 'inventory_2',
-      link: '/inventory',
+      link: '/fuel-products',
+      roles: ['BUYER', 'PROVIDER'],
       children: [
-        { label: 'inventory.product-inventory', link: '/inventory/product-inventory' },
-        { label: 'inventory.add-product', link: '/inventory/product-form' },
+        { label: 'inventory.product-inventory', link: '/fuel-products', roles: ['PROVIDER'] },
+        { label: 'inventory.add-product', link: '/fuel-products/product-form', roles: ['PROVIDER'] },
+        { label: 'inventory.catalog', link: '/fuel-products', roles: ['BUYER'] },
       ]
     },
     {
       label: 'nav.ordering',
       icon: 'shopping_cart',
       link: '/ordering',
+      roles: ['BUYER', 'PROVIDER'],
       children: [
         { label: 'ordering.requests', link: '/ordering/request-list' },
         { label: 'ordering.create-request', link: '/ordering/request-form' },
@@ -62,22 +75,22 @@ export class Layout {
       label: 'nav.fulfillment',
       icon: 'local_shipping',
       link: '/fulfillment',
+      roles: ['PROVIDER'],
       children: [
-        { label: 'fulfillment.vehicles', link: '/fulfillment/vehicle-list' },
+        { label: 'fulfillment.vehicles', link: '/fulfillment/tanker-list' },
         { label: 'fulfillment.drivers', link: '/fulfillment/driver-list' },
-        { label: 'fulfillment.dispatch', link: '/fulfillment/dispatch-dashboard' },
       ],
     },
     {
       label: 'nav.reports',
       icon: 'analytics',
-      link: '/reporting',
-      children: [
-        { label: 'reporting.supplier-dashboard', link: '/reporting/report-main' },
-        { label: 'reporting.client-portfolio', link: '/reporting/client-reports' },
-      ],
+      link: '/reporting/report-main',
+      roles: ['PROVIDER'],
     },
   ];
+
+  get visibleOptions() { return this.options.filter((option) => option.roles.includes(this.iam.role() ?? '')); }
+  visibleChildren(option: any) { return option.children?.filter((child: any) => !child.roles || child.roles.includes(this.iam.role() ?? '')) ?? []; }
 
   constructor(
     private router: Router,
@@ -108,4 +121,6 @@ export class Layout {
   getCurrentYear(): number {
     return new Date().getFullYear();
   }
+
+  logout(): void { this.iam.logout(); }
 }
