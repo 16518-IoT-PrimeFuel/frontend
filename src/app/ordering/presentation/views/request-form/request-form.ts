@@ -1,106 +1,44 @@
-import { Component, inject } from '@angular/core';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { OrderingStore } from '../../../application/ordering.store';
-import { Request } from '../../../domain/model/request.entity';
+import { Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { MatError, MatFormField, MatInput, MatLabel } from '@angular/material/input';
 import { MatButton } from '@angular/material/button';
+import { MatFormField, MatInput, MatLabel } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
-import { MatDatepicker, MatDatepickerInput, MatDatepickerToggle } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
+import { OrderingApi } from '../../../infrastructure/ordering-api';
+import { OrderingStore } from '../../../application/ordering.store';
+import { Customer, Tank } from '../../../../equipment/domain/model/equipment.entity';
+import { FuelProduct } from '../../../../inventory/domain/model/fuel-product.entity';
 
-@Component({
-  selector: 'app-request-form',
-  imports: [
-    TranslatePipe,
-    ReactiveFormsModule,
-    MatFormField, MatLabel, MatError, MatInput,
-    MatButton,
-    MatSelect, MatOption,
-    MatDatepicker, MatDatepickerInput, MatDatepickerToggle,
-    MatNativeDateModule,
-  ],
-  templateUrl: './request-form.html',
-  styleUrl: './request-form.css',
-})
+@Component({ selector: 'app-request-form', imports: [TranslatePipe, ReactiveFormsModule, MatFormField, MatLabel, MatInput, MatButton, MatSelect, MatOption], templateUrl: './request-form.html', styleUrl: './request-form.css' })
 export class RequestForm {
-  private fb     = inject(FormBuilder);
-  private route  = inject(ActivatedRoute);
-  private router = inject(Router);
+  private readonly fb = inject(FormBuilder);
+  private readonly api = inject(OrderingApi);
+  private readonly router = inject(Router);
   readonly store = inject(OrderingStore);
-
-  form = this.fb.group({
-    clientId:            new FormControl<string>('',   { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
-    providerId:          new FormControl<string>('',   { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
-    productId:           new FormControl<string>('',   { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
-    quantity:            new FormControl<number | null>(null, { validators: [Validators.required, Validators.min(1)] }),
-    unit:                new FormControl<string>('LITERS', { nonNullable: true, validators: [Validators.required] }),
-    desiredDeliveryDate: new FormControl<Date | null>(null, { validators: [Validators.required] }),
-    deliveryAddress:     new FormControl<string>('',   { nonNullable: true, validators: [Validators.required, Validators.minLength(10)] }),
-  });
-
-  isEdit     = false;
-  requestId: string | null = null;
-  readonly minDate = new Date();
-
-  readonly units = [
-    { value: 'LITERS',  label: 'unit.liters'  },
-    { value: 'GALLONS', label: 'unit.gallons' },
-  ];
+  readonly customers = signal<Customer[]>([]);
+  readonly tanks = signal<Tank[]>([]);
+  readonly providers = signal<{id: number; name: string}[]>([]);
+  readonly products = signal<FuelProduct[]>([]);
+  readonly minDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  readonly form = this.fb.nonNullable.group({ customerAccountId: [0, Validators.min(1)], tankId: [0, Validators.min(1)], providerId: [0, Validators.min(1)], fuelProductId: [0, Validators.min(1)], quantity: [1, [Validators.required, Validators.min(1)]], unit: ['LITERS', Validators.required], deliveryDate: [this.minDate, Validators.required], deliveryAddress: [''] });
 
   constructor() {
-    this.route.params.subscribe(params => {
-      this.requestId = params['id'] ?? null;
-      this.isEdit    = !!this.requestId;
-      if (this.isEdit && this.requestId) {
-        const request = this.store.getRequestById(this.requestId)();
-        if (request) {
-          this.form.patchValue({
-            clientId:            request.clientId,
-            providerId:          request.providerId,
-            productId:           request.productId,
-            quantity:            request.quantity,
-            unit:                request.unit,
-            desiredDeliveryDate: request.desiredDeliveryDate ? new Date(request.desiredDeliveryDate) : null,
-            deliveryAddress:     request.deliveryAddress,
-          });
-        }
-      }
-    });
+    this.api.customers().subscribe(values => this.customers.set(values));
+    this.api.tanks().subscribe(values => this.tanks.set(values));
+    this.api.providers().subscribe(values => this.providers.set(values));
   }
-
-  submit() {
+  tanksForCustomer(): Tank[] { return this.tanks().filter(t => t.customerAccountId === this.form.controls.customerAccountId.value); }
+  onCustomerChange(): void { this.form.controls.tankId.setValue(0); }
+  onProviderChange(): void {
+    const id = this.form.controls.providerId.value;
+    this.form.controls.fuelProductId.setValue(0); this.products.set([]);
+    if (id) this.api.products(id).subscribe(values => this.products.set(values));
+  }
+  submit(): void {
     if (this.form.invalid) return;
-
-    const now     = new Date().toISOString();
-    const dateVal = this.form.value.desiredDeliveryDate;
-    const desired = dateVal instanceof Date ? dateVal.toISOString() : new Date(dateVal!).toISOString();
-
-    const request = new Request({
-      id:                  this.requestId ?? '',
-      clientId:            this.form.value.clientId!,
-      providerId:          this.form.value.providerId!,
-      productId:           this.form.value.productId!,
-      quantity:            this.form.value.quantity!,
-      unit:                this.form.value.unit!,
-      desiredDeliveryDate: desired,
-      deliveryAddress:     this.form.value.deliveryAddress!,
-      status:              'PENDING_APPROVAL',
-      rejectionReason:     null,
-      createdAt:           now,
-      updatedAt:           now,
-    });
-
-    if (this.isEdit) {
-      this.store.updateRequest(request);
-    } else {
-      this.store.addRequest(request);
-    }
-    this.router.navigate(['/ordering/request-list']).then();
+    const { customerAccountId, tankId, providerId, fuelProductId, ...details } = this.form.getRawValue();
+    this.store.createRequest({ ...details, customerAccountId, tankId, providerId, fuelProductId }, () => this.router.navigate(['/ordering/request-list']).then());
   }
-
-  cancel() {
-    this.router.navigate(['/ordering/request-list']).then();
-  }
+  cancel(): void { this.router.navigate(['/ordering/request-list']).then(); }
 }
