@@ -1,0 +1,38 @@
+<main class="iam-page">
+  <section class="iam-card">
+    <h1>{{ 'profile.title' | translate }}</h1>
+    @if (loading()) { <p>{{ 'profile.loading' | translate }}</p> }
+    @else {
+      @if (error()) { <p class="iam-error" role="alert">{{ error() | translate }}</p> }
+      @if (user()) {
+        <h2>{{ 'profile.user' | translate }}</h2>
+        <p><strong>{{ 'profile.username' | translate }}:</strong> {{ user()!.username }}</p>
+        <p><strong>{{ 'profile.roles' | translate }}:</strong> {{ user()!.roles.join(', ') }}</p>
+        <h2>{{ 'profile.company' | translate }}</h2>
+        <form (ngSubmit)="save()">
+          @if (isBuyer) {
+            <label>{{ 'auth.company' | translate }}<input name="name" [(ngModel)]="buyer.name" required></label>
+            <label>{{ 'auth.ruc' | translate }}<input name="ruc" [(ngModel)]="buyer.ruc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11"></label>
+            <label>{{ 'auth.sector' | translate }}<input name="sector" [(ngModel)]="buyer.sector" required></label>
+            <label>{{ 'auth.address' | translate }}<input name="address" [(ngModel)]="buyer.address" required></label>
+            <label>{{ 'profile.contact-email' | translate }}<input name="contactEmail" type="email" [(ngModel)]="buyer.contactEmail" required></label>
+            <label>{{ 'auth.phone' | translate }}<input name="phone" type="tel" [(ngModel)]="buyer.phone" required></label>
+          } @else {
+            <label>{{ 'auth.company' | translate }}<input name="name" [(ngModel)]="provider.name" required></label>
+            <label>{{ 'auth.ruc' | translate }}<input name="ruc" [(ngModel)]="provider.ruc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11"></label>
+            <label>{{ 'auth.address' | translate }}<input name="address" [(ngModel)]="provider.address" required></label>
+            <label>{{ 'auth.phone' | translate }}<input name="phone" type="tel" [(ngModel)]="provider.phone" required></label>
+            <label>{{ 'auth.fuel-types' | translate }}<input name="fuelTypes" [(ngModel)]="fuelTypes" required></label>
+            <label>{{ 'auth.description' | translate }}<textarea name="description" [(ngModel)]="provider.description"></textarea></label>
+          }
+          <button type="submit" [disabled]="saving()">{{ (saving() ? 'profile.saving' : 'profile.save') | translate }}</button>
+          @if (saved()) { <p role="status">{{ 'profile.saved' | translate }}</p> }
+        </form>
+        <h2>{{ 'profile.organizations' | translate }}</h2>
+        @if (organizations().length) {
+          <ul>@for (org of organizations(); track org.id) { <li>{{ org.name }} — {{ org.type }} ({{ org.role }})</li> }</ul>
+        } @else { <p>{{ 'profile.no-organizations' | translate }}</p> }
+      }
+    }
+  </section>
+</main>

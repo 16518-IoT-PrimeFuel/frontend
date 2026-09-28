@@ -1,0 +1,20 @@
+<main class="iam-page">
+  <form class="iam-card" (ngSubmit)="submit()">
+    <h1>{{ (role === 'BUYER' ? 'auth.register.buyer-title' : 'auth.register.provider-title') | translate }}</h1>
+    <label>{{ 'auth.username' | translate }}<input name="username" type="email" [(ngModel)]="username" required autocomplete="email"></label>
+    <label>{{ 'auth.password' | translate }}<input name="password" type="password" [(ngModel)]="password" required minlength="8" autocomplete="new-password"></label>
+    <label>{{ 'auth.company' | translate }}<input name="name" [(ngModel)]="name" required></label>
+    <label>{{ 'auth.ruc' | translate }}<input name="ruc" [(ngModel)]="ruc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11"></label>
+    <label>{{ 'auth.address' | translate }}<input name="address" [(ngModel)]="address" required></label>
+    <label>{{ 'auth.phone' | translate }}<input name="phone" [(ngModel)]="phone" required type="tel"></label>
+    @if (role === 'BUYER') {
+      <label>{{ 'auth.sector' | translate }}<input name="sector" [(ngModel)]="sector" required></label>
+    } @else {
+      <label>{{ 'auth.fuel-types' | translate }}<input name="fuelTypes" [(ngModel)]="fuelTypes" required></label>
+      <label>{{ 'auth.description' | translate }}<textarea name="description" [(ngModel)]="description"></textarea></label>
+    }
+    @if (error()) { <p class="iam-error" role="alert">{{ error() | translate }}</p> }
+    <button type="submit">{{ 'auth.register.submit' | translate }}</button>
+    <a routerLink="/login">{{ 'auth.login.link' | translate }}</a>
+  </form>
+</main>

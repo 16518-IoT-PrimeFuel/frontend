@@ -1,0 +1,12 @@
+<main class="iam-page">
+  <form class="iam-card" (ngSubmit)="submit()">
+    <h1>{{ 'auth.login.title' | translate }}</h1>
+    <label>{{ 'auth.username' | translate }}<input name="username" type="email" [(ngModel)]="username" required autocomplete="username"></label>
+    <label>{{ 'auth.password' | translate }}<input name="password" type="password" [(ngModel)]="password" required autocomplete="current-password"></label>
+    @if (error()) { <p class="iam-error" role="alert">{{ error() | translate }}</p> }
+    <button type="submit">{{ 'auth.login.submit' | translate }}</button>
+    <a routerLink="/forgot-password">{{ 'auth.forgot' | translate }}</a>
+    <a routerLink="/register/buyer">{{ 'auth.register.buyer-link' | translate }}</a>
+    <a routerLink="/register/distributor">{{ 'auth.register.provider-link' | translate }}</a>
+  </form>
+</main>
