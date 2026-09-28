@@ -1,61 +1,42 @@
-import { Injectable } from '@angular/core';
-import { BaseApi } from '../../shared/infrastructure/base-api';
-import { RequestsApiEndpoint } from './requests-api-endpoint';
-import { OrdersApiEndpoint } from './orders-api-endpoint';
-import { Request } from '../domain/model/request.entity';
-import { Order } from '../domain/model/order.entity';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
+import { CreateRequest, Request } from '../domain/model/request.entity';
+import { Order } from '../domain/model/order.entity';
+import { Customer, Tank } from '../../equipment/domain/model/equipment.entity';
+import { FuelProduct } from '../../inventory/domain/model/fuel-product.entity';
+
+export type PaymentMethod = 'BANK_TRANSFER' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CASH';
+export interface Payment { id: number; orderId: number; companyId: number; amount: number; status: string; paymentMethod: PaymentMethod; transactionReference: string | null; paidAt: string | null; }
 
 @Injectable({ providedIn: 'root' })
-export class OrderingApi extends BaseApi {
-  private readonly requestsEndpoint: RequestsApiEndpoint;
-  private readonly ordersEndpoint: OrdersApiEndpoint;
+export class OrderingApi {
+  private readonly http = inject(HttpClient);
+  private readonly base = environment.serverBasePath;
 
-  constructor(http: HttpClient) {
-    super();
-    this.requestsEndpoint = new RequestsApiEndpoint(http);
-    this.ordersEndpoint = new OrdersApiEndpoint(http);
+  requests(): Observable<Request[]> { return this.http.get<Request[]>(`${this.base}/replenishment-requests`); }
+  request(id: number): Observable<Request> { return this.http.get<Request>(`${this.base}/replenishment-requests/${id}`); }
+  createRequest(payload: CreateRequest): Observable<Request> { return this.http.post<Request>(`${this.base}/replenishment-requests`, { ...payload, source: 'MANUAL' }); }
+  acceptRequest(id: number): Observable<Request> { return this.http.post<Request>(`${this.base}/replenishment-requests/${id}/accept`, {}); }
+  rejectRequest(id: number, reason: string): Observable<Request> { return this.http.post<Request>(`${this.base}/replenishment-requests/${id}/reject`, { reason }); }
+  cancelRequest(id: number): Observable<Request> { return this.http.post<Request>(`${this.base}/replenishment-requests/${id}/cancel`, {}); }
+
+  orders(path: string, id: number): Observable<Order[]> { return this.http.get<Order[]>(`${this.base}/fuel-orders/${path}/${id}`); }
+  order(id: number): Observable<Order> { return this.http.get<Order>(`${this.base}/fuel-orders/${id}`); }
+  confirmOrder(id: number): Observable<Order> { return this.http.post<Order>(`${this.base}/fuel-orders/${id}/confirm`, {}); }
+  cancelOrder(id: number): Observable<Order> { return this.http.post<Order>(`${this.base}/fuel-orders/${id}/cancel`, {}); }
+
+  paymentForOrder(orderId: number): Observable<Payment> { return this.http.get<Payment>(`${this.base}/payments/order/${orderId}`); }
+  createPayment(orderId: number, companyId: number, amount: number, paymentMethod: PaymentMethod): Observable<Payment> {
+    return this.http.post<Payment>(`${this.base}/payments`, { orderId, companyId, amount, paymentMethod });
+  }
+  completePayment(id: number, transactionReference: string): Observable<Payment> {
+    return this.http.post<Payment>(`${this.base}/payments/${id}/complete`, { transactionReference });
   }
 
-  getRequests(): Observable<Request[]> {
-    return this.requestsEndpoint.getAll();
-  }
-
-  getOrders(): Observable<Order[]> {
-    return this.ordersEndpoint.getAll();
-  }
-
-  getRequestById(id: string): Observable<Request> {
-    return this.requestsEndpoint.getById(id);
-  }
-
-  getOrderById(id: string): Observable<Order> {
-    return this.ordersEndpoint.getById(id);
-  }
-
-  createRequest(request: Request): Observable<Request> {
-    return this.requestsEndpoint.create(request);
-  }
-
-  createOrder(order: Order): Observable<Order> {
-    return this.ordersEndpoint.create(order);
-  }
-
-  updateRequest(request: Request): Observable<Request> {
-    return this.requestsEndpoint.update(request, request.id);
-  }
-
-  updateOrder(order: Order): Observable<Order> {
-    return this.ordersEndpoint.update(order, order.id);
-  }
-
-  deleteRequest(id: string): Observable<void> {
-    return this.requestsEndpoint.delete(id);
-  }
-
-  deleteOrder(id: string): Observable<void> {
-    return this.ordersEndpoint.delete(id);
-  }
-
+  customers(): Observable<Customer[]> { return this.http.get<Customer[]>(`${this.base}/customers`); }
+  tanks(): Observable<Tank[]> { return this.http.get<Tank[]>(`${this.base}/tanks`); }
+  providers(): Observable<{ id: number; name: string }[]> { return this.http.get<{ id: number; name: string }[]>(`${this.base}/provider-companies`); }
+  products(providerId: number): Observable<FuelProduct[]> { return this.http.get<FuelProduct[]>(`${this.base}/fuel-products/provider/${providerId}`); }
 }
