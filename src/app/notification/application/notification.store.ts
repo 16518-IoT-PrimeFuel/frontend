@@ -1,198 +1,89 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
-import { retry } from 'rxjs';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { NotificationApi } from '../infrastructure/notification-api';
 import { Notification } from '../domain/model/notification.entity';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationStore {
   private readonly api = inject(NotificationApi);
+  private readonly list = signal<Notification[]>([]);
+  private readonly unread = signal(0);
+  private readonly loading = signal(false);
+  private readonly errorMessage = signal('');
+  private readonly successMessage = signal('');
 
-  private readonly _notificationList = signal<Notification[]>([]);
-  private readonly _selectedNotification = signal<Notification | null>(null);
-  private readonly _isLoading = signal<boolean>(false);
-  private readonly _error = signal<string>('');
-  private readonly _successMsg = signal<string>('');
+  readonly notificationList = this.list.asReadonly();
+  readonly unreadCount = this.unread.asReadonly();
+  readonly isLoading = this.loading.asReadonly();
+  readonly error = this.errorMessage.asReadonly();
+  readonly successMsg = this.successMessage.asReadonly();
+  readonly orderNotifications = computed(() => this.list().filter((n) => n.isOrderEvent()));
+  readonly deliveryNotifications = computed(() => this.list().filter((n) => n.isDeliveryEvent()));
 
-  public readonly notificationList = this._notificationList.asReadonly();
-  public readonly selectedNotification = this._selectedNotification.asReadonly();
-  public readonly isLoading = this._isLoading.asReadonly();
-  public readonly error = this._error.asReadonly();
-  public readonly successMsg = this._successMsg.asReadonly();
-
-  public readonly unreadNotifications = computed(() =>
-    this._notificationList().filter((n) => !n.isRead),
-  );
-  public readonly readNotifications = computed(() =>
-    this._notificationList().filter((n) => n.isRead),
-  );
-  public readonly unreadCount = computed(() => this.unreadNotifications().length);
-  public readonly orderNotifications = computed(() =>
-    this._notificationList().filter((n) => n.isOrderEvent()),
-  );
-  public readonly paymentNotifications = computed(() =>
-    this._notificationList().filter((n) => n.isPaymentEvent()),
-  );
-  public readonly deliveryNotifications = computed(() =>
-    this._notificationList().filter((n) => n.isDeliveryEvent()),
-  );
-
-  loadNotificationsByUser(userId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api.getNotificationsByUser(userId).pipe(retry(2)).subscribe({
-      next: (notifications) => {
-        setTimeout(() => {
-          this._notificationList.set(notifications);
-          this._isLoading.set(false);
-        }, 100);
+  loadNotifications(): void {
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.api.getNotifications().subscribe({
+      next: (items) => {
+        this.list.set(items);
+        this.unread.set(items.filter((item) => !item.read).length);
+        this.loading.set(false);
       },
-      error: (err) => {
-        this._error.set(err.message || 'Failed to load notifications');
-        this._isLoading.set(false);
-      },
+      error: (error) => this.fail(error),
     });
   }
 
-  loadUnreadNotificationsByUser(userId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api.getUnreadNotificationsByUser(userId).pipe(retry(2)).subscribe({
-      next: (notifications) => {
-        setTimeout(() => {
-          this._notificationList.set(notifications);
-          this._isLoading.set(false);
-        }, 100);
+  loadUnreadNotifications(): void {
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.api.getUnreadNotifications().subscribe({
+      next: (items) => {
+        this.unread.set(items.length);
+        this.list.set(items);
+        this.loading.set(false);
       },
-      error: (err) => {
-        this._error.set(err.message || 'Failed to load unread notifications');
-        this._isLoading.set(false);
-      },
+      error: (error) => this.fail(error),
     });
   }
 
-  loadNotificationsByOrder(orderId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api.getNotificationsByOrder(orderId).pipe(retry(2)).subscribe({
-      next: (notifications) => {
-        this._notificationList.set(notifications);
-        this._isLoading.set(false);
-      },
-      error: (err) => {
-        this._error.set(err.message || 'Failed to load notifications for order');
-        this._isLoading.set(false);
-      },
+  refreshUnreadCount(): void {
+    this.api.getUnreadNotifications().subscribe({
+      next: (items) => this.unread.set(items.length),
+      error: (error) => this.errorMessage.set(error.message || 'Failed to load unread notifications'),
     });
   }
 
-  loadNotificationById(notificationId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api.getNotificationById(notificationId).pipe(retry(2)).subscribe({
-      next: (notification) => {
-        this._selectedNotification.set(notification);
-        this._isLoading.set(false);
-      },
-      error: (err) => {
-        this._error.set(err.message || 'Failed to load notification');
-        this._isLoading.set(false);
-      },
-    });
-  }
-
-  createNotification(
-    request: Pick<Notification, 'userId' | 'orderId' | 'type' | 'message'>,
-    onSuccess?: () => void,
-  ): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this._successMsg.set('');
-    this.api.createNotification(request).pipe(retry(2)).subscribe({
-      next: (notification) => {
-        this._notificationList.update((list) => [notification, ...list]);
-        this._successMsg.set('Notification created successfully');
-        this._isLoading.set(false);
-        onSuccess?.();
-      },
-      error: (err) => {
-        this._error.set(err.message || 'Failed to create notification');
-        this._isLoading.set(false);
-      },
-    });
-  }
-
-  markAsRead(notificationId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api.markAsRead(notificationId).pipe(retry(2)).subscribe({
+  markAsRead(id: number): void {
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.api.markAsRead(id).subscribe({
       next: (updated) => {
-        this._notificationList.update((list) =>
-          list.map((n) => { if (n.id === notificationId) { n.markAsRead(); } return n; }),
-        );
-        this._selectedNotification.set(updated);
-        this._isLoading.set(false);
+        this.list.update((items) => items.map((item) => item.id === id ? updated : item));
+        this.unread.update((count) => Math.max(0, count - 1));
+        this.loading.set(false);
       },
-      error: (err) => {
-        this._error.set(err.message || 'Failed to mark notification as read');
-        this._isLoading.set(false);
-      },
+      error: (error) => this.fail(error),
     });
   }
 
-  markAsUnread(notificationId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api.markAsUnread(notificationId).pipe(retry(2)).subscribe({
-      next: (updated) => {
-        this._notificationList.update((list) =>
-          list.map((n) => { if (n.id === notificationId) { n.markAsUnread(); } return n; }),
-        );
-        this._selectedNotification.set(updated);
-        this._isLoading.set(false);
-      },
-      error: (err) => {
-        this._error.set(err.message || 'Failed to mark notification as unread');
-        this._isLoading.set(false);
-      },
-    });
-  }
-
-  markAllAsRead(userId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this._successMsg.set('');
-    this.api.markAllAsReadForUser(userId).pipe(retry(2)).subscribe({
+  markAllAsRead(): void {
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.api.markAllAsRead().subscribe({
       next: () => {
-        this._notificationList.update((list) =>
-          list.map((n) => { n.markAsRead(); return n; }),
-        );
-        this._successMsg.set('All notifications marked as read');
-        this._isLoading.set(false);
+        this.list.update((items) => items.map((item) => { item.read = true; return item; }));
+        this.unread.set(0);
+        this.successMessage.set('All notifications marked as read');
+        this.loading.set(false);
       },
-      error: (err) => {
-        this._error.set(err.message || 'Failed to mark all notifications as read');
-        this._isLoading.set(false);
-      },
+      error: (error) => this.fail(error),
     });
   }
 
-  deleteNotification(notificationId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api.deleteNotification(notificationId).pipe(retry(2)).subscribe({
-      next: () => {
-        this._notificationList.update((list) => list.filter((n) => n.id !== notificationId));
-        this._isLoading.set(false);
-      },
-      error: (err) => {
-        this._error.set(err.message || 'Failed to delete notification');
-        this._isLoading.set(false);
-      },
-    });
-  }
+  clearMessages(): void { this.errorMessage.set(''); this.successMessage.set(''); }
 
-  clearMessages(): void {
-    this._error.set('');
-    this._successMsg.set('');
+  private fail(error: { message?: string }): void {
+    this.errorMessage.set(error.message || 'Failed to load notifications');
+    this.loading.set(false);
   }
 }
