@@ -263,7 +263,9 @@
       "brand": "e.g. Volvo",
       "model": "e.g. FH16 500",
       "capacity": "e.g. 15000"
-    }
+    },
+    "saved-created": "Tanker registered successfully",
+    "saved": "Tanker updated successfully"
   },
   "driver-list": {
     "title": "Driver Registry",
@@ -304,7 +306,9 @@
       "license-number": "e.g. Q12345678",
       "phone": "e.g. +51987654321",
       "email": "e.g. driver@fulltank.com"
-    }
+    },
+    "saved-created": "Driver registered successfully",
+    "saved": "Driver updated successfully"
   },
   "vehicle-status": {
     "available": "Available",
@@ -492,7 +496,8 @@
       "message": "Message",
       "status": "Status",
       "created-at": "Date"
-    }
+    },
+    "all-read": "All notifications marked as read"
   },
   "auth": {
     "login": {
@@ -605,7 +610,12 @@
     "users": {
       "tab": "Users",
       "search": "Search by username",
-      "id": "ID", "username": "Username", "roles": "Roles", "company": "Company", "provider": "Provider", "actions": "Actions",
+      "id": "ID",
+      "username": "Username",
+      "roles": "Roles",
+      "company": "Company",
+      "provider": "Provider",
+      "actions": "Actions",
       "promote": "Promote to admin",
       "is-admin": "Admin",
       "empty": "No users found.",
@@ -616,14 +626,24 @@
     "metrics": {
       "tab": "API metrics",
       "version": "Version",
-      "route": "Route", "handler": "Handler", "count": "Calls", "last-seen": "Last seen", "callers": "Distinct callers",
+      "route": "Route",
+      "handler": "Handler",
+      "count": "Calls",
+      "last-seen": "Last seen",
+      "callers": "Distinct callers",
       "empty": "No metrics recorded for this version."
     },
     "payments": {
       "tab": "Payments",
       "status": "Status",
       "all": "All",
-      "id": "ID", "order": "Order", "company": "Company", "amount": "Amount", "method": "Method", "reference": "Reference", "paid-at": "Paid at",
+      "id": "ID",
+      "order": "Order",
+      "company": "Company",
+      "amount": "Amount",
+      "method": "Method",
+      "reference": "Reference",
+      "paid-at": "Paid at",
       "empty": "No payments found."
     },
     "evidence": {
@@ -639,5 +659,31 @@
   },
   "common": {
     "loading": "Loading…"
+  },
+  "errors": {
+    "generic": "The request could not be completed.",
+    "network": "The server could not be reached.",
+    "server": "Something went wrong on the server. Try again later.",
+    "http-400": "The request contains invalid data.",
+    "http-401": "Your session has expired. Sign in again.",
+    "http-403": "You do not have permission to do this.",
+    "http-404": "The requested resource was not found.",
+    "http-409": "This conflicts with an existing record.",
+    "http-422": "This request cannot be processed."
+  },
+  "validation": {
+    "required": "This field is required",
+    "min-length": "Minimum length is {{n}}",
+    "min-value": "Minimum value is {{n}}",
+    "email": "Invalid email format",
+    "phone": "Invalid phone format",
+    "positive": "Value must be greater than 0"
+  },
+  "confirm": {
+    "title": "Confirm action",
+    "product": "Delete this product? This cannot be undone.",
+    "deactivate": "Deactivate this item?",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
   }
 }

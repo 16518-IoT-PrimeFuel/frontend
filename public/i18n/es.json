@@ -263,7 +263,9 @@
       "brand": "ej. Volvo",
       "model": "ej. FH16 500",
       "capacity": "ej. 15000"
-    }
+    },
+    "saved-created": "Cisterna registrada correctamente",
+    "saved": "Cisterna actualizada correctamente"
   },
   "driver-list": {
     "title": "Registro de Conductores",
@@ -304,7 +306,9 @@
       "license-number": "ej. Q12345678",
       "phone": "ej. +51987654321",
       "email": "ej. conductor@fulltank.com"
-    }
+    },
+    "saved-created": "Conductor registrado correctamente",
+    "saved": "Conductor actualizado correctamente"
   },
   "vehicle-status": {
     "available": "Disponible",
@@ -492,7 +496,8 @@
       "message": "Mensaje",
       "status": "Estado",
       "created-at": "Fecha"
-    }
+    },
+    "all-read": "Todas las notificaciones marcadas como leídas"
   },
   "auth": {
     "login": {
@@ -605,7 +610,12 @@
     "users": {
       "tab": "Usuarios",
       "search": "Buscar por usuario",
-      "id": "ID", "username": "Usuario", "roles": "Roles", "company": "Empresa", "provider": "Distribuidor", "actions": "Acciones",
+      "id": "ID",
+      "username": "Usuario",
+      "roles": "Roles",
+      "company": "Empresa",
+      "provider": "Distribuidor",
+      "actions": "Acciones",
       "promote": "Promover a admin",
       "is-admin": "Admin",
       "empty": "No se encontraron usuarios.",
@@ -616,14 +626,24 @@
     "metrics": {
       "tab": "Métricas de API",
       "version": "Versión",
-      "route": "Ruta", "handler": "Manejador", "count": "Llamadas", "last-seen": "Última vez", "callers": "Llamantes distintos",
+      "route": "Ruta",
+      "handler": "Manejador",
+      "count": "Llamadas",
+      "last-seen": "Última vez",
+      "callers": "Llamantes distintos",
       "empty": "No hay métricas registradas para esta versión."
     },
     "payments": {
       "tab": "Pagos",
       "status": "Estado",
       "all": "Todos",
-      "id": "ID", "order": "Orden", "company": "Empresa", "amount": "Monto", "method": "Método", "reference": "Referencia", "paid-at": "Pagado el",
+      "id": "ID",
+      "order": "Orden",
+      "company": "Empresa",
+      "amount": "Monto",
+      "method": "Método",
+      "reference": "Referencia",
+      "paid-at": "Pagado el",
       "empty": "No se encontraron pagos."
     },
     "evidence": {
@@ -639,5 +659,31 @@
   },
   "common": {
     "loading": "Cargando…"
+  },
+  "errors": {
+    "generic": "No se pudo completar la solicitud.",
+    "network": "No se pudo conectar con el servidor.",
+    "server": "Ocurrió un error en el servidor. Inténtalo más tarde.",
+    "http-400": "La solicitud contiene datos inválidos.",
+    "http-401": "Tu sesión expiró. Inicia sesión de nuevo.",
+    "http-403": "No tienes permiso para hacer esto.",
+    "http-404": "No se encontró el recurso solicitado.",
+    "http-409": "Esto entra en conflicto con un registro existente.",
+    "http-422": "No se puede procesar esta solicitud."
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "min-length": "Longitud mínima: {{n}}",
+    "min-value": "Valor mínimo: {{n}}",
+    "email": "Formato de correo inválido",
+    "phone": "Formato de teléfono inválido",
+    "positive": "El valor debe ser mayor que 0"
+  },
+  "confirm": {
+    "title": "Confirmar acción",
+    "product": "¿Eliminar este producto? No se puede deshacer.",
+    "deactivate": "¿Desactivar este elemento?",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
   }
 }

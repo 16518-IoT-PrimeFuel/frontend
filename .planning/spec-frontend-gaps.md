@@ -110,8 +110,13 @@ Cerrar, por etapas y de la más dañina a la menos, los huecos del frontend dete
 - UI no trivial: entrevistar antes con AskUserQuestion. Diseño con el skill `impeccable`.
 - Trabajar poco a poco: una etapa a la vez, informando al terminar cada una, y esperando el visto bueno antes de la siguiente.
 
-### Verificación pendiente
-La verificación interactiva con `playwright-cli` (11 hallazgos) sigue en curso. Los hallazgos "por verificar" deben tratarse como hipótesis hasta que se confirmen en pantalla. Swagger en vivo no se pudo leer: `/v3/api-docs` devuelve 500 en el backend local (springdoc); se usó el snapshot `openapi-snapshot.json` del 27-sep.
+### Verificación interactiva (playwright-cli, 2026-09-28) — CORRIGE las tablas de arriba
+- Swagger: NO está roto. La spec real está en `/api-docs` (no `/v3/api-docs`, que no existe y devuelve 500 por el manejador global). Es idéntica al snapshot (84 paths, 103 operaciones).
+- Refutados (NO implementar): (1) el PUT de conductor NO resetea el estado (el form ya envía `status`); (3) el menú del PROVIDER NO muestra "Crear solicitud"; (5) `delivery-detail` NO queda en blanco (muestra alert "Could not load the delivery"); (9) el backend rechaza en la creación (400) una solicitud sin dirección, así que el 409 en accept no se alcanza por ahí. Sigue válido que el cliente no exige la dirección.
+- Confirmados: sin bandeja del proveedor (B1); orden PAID sin su pago visible; 403/404 con cuerpo vacío y `details` del 400 no mostrados; `fuelType` y `unit` de tanques en texto libre (el backend acepta cualquier valor); política de reposición con IDs numéricos; entrega alcanzable solo tras asignar; estados de transición y timeline crudos.
+- Ya corregidos en el árbol durante la prueba (verificar que no se reviertan): claves i18n de notificaciones, estados y `ordering.*`; enlace a login en la landing; idioma persistido en `fulltank.lang`.
+- NUEVOS: N1 (ALTA, regresión activa) con la UI en inglés todo se ve como claves crudas (`home.title`...), en español bien; hipótesis: el cambio en el interceptor de auth inyecta `TranslateService` y crea dependencia circular con el loader HTTP. N2 `POST /drivers` con licencia duplicada devuelve 500 (restricción única global; es del backend). N3 la ventana de reserva de la asignación dice "(optional)" pero el backend exige inicio y fin. N4 el BUYER no tiene "Reportes" en el menú. N5 login muestra "User not found: <email>" en inglés y enumera usuarios. N7 columna "Request" de órdenes vacía (`requestId` null). N9 aceptar, rechazar y guardar política sin feedback. N10 título de edición de conductor dice "Register Driver". N11 `/access-denied` dice "sin rol soportado" a un BUYER o PROVIDER válido en ruta ajena. N12 no se generan notificaciones de entrega ni de pago (backend, solo ORDER_ACCEPTED).
+- Pendiente de verificar en pantalla: fallo de entrega, cancelar orden o solicitud, botón "block" de conductores, elegibilidad, y el detalle del 400 tras el fix de `details`.
 
 ### Apéndice A — Tabla 1: endpoints sin cobertura completa (93 no-admin: 59 cubiertos, 14 parciales, 20 sin cobertura)
 
