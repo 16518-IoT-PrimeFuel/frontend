@@ -16,16 +16,11 @@ export abstract class ErrorHandlingEnabledBaseType {
    */
   protected handleError(operation: string) {
     return (error: HttpErrorResponse): Observable<never> => {
-      const errorMessage = error.error?.message ?? error.error?.code ?? (
-        error.error instanceof ErrorEvent ? error.error.message :
-          error.status === 400 ? 'Request validation failed.' :
-          error.status === 401 ? 'Your session has expired. Sign in again.' :
-          error.status === 403 ? 'You do not have permission to do this.' :
-          error.status === 404 ? 'The requested resource was not found.' :
-          error.status === 409 ? 'This conflicts with an existing record.' :
-          error.status === 422 ? 'This request cannot be processed.' :
-          error.status === 0 ? 'The server could not be reached.' : error.statusText || 'Unexpected server error'
-      );
+      const body = typeof error.error === 'object' ? error.error : null;
+      const fallback = error.status === 0 ? 'errors.network' : error.status >= 500 ? 'errors.server' : `errors.http-${error.status}`;
+      const message = error.status >= 500 ? fallback : (body?.message ?? fallback);
+      const details = error.status < 500 && typeof body?.details === 'string' && body.details !== message ? body.details : '';
+      const errorMessage = details ? `${message}: ${details}` : message;
 
       console.error(`[FullTank API Error] ${errorMessage}`, error);
       return throwError(() => new Error(errorMessage));
