@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { FulfillmentStore } from '../../../application/fulfillment.store';
+import { IamStore } from '../../../../iam/application/iam.store';
 
 /**
  * @summary Vista de lista de conductores.
@@ -35,8 +36,7 @@ import { FulfillmentStore } from '../../../application/fulfillment.store';
 export class DriverList implements OnInit {
   protected readonly store = inject(FulfillmentStore);
 
-  // TODO: Reemplazar con providerId real de IAM cuando se implemente
-  private readonly TEMP_PROVIDER_ID = '1';
+
 
   protected readonly displayedColumns: string[] = [
     'fullName',
@@ -48,23 +48,23 @@ export class DriverList implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.store.loadDriversByProvider(this.TEMP_PROVIDER_ID);
+    this.store.loadDrivers();
   }
 
   protected onRefresh(): void {
-    this.store.loadDriversByProvider(this.TEMP_PROVIDER_ID);
+    this.store.loadDrivers();
   }
 
   protected onShowAvailable(): void {
-    this.store.loadAvailableDrivers(this.TEMP_PROVIDER_ID);
+    this.store.loadAvailableDrivers();
   }
 
   protected onShowAll(): void {
-    this.store.loadDriversByProvider(this.TEMP_PROVIDER_ID);
+    this.store.loadDrivers();
   }
 
-  protected onDelete(driverId: string): void {
-    this.store.deleteDriver(driverId);
+  protected onToggleActive(driverId: number, active: boolean): void {
+    this.store.updateDriverStatus(driverId, { status: active ? 'INACTIVE' : 'AVAILABLE' });
   }
 
   protected getStatusClass(status: string): string {

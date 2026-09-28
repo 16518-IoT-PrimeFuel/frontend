@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -30,18 +30,22 @@ import { Driver } from '../../../domain/model/driver.entity';
 })
 export class DriverForm implements OnInit {
   protected readonly store = inject(FulfillmentStore);
+  private readonly syncForm = effect(() => {
+    const driver = this.store.selectedDriver();
+    if (driver && this.driverForm) this.driverForm.patchValue(driver);
+  });
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  private readonly TEMP_PROVIDER_ID = '1';
 
   protected driverForm: FormGroup;
   protected isEditMode = false;
-  protected driverId: string | null = null;
+  protected driverId: number | null = null;
 
   constructor() {
     this.driverForm = this.fb.group({
+      userId: [null],
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
       licenseNumber: ['', [Validators.required, Validators.minLength(8)]],
@@ -51,23 +55,11 @@ export class DriverForm implements OnInit {
   }
 
   ngOnInit(): void {
-    this.driverId = this.route.snapshot.paramMap.get('id');
+    this.driverId = Number(this.route.snapshot.paramMap.get('id')) || null;
     this.isEditMode = !!this.driverId;
 
     if (this.isEditMode && this.driverId) {
       this.store.loadDriverById(this.driverId);
-      setTimeout(() => {
-        const driver = this.store.selectedDriver();
-        if (driver) {
-          this.driverForm.patchValue({
-            firstName: driver.firstName,
-            lastName: driver.lastName,
-            licenseNumber: driver.licenseNumber,
-            phoneNumber: driver.phoneNumber,
-            email: driver.email,
-          });
-        }
-      }, 500);
     }
   }
 
@@ -84,14 +76,15 @@ export class DriverForm implements OnInit {
   }
 
   private registerDriverData(): void {
-    const request: Omit<Driver, 'id' | 'createdAt'> = {
-      providerId: this.TEMP_PROVIDER_ID,
+    const request: Omit<Driver, 'id' | 'providerId' | 'createdAt'> = {
+      userId: this.driverForm.value.userId,
       firstName: this.driverForm.value.firstName,
       lastName: this.driverForm.value.lastName,
       licenseNumber: this.driverForm.value.licenseNumber,
       phoneNumber: this.driverForm.value.phoneNumber,
       email: this.driverForm.value.email,
       status: 'AVAILABLE',
+      active: true,
     };
     this.store.registerDriver(request, () => {
       this.router.navigate(['/fulfillment/driver-list']);

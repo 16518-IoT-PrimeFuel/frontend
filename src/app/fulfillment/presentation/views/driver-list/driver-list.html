@@ -91,14 +91,7 @@
           >
             <mat-icon>edit</mat-icon>
           </button>
-          <button
-            mat-icon-button
-            color="warn"
-            (click)="onDelete(element.id)"
-            [matTooltip]="'driver-list.delete-tooltip' | translate"
-          >
-            <mat-icon>close</mat-icon>
-          </button>
+          <button mat-icon-button (click)="onToggleActive(element.id, element.active)" [matTooltip]="element.active ? ('tanker-list.deactivate' | translate) : ('tanker-list.activate' | translate)"><mat-icon>{{ element.active ? 'block' : 'check_circle' }}</mat-icon></button><button mat-button (click)="store.checkDriverEligibility(element.id)">{{ 'driver-list.eligibility' | translate }}</button>@if (store.driverEligibility()[element.id]; as eligibility) { <span>{{ eligibility.outcome }}: {{ eligibility.reason }}</span> }
         </td>
       </ng-container>
 

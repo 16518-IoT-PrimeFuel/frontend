@@ -23,6 +23,10 @@
   <mat-card class="form-card">
     <mat-card-content>
       <form [formGroup]="driverForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'driver-form.fields.user-id' | translate }}</mat-label>
+          <input matInput type="number" formControlName="userId" />
+        </mat-form-field>
         <!-- First Name and Last Name Row -->
         <div class="form-row">
           <mat-form-field appearance="outline">

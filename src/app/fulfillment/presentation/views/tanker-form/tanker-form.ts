@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -11,9 +11,9 @@ import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslatePipe } from '@ngx-translate/core';
 import { FulfillmentStore } from '../../../application/fulfillment.store';
-import { Vehicle } from '../../../domain/model/vehicle.entity';
+import { Tanker } from '../../../domain/model/tanker.entity';
 @Component({
-  selector: 'app-vehicle-form',
+  selector: 'app-tanker-form',
   standalone: true,
   imports: [
     CommonModule,
@@ -27,20 +27,23 @@ import { Vehicle } from '../../../domain/model/vehicle.entity';
     MatProgressSpinnerModule,
     TranslatePipe,
   ],
-  templateUrl: './vehicle-form.html',
-  styleUrl: './vehicle-form.css',
+  templateUrl: './tanker-form.html',
+  styleUrl: './tanker-form.css',
 })
-export class VehicleForm implements OnInit {
+export class TankerForm implements OnInit {
   protected readonly store = inject(FulfillmentStore);
+  private readonly syncForm = effect(() => {
+    const tanker = this.store.selectedTanker();
+    if (tanker && this.tankerForm) this.tankerForm.patchValue(tanker);
+  });
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  private readonly TEMP_PROVIDER_ID = '1';
 
-  protected vehicleForm: FormGroup;
+  protected tankerForm: FormGroup;
   protected isEditMode = false;
-  protected vehicleId: string | null = null;
+  protected tankerId: number | null = null;
 
   protected readonly units = [
     { value: 'LITERS', label: 'unit.liters' },
@@ -48,7 +51,7 @@ export class VehicleForm implements OnInit {
   ];
 
   constructor() {
-    this.vehicleForm = this.fb.group({
+    this.tankerForm = this.fb.group({
       licensePlate: ['', [Validators.required, Validators.minLength(6)]],
       brand: ['', [Validators.required, Validators.minLength(2)]],
       model: ['', [Validators.required, Validators.minLength(2)]],
@@ -59,74 +62,61 @@ export class VehicleForm implements OnInit {
   }
 
   ngOnInit(): void {
-    this.vehicleId = this.route.snapshot.paramMap.get('id');
-    this.isEditMode = !!this.vehicleId;
+    this.tankerId = Number(this.route.snapshot.paramMap.get('id')) || null;
+    this.isEditMode = !!this.tankerId;
 
-    if (this.isEditMode && this.vehicleId) {
-      this.store.loadVehicleById(this.vehicleId);
-      setTimeout(() => {
-        const vehicle = this.store.selectedVehicle();
-        if (vehicle) {
-          this.vehicleForm.patchValue({
-            licensePlate: vehicle.licensePlate,
-            brand: vehicle.brand,
-            model: vehicle.model,
-            capacity: vehicle.capacity,
-            unit: vehicle.unit,
-            status: vehicle.status,
-          });
-        }
-      }, 500);
+    if (this.isEditMode && this.tankerId) {
+      this.store.loadTankerById(this.tankerId);
     }
   }
 
   protected onSubmit(): void {
-    if (this.vehicleForm.invalid) {
-      this.vehicleForm.markAllAsTouched();
+    if (this.tankerForm.invalid) {
+      this.tankerForm.markAllAsTouched();
       return;
     }
-    if (this.isEditMode && this.vehicleId) {
-      this.updateVehicleData();
+    if (this.isEditMode && this.tankerId) {
+      this.updateTankerData();
     } else {
-      this.registerVehicleData();
+      this.registerTankerData();
     }
   }
 
-  private registerVehicleData(): void {
-    const request: Omit<Vehicle, 'id' | 'createdAt'> = {
-      providerId: this.TEMP_PROVIDER_ID,
-      licensePlate: this.vehicleForm.value.licensePlate,
-      brand: this.vehicleForm.value.brand,
-      model: this.vehicleForm.value.model,
-      capacity: this.vehicleForm.value.capacity,
-      unit: this.vehicleForm.value.unit,
+  private registerTankerData(): void {
+    const request: Omit<Tanker, 'id' | 'providerId' | 'createdAt'> = {
+      licensePlate: this.tankerForm.value.licensePlate,
+      brand: this.tankerForm.value.brand,
+      model: this.tankerForm.value.model,
+      capacity: this.tankerForm.value.capacity,
+      unit: this.tankerForm.value.unit,
       status: 'AVAILABLE',
+      active: true,
     };
-    this.store.registerVehicle(request, () => {
-      this.router.navigate(['/fulfillment/vehicle-list']);
+    this.store.registerTanker(request, () => {
+      this.router.navigate(['/fulfillment/tanker-list']);
     });
   }
 
-  private updateVehicleData(): void {
-    const request: Partial<Omit<Vehicle, 'id' | 'providerId' | 'createdAt'>> = {
-      licensePlate: this.vehicleForm.value.licensePlate,
-      brand: this.vehicleForm.value.brand,
-      model: this.vehicleForm.value.model,
-      capacity: this.vehicleForm.value.capacity,
-      unit: this.vehicleForm.value.unit,
-      status: this.vehicleForm.value.status,
+  private updateTankerData(): void {
+    const request: Partial<Omit<Tanker, 'id' | 'providerId' | 'createdAt'>> = {
+      licensePlate: this.tankerForm.value.licensePlate,
+      brand: this.tankerForm.value.brand,
+      model: this.tankerForm.value.model,
+      capacity: this.tankerForm.value.capacity,
+      unit: this.tankerForm.value.unit,
+      status: this.tankerForm.value.status,
     };
-    this.store.updateVehicle(this.vehicleId!, request, () => {
-      this.router.navigate(['/fulfillment/vehicle-list']);
+    this.store.updateTanker(this.tankerId!, request, () => {
+      this.router.navigate(['/fulfillment/tanker-list']);
     });
   }
 
   protected onCancel(): void {
-    this.router.navigate(['/fulfillment/vehicle-list']);
+    this.router.navigate(['/fulfillment/tanker-list']);
   }
 
   protected getErrorMessage(field: string): string {
-    const control = this.vehicleForm.get(field);
+    const control = this.tankerForm.get(field);
     if (control?.hasError('required')) return 'This field is required';
     if (control?.hasError('minlength'))
       return `Minimum length is ${control.errors?.['minlength'].requiredLength}`;

@@ -16,7 +16,7 @@ import { FulfillmentStore } from '../../../application/fulfillment.store';
  * @author FullTank Platform
  */
 @Component({
-  selector: 'app-vehicle-list',
+  selector: 'app-tanker-list',
   standalone: true,
   imports: [
     CommonModule,
@@ -29,14 +29,12 @@ import { FulfillmentStore } from '../../../application/fulfillment.store';
     RouterModule,
     TranslatePipe,
   ],
-  templateUrl: './vehicle-list.html',
-  styleUrl: './vehicle-list.css',
+  templateUrl: './tanker-list.html',
+  styleUrl: './tanker-list.css',
 })
-export class VehicleList implements OnInit {
+export class TankerList implements OnInit {
   protected readonly store = inject(FulfillmentStore);
 
-  // TODO: Reemplazar con providerId real de IAM cuando se implemente
-  private readonly TEMP_PROVIDER_ID = '1';
 
   protected readonly displayedColumns: string[] = [
     'licensePlate',
@@ -48,23 +46,23 @@ export class VehicleList implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.store.loadVehiclesByProvider(this.TEMP_PROVIDER_ID);
+    this.store.loadTankers();
   }
 
   protected onRefresh(): void {
-    this.store.loadVehiclesByProvider(this.TEMP_PROVIDER_ID);
+    this.store.loadTankers();
   }
 
   protected onShowAvailable(): void {
-    this.store.loadAvailableVehicles(this.TEMP_PROVIDER_ID);
+    this.store.loadAvailableTankers();
   }
 
   protected onShowAll(): void {
-    this.store.loadVehiclesByProvider(this.TEMP_PROVIDER_ID);
+    this.store.loadTankers();
   }
 
-  protected onDelete(vehicleId: string): void {
-    this.store.deleteVehicle(vehicleId);
+  protected onToggleActive(tankerId: number, active: boolean): void {
+    this.store.updateTankerStatus(tankerId, { status: active ? 'INACTIVE' : 'AVAILABLE' });
   }
 
   protected getStatusClass(status: string): string {

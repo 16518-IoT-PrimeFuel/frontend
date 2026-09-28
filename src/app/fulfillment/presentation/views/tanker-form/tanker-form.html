@@ -1,8 +1,8 @@
-<div class="vehicle-form-container">
+<div class="tanker-form-container">
   <header class="page-header">
     <div class="header-content">
-      <h1>{{ 'vehicle-form.title' | translate }}</h1>
-      <p>{{ 'vehicle-form.subtitle' | translate }}</p>
+      <h1>{{ 'tanker-form.title' | translate }}</h1>
+      <p>{{ 'tanker-form.subtitle' | translate }}</p>
     </div>
   </header>
 
@@ -22,17 +22,17 @@
 
   <mat-card class="form-card">
     <mat-card-content>
-      <form [formGroup]="vehicleForm" (ngSubmit)="onSubmit()">
+      <form [formGroup]="tankerForm" (ngSubmit)="onSubmit()">
         <!-- License Plate Field -->
         <mat-form-field appearance="outline">
-          <mat-label>{{ 'vehicle-form.fields.license-plate' | translate }}</mat-label>
+          <mat-label>{{ 'tanker-form.fields.license-plate' | translate }}</mat-label>
           <input
             matInput
             formControlName="licensePlate"
-            [placeholder]="'vehicle-form.placeholders.license-plate' | translate"
+            [placeholder]="'tanker-form.placeholders.license-plate' | translate"
           />
           <mat-icon matPrefix>badge</mat-icon>
-          @if (vehicleForm.get('licensePlate')?.invalid && vehicleForm.get('licensePlate')?.touched) {
+          @if (tankerForm.get('licensePlate')?.invalid && tankerForm.get('licensePlate')?.touched) {
             <mat-error>{{ getErrorMessage('licensePlate') }}</mat-error>
           }
         </mat-form-field>
@@ -40,27 +40,27 @@
         <!-- Brand and Model Row -->
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>{{ 'vehicle-form.fields.brand' | translate }}</mat-label>
+            <mat-label>{{ 'tanker-form.fields.brand' | translate }}</mat-label>
             <input
               matInput
               formControlName="brand"
-              [placeholder]="'vehicle-form.placeholders.brand' | translate"
+              [placeholder]="'tanker-form.placeholders.brand' | translate"
             />
             <mat-icon matPrefix>business</mat-icon>
-            @if (vehicleForm.get('brand')?.invalid && vehicleForm.get('brand')?.touched) {
+            @if (tankerForm.get('brand')?.invalid && tankerForm.get('brand')?.touched) {
               <mat-error>{{ getErrorMessage('brand') }}</mat-error>
             }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>{{ 'vehicle-form.fields.model' | translate }}</mat-label>
+            <mat-label>{{ 'tanker-form.fields.model' | translate }}</mat-label>
             <input
               matInput
               formControlName="model"
-              [placeholder]="'vehicle-form.placeholders.model' | translate"
+              [placeholder]="'tanker-form.placeholders.model' | translate"
             />
             <mat-icon matPrefix>directions_car</mat-icon>
-            @if (vehicleForm.get('model')?.invalid && vehicleForm.get('model')?.touched) {
+            @if (tankerForm.get('model')?.invalid && tankerForm.get('model')?.touched) {
               <mat-error>{{ getErrorMessage('model') }}</mat-error>
             }
           </mat-form-field>
@@ -69,21 +69,21 @@
         <!-- Capacity and Unit Row -->
         <div class="form-row">
           <mat-form-field appearance="outline">
-            <mat-label>{{ 'vehicle-form.fields.capacity' | translate }}</mat-label>
+            <mat-label>{{ 'tanker-form.fields.capacity' | translate }}</mat-label>
             <input
               matInput
               type="number"
               formControlName="capacity"
-              [placeholder]="'vehicle-form.placeholders.capacity' | translate"
+              [placeholder]="'tanker-form.placeholders.capacity' | translate"
             />
             <mat-icon matPrefix>local_gas_station</mat-icon>
-            @if (vehicleForm.get('capacity')?.invalid && vehicleForm.get('capacity')?.touched) {
+            @if (tankerForm.get('capacity')?.invalid && tankerForm.get('capacity')?.touched) {
               <mat-error>{{ getErrorMessage('capacity') }}</mat-error>
             }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>{{ 'vehicle-form.fields.unit' | translate }}</mat-label>
+            <mat-label>{{ 'tanker-form.fields.unit' | translate }}</mat-label>
             <mat-select formControlName="unit">
               @for (unit of units; track unit.value) {
                 <mat-option [value]="unit.value">{{ unit.label | translate }}</mat-option>
@@ -97,7 +97,7 @@
         <div class="form-actions">
           <button mat-button type="button" (click)="onCancel()" [disabled]="store.isLoading()">
             <mat-icon>cancel</mat-icon>
-            {{ 'vehicle-form.cancel' | translate }}
+            {{ 'tanker-form.cancel' | translate }}
           </button>
           <button mat-raised-button color="primary" type="submit" [disabled]="store.isLoading()">
             @if (store.isLoading()) {
@@ -105,7 +105,7 @@
             } @else {
               <mat-icon>save</mat-icon>
             }
-            {{ 'vehicle-form.register' | translate }}
+            {{ 'tanker-form.register' | translate }}
           </button>
         </div>
       </form>
