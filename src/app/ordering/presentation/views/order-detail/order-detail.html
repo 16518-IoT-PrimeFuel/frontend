@@ -9,7 +9,7 @@
   <mat-spinner diameter="40"></mat-spinner>
 }
 @if (store.error()) {
-  <mat-error>{{ store.error() }}</mat-error>
+  <mat-error>{{ store.error() | translate }}</mat-error>
 }
 
 @if (order(); as o) {
@@ -66,7 +66,7 @@
           <h3>{{ 'order-detail.payment' | translate }}</h3>
           @if (paymentLoading()) { <mat-spinner diameter="28"></mat-spinner> }
           @if (payment(); as p) {
-            <p>{{ 'order-detail.payment-status' | translate }}: {{ p.status }}</p>
+            <p>{{ 'order-detail.payment-status' | translate }}: {{ 'payment-status.' + p.status.toLowerCase() | translate }}</p>
             <p>{{ 'order-detail.payment-method' | translate }}: {{ 'order-detail.method-' + p.paymentMethod.toLowerCase() | translate }}</p>
             @if (p.transactionReference) { <p>{{ 'order-detail.transaction-reference' | translate }}: {{ p.transactionReference }}</p> }
             @if (isBuyer && p.status === 'PENDING') {
