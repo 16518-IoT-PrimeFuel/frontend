@@ -36,7 +36,9 @@
   "ordering": {
     "requests": "Solicitudes",
     "create-request": "Nueva Solicitud",
-    "orders": "Órdenes"
+    "orders": "Órdenes",
+    "missing-organization": "Tu organización aún no está configurada.",
+    "request-failed": "No se pudo completar la solicitud."
   },
   "fulfillment": {
     "vehicles": "Vehículos",
@@ -59,6 +61,8 @@
     "fail": "Marcar como fallida",
     "cancel-delivery": "Cancelar entrega",
     "command-failed": "No se pudo actualizar la entrega",
+    "delivery-load-failed": "No se pudo cargar la entrega.",
+    "delivery-loading": "Cargando entrega…",
     "tracking": "Seguimiento",
     "loaded": "Cargado",
     "not-loaded": "No cargado",
@@ -101,7 +105,8 @@
     "title": "Plataforma FullTank",
     "content": "Sistema de pedidos de combustible y gestión logística para empresas",
     "buyers-btn": "Soy Comprador",
-    "suppliers-btn": "Soy Proveedor"
+    "suppliers-btn": "Soy Proveedor",
+    "login-btn": "Iniciar sesión"
   },
   "about": {
     "title": "Acerca de FullTank",
@@ -250,7 +255,8 @@
       "brand": "Marca",
       "model": "Modelo",
       "capacity": "Capacidad",
-      "unit": "Unidad"
+      "unit": "Unidad",
+      "status": "Estado"
     },
     "placeholders": {
       "license-plate": "ej. ABC-123",
@@ -289,7 +295,8 @@
       "last-name": "Apellido",
       "license-number": "Nº de Licencia",
       "phone": "Teléfono",
-      "email": "Correo"
+      "email": "Correo",
+      "status": "Estado"
     },
     "placeholders": {
       "first-name": "ej. Juan",
@@ -301,14 +308,15 @@
   },
   "vehicle-status": {
     "available": "Disponible",
-    "in_route": "En Ruta",
+    "in_route": "En ruta",
     "maintenance": "Mantenimiento",
-    "out_of_service": "Fuera de Servicio"
+    "suspended": "Suspendido",
+    "inactive": "Inactivo"
   },
   "driver-status": {
     "available": "Disponible",
     "assigned": "Asignado",
-    "on_leave": "De Permiso",
+    "suspended": "Suspendido",
     "inactive": "Inactivo"
   },
   "dispatch-dashboard": {
@@ -332,10 +340,19 @@
     }
   },
   "delivery-status": {
-    "assigned": "Asignado",
-    "in_transit": "En Tránsito",
-    "delivered": "Entregado",
-    "cancelled": "Cancelado"
+    "assigned": "Asignada",
+    "started": "Iniciada",
+    "arrived": "Llegó",
+    "delivering": "Entregando",
+    "completed": "Completada",
+    "failed": "Fallida",
+    "cancelled": "Cancelada"
+  },
+  "payment-status": {
+    "pending": "Pendiente",
+    "completed": "Completado",
+    "failed": "Fallido",
+    "refunded": "Reembolsado"
   },
   "request-list": {
     "title": "Solicitudes de Combustible",
@@ -469,7 +486,8 @@
     "delete-tooltip": "Eliminar Notificación",
     "empty": "No tienes notificaciones",
     "fields": {
-      "order": "Orden",
+      "request": "Solicitud",
+      "delivery": "Entrega",
       "type": "Tipo",
       "message": "Mensaje",
       "status": "Estado",
@@ -564,19 +582,21 @@
     "request-failed": "No se pudo completar la solicitud."
   },
   "notification-type": {
-    "order_created": "Orden Creada",
-    "order_approved": "Orden Aprobada",
-    "order_rejected": "Orden Rechazada",
-    "order_dispatched": "Orden Despachada",
-    "order_delivered": "Orden Entregada",
-    "order_closed": "Orden Cerrada",
-    "payment_registered": "Pago Registrado",
-    "payment_approved": "Pago Aprobado",
-    "delivery_assigned": "Entrega Asignada",
-    "delivery_in_transit": "Entrega en Tránsito",
-    "order_accepted": "Pedido Aceptado",
-    "delivery_completed": "Entrega Completada",
-    "delivery_failed": "Entrega Fallida"
+    "new_request": "Nueva solicitud",
+    "request_pending": "Solicitud pendiente",
+    "order_accepted": "Orden aceptada",
+    "order_rejected": "Orden rechazada",
+    "order_dispatched": "Orden despachada",
+    "order_delivered": "Orden entregada",
+    "order_confirmed": "Orden confirmada",
+    "order_cancelled": "Orden cancelada",
+    "delivery_dispatched": "Entrega despachada",
+    "delivery_completed": "Entrega completada",
+    "delivery_failed": "Entrega fallida",
+    "payment_received": "Pago recibido",
+    "payment_completed": "Pago completado",
+    "payment_refunded": "Pago reembolsado",
+    "general": "General"
   },
   "admin": {
     "title": "Administración",

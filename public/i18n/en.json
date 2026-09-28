@@ -36,7 +36,9 @@
   "ordering": {
     "requests": "Requests",
     "create-request": "New Request",
-    "orders": "Orders"
+    "orders": "Orders",
+    "missing-organization": "Your organization is not set up yet.",
+    "request-failed": "The request could not be completed."
   },
   "fulfillment": {
     "vehicles": "Vehicles",
@@ -59,6 +61,8 @@
     "fail": "Mark failed",
     "cancel-delivery": "Cancel delivery",
     "command-failed": "Could not update delivery",
+    "delivery-load-failed": "Could not load the delivery.",
+    "delivery-loading": "Loading delivery…",
     "tracking": "Tracking",
     "loaded": "Loaded",
     "not-loaded": "Not loaded",
@@ -101,7 +105,8 @@
     "title": "FullTank Platform",
     "content": "Fuel ordering and logistics management system for businesses",
     "buyers-btn": "I'm a Buyer",
-    "suppliers-btn": "I'm a Supplier"
+    "suppliers-btn": "I'm a Supplier",
+    "login-btn": "Sign in"
   },
   "about": {
     "title": "About FullTank",
@@ -250,7 +255,8 @@
       "brand": "Brand",
       "model": "Model",
       "capacity": "Capacity",
-      "unit": "Unit"
+      "unit": "Unit",
+      "status": "Status"
     },
     "placeholders": {
       "license-plate": "e.g. ABC-123",
@@ -289,7 +295,8 @@
       "last-name": "Last Name",
       "license-number": "License Number",
       "phone": "Phone",
-      "email": "Email"
+      "email": "Email",
+      "status": "Status"
     },
     "placeholders": {
       "first-name": "e.g. Juan",
@@ -303,12 +310,13 @@
     "available": "Available",
     "in_route": "In Route",
     "maintenance": "Maintenance",
-    "out_of_service": "Out of Service"
+    "suspended": "Suspended",
+    "inactive": "Inactive"
   },
   "driver-status": {
     "available": "Available",
     "assigned": "Assigned",
-    "on_leave": "On Leave",
+    "suspended": "Suspended",
     "inactive": "Inactive"
   },
   "dispatch-dashboard": {
@@ -333,9 +341,18 @@
   },
   "delivery-status": {
     "assigned": "Assigned",
-    "in_transit": "In Transit",
-    "delivered": "Delivered",
+    "started": "Started",
+    "arrived": "Arrived",
+    "delivering": "Delivering",
+    "completed": "Completed",
+    "failed": "Failed",
     "cancelled": "Cancelled"
+  },
+  "payment-status": {
+    "pending": "Pending",
+    "completed": "Completed",
+    "failed": "Failed",
+    "refunded": "Refunded"
   },
   "request-list": {
     "title": "Fuel Requests",
@@ -469,7 +486,8 @@
     "delete-tooltip": "Delete Notification",
     "empty": "You have no notifications",
     "fields": {
-      "order": "Order",
+      "request": "Request",
+      "delivery": "Delivery",
       "type": "Type",
       "message": "Message",
       "status": "Status",
@@ -564,19 +582,21 @@
     "request-failed": "The request could not be completed."
   },
   "notification-type": {
-    "order_created": "Order Created",
-    "order_approved": "Order Approved",
+    "new_request": "New Request",
+    "request_pending": "Request Pending",
+    "order_accepted": "Order Accepted",
     "order_rejected": "Order Rejected",
     "order_dispatched": "Order Dispatched",
     "order_delivered": "Order Delivered",
-    "order_closed": "Order Closed",
-    "payment_registered": "Payment Registered",
-    "payment_approved": "Payment Approved",
-    "delivery_assigned": "Delivery Assigned",
-    "delivery_in_transit": "Delivery in Transit",
-    "order_accepted": "Order Accepted",
+    "order_confirmed": "Order Confirmed",
+    "order_cancelled": "Order Cancelled",
+    "delivery_dispatched": "Delivery Dispatched",
     "delivery_completed": "Delivery Completed",
-    "delivery_failed": "Delivery Failed"
+    "delivery_failed": "Delivery Failed",
+    "payment_received": "Payment Received",
+    "payment_completed": "Payment Completed",
+    "payment_refunded": "Payment Refunded",
+    "general": "General"
   },
   "admin": {
     "title": "Administration",

@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -20,6 +21,7 @@ import { Driver } from '../../../domain/model/driver.entity';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatSelectModule,
     MatIconModule,
     MatCardModule,
     MatProgressSpinnerModule,
@@ -42,10 +44,12 @@ export class DriverForm implements OnInit {
   protected driverForm: FormGroup;
   protected isEditMode = false;
   protected driverId: number | null = null;
+  protected readonly statuses = ['AVAILABLE', 'ASSIGNED', 'SUSPENDED', 'INACTIVE'];
 
   constructor() {
     this.driverForm = this.fb.group({
       userId: [null],
+      status: ['AVAILABLE'],
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
       licenseNumber: ['', [Validators.required, Validators.minLength(8)]],
@@ -93,6 +97,8 @@ export class DriverForm implements OnInit {
 
   private updateDriverData(): void {
     const request: Partial<Omit<Driver, 'id' | 'providerId' | 'createdAt'>> = {
+      userId: this.driverForm.value.userId,
+      status: this.driverForm.value.status,
       firstName: this.driverForm.value.firstName,
       lastName: this.driverForm.value.lastName,
       licenseNumber: this.driverForm.value.licenseNumber,
