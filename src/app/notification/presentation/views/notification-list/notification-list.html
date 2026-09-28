@@ -76,6 +76,8 @@
           class="notification-card"
           [class.unread]="!notification.read"
           [class]="getCategoryClass(notification)"
+          [class.clickable]="linkFor(notification)"
+          (click)="open(notification)"
         >
           <div class="notification-icon">
             <mat-icon>{{ getIconFor(notification) }}</mat-icon>
@@ -97,10 +99,10 @@
             <h2 class="notification-message">{{ notification.title }}</h2>
             <p>{{ notification.message }}</p>
 
-            @if (notification.referenceId) {
+            @if (notification.referenceId && referenceLabel(notification); as label) {
               <p class="notification-meta">
                 <mat-icon>tag</mat-icon>
-                {{ 'notification-list.fields.order' | translate }}:
+                {{ label | translate }}:
                 <code>{{ notification.referenceId }}</code>
               </p>
             }

@@ -266,3 +266,5 @@ mat-chip.payment-registered {
   height: 48px;
   width: 48px;
 }
+
+.notification-card.clickable { cursor: pointer; }
