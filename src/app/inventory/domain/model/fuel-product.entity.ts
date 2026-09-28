@@ -1,49 +1,30 @@
 import { BaseEntity } from '../../../shared/domain/model/base-entity';
 
-export class FuelProduct implements BaseEntity {
-  id: string;
-  name: string;
-  type: string;
-  description: string;
-  pricePerLiter: number;
-  unit: string;
-  isActive: boolean;
-  createdAt: string;
+export type FuelType = 'DIESEL' | 'GASOLINE' | 'GASOLINE_84' | 'GASOLINE_90' | 'GASOLINE_95' | 'GASOLINE_97' | 'GLP' | 'GNV';
 
-  constructor(params: {
-    id: string;
-    name: string;
-    type: string;
-    description: string;
-    pricePerLiter: number;
-    unit: string;
-    isActive: boolean;
-    createdAt: string;
-  }) {
-    this.id = params.id;
-    this.name = params.name;
-    this.type = params.type;
-    this.description = params.description;
-    this.pricePerLiter = params.pricePerLiter;
-    this.unit = params.unit;
-    this.isActive = params.isActive;
-    this.createdAt = params.createdAt;
-  }
+export class FuelProduct implements BaseEntity {
+  id!: number;
+  name!: string;
+  fuelType!: FuelType;
+  pricePerUnit!: number;
+  unit!: string;
+  availableStock!: number;
+  capacity!: number;
+  providerId!: number;
+  active!: boolean;
+
+  constructor(params: FuelProduct) { Object.assign(this, params); }
 }
 
 export interface CreateProductPayload {
   name: string;
-  type: string;
-  description: string;
-  pricePerLiter: number;
+  fuelType: FuelType;
+  pricePerUnit: number;
   unit: string;
+  availableStock: number;
+  capacity: number;
+  providerId: number;
+  active: boolean;
 }
 
-export interface UpdateProductPayload {
-  name?: string;
-  type?: string;
-  description?: string;
-  pricePerLiter?: number;
-  unit?: string;
-  isActive?: boolean;
-}
+export type UpdateProductPayload = Omit<CreateProductPayload, 'providerId'>;
