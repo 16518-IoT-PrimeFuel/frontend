@@ -1,4 +1,5 @@
-import { BaseResource, BaseResponse } from '../../shared/infrastructure/base-response';
+import { BaseResource } from '../../shared/infrastructure/base-response';
+import { DriverStatus } from '../domain/model/driver.entity';
 
 /**
  * @summary Resource DTO para conductores.
@@ -6,17 +7,14 @@ import { BaseResource, BaseResponse } from '../../shared/infrastructure/base-res
  * @author FullTank Platform
  */
 export interface DriverResource extends BaseResource {
-  id: string;
-  providerId: string;
+  id: number;
+  providerId: number;
+  userId: number | null;
   firstName: string;
   lastName: string;
   licenseNumber: string;
   phoneNumber: string;
   email: string;
-  status: string;
-  createdAt: string;
-}
-
-export interface DriversResponse extends BaseResponse {
-  drivers: DriverResource[];
+  status: DriverStatus;
+  active: boolean;
 }

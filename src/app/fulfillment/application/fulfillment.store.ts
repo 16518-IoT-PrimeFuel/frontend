@@ -1,456 +1,112 @@
-import { Injectable, signal, computed } from '@angular/core';
-import { retry } from 'rxjs';
+import { Injectable, signal } from '@angular/core';
+import { Observable } from 'rxjs';
 import { FulfillmentApi } from '../infrastructure/fulfillment-api';
-import { Vehicle } from '../domain/model/vehicle.entity';
+import { Tanker } from '../domain/model/tanker.entity';
 import { Driver } from '../domain/model/driver.entity';
-import { Delivery } from '../domain/model/delivery.entity';
+
+type TankerRequest = Omit<Tanker, 'id' | 'providerId' | 'createdAt'>;
+type DriverRequest = Omit<Driver, 'id' | 'providerId' | 'createdAt'>;
 
 /**
  * @summary Store de estado para el BC Fulfillment.
- * @remarks Gestiona estado de vehículos, conductores y entregas usando signals.
+ * @remarks Gestiona estado de cisternas (tankers) y conductores usando signals.
  * @author FullTank Platform
  */
 @Injectable({ providedIn: 'root' })
 export class FulfillmentStore {
-  // ── State ────────────────────────────────────────────────────────────────
-  private readonly _vehicleList = signal<Vehicle[]>([]);
-  private readonly _selectedVehicle = signal<Vehicle | null>(null);
+  private readonly _tankerList = signal<Tanker[]>([]);
+  private readonly _selectedTanker = signal<Tanker | null>(null);
   private readonly _driverList = signal<Driver[]>([]);
   private readonly _selectedDriver = signal<Driver | null>(null);
-  private readonly _deliveryList = signal<Delivery[]>([]);
-  private readonly _selectedDelivery = signal<Delivery | null>(null);
   private readonly _isLoading = signal<boolean>(false);
   private readonly _error = signal<string>('');
   private readonly _successMsg = signal<string>('');
+  private readonly _driverEligibility = signal<Record<number, { outcome: string; reason: string }>>({});
 
-  // ── Public Readonly Signals ──────────────────────────────────────────────
-  public readonly vehicleList = this._vehicleList.asReadonly();
-  public readonly selectedVehicle = this._selectedVehicle.asReadonly();
+  public readonly tankerList = this._tankerList.asReadonly();
+  public readonly selectedTanker = this._selectedTanker.asReadonly();
   public readonly driverList = this._driverList.asReadonly();
   public readonly selectedDriver = this._selectedDriver.asReadonly();
-  public readonly deliveryList = this._deliveryList.asReadonly();
-  public readonly selectedDelivery = this._selectedDelivery.asReadonly();
   public readonly isLoading = this._isLoading.asReadonly();
   public readonly error = this._error.asReadonly();
   public readonly successMsg = this._successMsg.asReadonly();
-
-  // ── Computed ─────────────────────────────────────────────────────────────
-  public readonly availableVehicles = computed(() =>
-    this._vehicleList().filter((vehicle) => vehicle.status === 'AVAILABLE'),
-  );
-
-  public readonly inRouteVehicles = computed(() =>
-    this._vehicleList().filter((vehicle) => vehicle.status === 'IN_ROUTE'),
-  );
-
-  public readonly vehiclesInMaintenance = computed(() =>
-    this._vehicleList().filter((vehicle) => vehicle.status === 'MAINTENANCE'),
-  );
-
-  public readonly availableDrivers = computed(() =>
-    this._driverList().filter((driver) => driver.status === 'AVAILABLE'),
-  );
-
-  public readonly assignedDrivers = computed(() =>
-    this._driverList().filter((driver) => driver.status === 'ASSIGNED'),
-  );
-
-  public readonly activeDeliveries = computed(() =>
-    this._deliveryList().filter(
-      (delivery) => delivery.status === 'ASSIGNED' || delivery.status === 'IN_TRANSIT',
-    ),
-  );
-
-  public readonly completedDeliveries = computed(() =>
-    this._deliveryList().filter((delivery) => delivery.status === 'DELIVERED'),
-  );
+  public readonly driverEligibility = this._driverEligibility.asReadonly();
 
   constructor(private api: FulfillmentApi) {}
 
-  // ── Vehicle Operations ───────────────────────────────────────────────────
-  loadVehiclesByProvider(providerId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-
-    this.api
-      .getVehiclesByProvider(providerId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (vehicles) => {
-          setTimeout(() => {
-            this._vehicleList.set(vehicles);
-            this._isLoading.set(false);
-          }, 100);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to load vehicles');
-          this._isLoading.set(false);
-        },
-      });
+  checkDriverEligibility(id: number): void {
+    this.api.checkDriverEligibility(id).subscribe({
+      next: (result) => this._driverEligibility.update((current) => ({ ...current, [id]: result })),
+      error: (err) => this._error.set(err.message || 'Failed to check driver eligibility'),
+    });
   }
 
-  loadAvailableVehicles(providerId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
+  // ── Tankers ──────────────────────────────────────────────────────────────
+  loadTankers(): void { this.run(this.api.getTankers(), 'Failed to load tankers', (rows) => this._tankerList.set(rows)); }
+  loadAvailableTankers(): void { this.run(this.api.getEligibleTankers(), 'Failed to load available tankers', (rows) => this._tankerList.set(rows)); }
+  loadTankerById(id: number): void { this.run(this.api.getTankerById(id), 'Failed to load tanker', (row) => this._selectedTanker.set(row)); }
 
-    this.api
-      .getAvailableVehicles(providerId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (vehicles) => {
-          setTimeout(() => {
-            this._vehicleList.set(vehicles);
-            this._isLoading.set(false);
-          }, 100);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to load available vehicles');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  registerVehicle(request: Omit<Vehicle, 'id' | 'createdAt'>, onSuccess?: () => void): void {
-    this._isLoading.set(true);
-    this._error.set('');
+  registerTanker(request: TankerRequest, onSuccess?: () => void): void {
     this._successMsg.set('');
-
-    this.api
-      .registerVehicle(request)
-      .pipe(retry(2))
-      .subscribe({
-        next: (vehicle) => {
-          this._vehicleList.update((list) => [...list, vehicle]);
-          this._successMsg.set('Vehicle registered successfully');
-          this._isLoading.set(false);
-          onSuccess?.();
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to register vehicle');
-          this._isLoading.set(false);
-        },
-      });
+    this.run(this.api.registerTanker(request), 'Failed to register tanker', (row) => {
+      this._tankerList.update((list) => [...list, row]);
+      this._successMsg.set('Tanker registered successfully');
+      onSuccess?.();
+    });
   }
 
-  loadVehicleById(vehicleId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api
-      .getVehicleById(vehicleId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (vehicle) => {
-          this._selectedVehicle.set(vehicle);
-          this._isLoading.set(false);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to load vehicle');
-          this._isLoading.set(false);
-        },
-      });
+  updateTanker(id: number, request: Partial<TankerRequest>, onSuccess?: () => void): void {
+    this.run(this.api.updateTanker(id, request), 'Failed to update tanker', (row) => {
+      this._tankerList.update((list) => list.map((t) => (t.id === id ? row : t)));
+      this._selectedTanker.set(row);
+      this._successMsg.set('Tanker updated successfully');
+      onSuccess?.();
+    });
   }
 
-  updateVehicle(vehicleId: string, request: Partial<Omit<Vehicle, 'id' | 'providerId' | 'createdAt'>>, onSuccess?: () => void): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api
-      .updateVehicle(vehicleId, request)
-      .pipe(retry(2))
-      .subscribe({
-        next: (vehicle) => {
-          this._vehicleList.update((list) => list.map((v) => (v.id === vehicleId ? vehicle : v)));
-          this._selectedVehicle.set(vehicle);
-          this._successMsg.set('Vehicle updated successfully');
-          this._isLoading.set(false);
-          onSuccess?.();
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to update vehicle');
-          this._isLoading.set(false);
-        },
-      });
+  updateTankerStatus(id: number, request: Pick<Tanker, 'status'>): void {
+    this.run(this.api.updateTankerStatus(id, request), 'Failed to update tanker status', (row) => {
+      this._tankerList.update((list) => list.map((t) => (t.id === id ? row : t)));
+      this._successMsg.set('Tanker status updated successfully');
+    });
   }
 
-  deleteVehicle(vehicleId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api
-      .deleteVehicle(vehicleId)
-      .pipe(retry(2))
-      .subscribe({
-        next: () => {
-          this._vehicleList.update((list) => list.filter((v) => v.id !== vehicleId));
-          this._isLoading.set(false);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to delete vehicle');
-          this._isLoading.set(false);
-        },
-      });
-  }
+  // ── Drivers ──────────────────────────────────────────────────────────────
+  loadDrivers(): void { this.run(this.api.getDrivers(), 'Failed to load drivers', (rows) => this._driverList.set(rows)); }
+  loadAvailableDrivers(): void { this.run(this.api.getEligibleDrivers(), 'Failed to load available drivers', (rows) => this._driverList.set(rows)); }
+  loadDriverById(id: number): void { this.run(this.api.getDriverById(id), 'Failed to load driver', (row) => this._selectedDriver.set(row)); }
 
-  updateVehicleStatus(vehicleId: string, request: Pick<Vehicle, 'status'>): void {
-    this._isLoading.set(true);
-    this._error.set('');
-
-    this.api
-      .updateVehicleStatus(vehicleId, request)
-      .pipe(retry(2))
-      .subscribe({
-        next: (updatedVehicle) => {
-          setTimeout(() => {
-            this._vehicleList.update((list) =>
-              list.map((v) => (v.id === vehicleId ? updatedVehicle : v)),
-            );
-            this._successMsg.set('Vehicle status updated successfully');
-            this._isLoading.set(false);
-          }, 100);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to update vehicle status');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  // ── Driver Operations ────────────────────────────────────────────────────
-  loadDriversByProvider(providerId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-
-    this.api
-      .getDriversByProvider(providerId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (drivers) => {
-          setTimeout(() => {
-            this._driverList.set(drivers);
-            this._isLoading.set(false);
-          }, 100);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to load drivers');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  loadAvailableDrivers(providerId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-
-    this.api
-      .getAvailableDrivers(providerId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (drivers) => {
-          setTimeout(() => {
-            this._driverList.set(drivers);
-            this._isLoading.set(false);
-          }, 100);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to load available drivers');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  registerDriver(request: Omit<Driver, 'id' | 'createdAt'>, onSuccess?: () => void): void{
-    this._isLoading.set(true);
-    this._error.set('');
+  registerDriver(request: DriverRequest, onSuccess?: () => void): void {
     this._successMsg.set('');
-
-    this.api
-      .registerDriver(request)
-      .pipe(retry(2))
-      .subscribe({
-        next: (driver) => {
-          this._driverList.update((list) => [...list, driver]);
-          this._successMsg.set('Driver registered successfully');
-          this._isLoading.set(false);
-          onSuccess?.();
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to register driver');
-          this._isLoading.set(false);
-        },
-      });
+    this.run(this.api.registerDriver(request), 'Failed to register driver', (row) => {
+      this._driverList.update((list) => [...list, row]);
+      this._successMsg.set('Driver registered successfully');
+      onSuccess?.();
+    });
   }
 
-  loadDriverById(driverId: string): void {
+  updateDriver(id: number, request: Partial<DriverRequest>, onSuccess?: () => void): void {
+    this.run(this.api.updateDriver(id, request), 'Failed to update driver', (row) => {
+      this._driverList.update((list) => list.map((d) => (d.id === id ? row : d)));
+      this._selectedDriver.set(row);
+      this._successMsg.set('Driver updated successfully');
+      onSuccess?.();
+    });
+  }
+
+  updateDriverStatus(id: number, request: Pick<Driver, 'status'>): void {
+    this.run(this.api.updateDriverStatus(id, request), 'Failed to update driver status', (row) => {
+      this._driverList.update((list) => list.map((d) => (d.id === id ? row : d)));
+      this._successMsg.set('Driver status updated successfully');
+    });
+  }
+
+  private run<T>(request: Observable<T>, fallback: string, done: (value: T) => void): void {
     this._isLoading.set(true);
     this._error.set('');
-    this.api
-      .getDriverById(driverId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (driver) => {
-          this._selectedDriver.set(driver);
-          this._isLoading.set(false);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to load driver');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  updateDriver(driverId: string, request: Partial<Omit<Driver, 'id' | 'providerId' | 'createdAt'>>, onSuccess?: () => void): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api
-      .updateDriver(driverId, request)
-      .pipe(retry(2))
-      .subscribe({
-        next: (driver) => {
-          this._driverList.update((list) => list.map((d) => (d.id === driverId ? driver : d)));
-          this._selectedDriver.set(driver);
-          this._successMsg.set('Driver updated successfully');
-          this._isLoading.set(false);
-          onSuccess?.();
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to update driver');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  deleteDriver(driverId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-    this.api
-      .deleteDriver(driverId)
-      .pipe(retry(2))
-      .subscribe({
-        next: () => {
-          this._driverList.update((list) => list.filter((d) => d.id !== driverId));
-          this._isLoading.set(false);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to delete driver');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  updateDriverStatus(driverId: string, request: Pick<Driver, 'status'>): void {
-    this._isLoading.set(true);
-    this._error.set('');
-
-    this.api
-      .updateDriverStatus(driverId, request)
-      .pipe(retry(2))
-      .subscribe({
-        next: (updatedDriver) => {
-          setTimeout(() => {
-            this._driverList.update((list) =>
-              list.map((d) => (d.id === driverId ? updatedDriver : d)),
-            );
-            this._successMsg.set('Driver status updated successfully');
-            this._isLoading.set(false);
-          }, 100);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to update driver status');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  // ── Delivery Operations ──────────────────────────────────────────────────
-  loadDeliveriesByProvider(providerId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-
-    this.api
-      .getDeliveriesByProvider(providerId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (deliveries) => {
-          this._deliveryList.set(deliveries); // sin setTimeout
-          this._isLoading.set(false);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to load deliveries');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  loadDeliveryByOrder(orderId: string): void {
-    this._isLoading.set(true);
-    this._error.set('');
-
-    this.api
-      .getDeliveryByOrder(orderId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (delivery) => {
-          setTimeout(() => {
-            this._selectedDelivery.set(delivery);
-            this._isLoading.set(false);
-          }, 100);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to load delivery');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  assignResources(request: Omit<Delivery, 'id' | 'status' | 'actualDeliveryDate' | 'createdAt'>): void{
-    this._isLoading.set(true);
-    this._error.set('');
-    this._successMsg.set('');
-
-    this.api
-      .assignResources(request)
-      .pipe(retry(2))
-      .subscribe({
-        next: (delivery) => {
-          setTimeout(() => {
-            this._deliveryList.update((list) => [...list, delivery]);
-            this._successMsg.set('Resources assigned successfully');
-            this._isLoading.set(false);
-          }, 100);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to assign resources');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  executeDispatch(deliveryId: string, request: Partial<Pick<Delivery, 'status' | 'actualDeliveryDate' | 'notes'>>): void{
-    this._isLoading.set(true);
-    this._error.set('');
-    this._successMsg.set('');
-
-    this.api
-      .executeDispatch(deliveryId, request)
-      .pipe(retry(2))
-      .subscribe({
-        next: (delivery) => {
-          setTimeout(() => {
-            this._deliveryList.update((list) =>
-              list.map((d) => (d.id === deliveryId ? delivery : d)),
-            );
-            this._successMsg.set('Dispatch executed successfully');
-            this._isLoading.set(false);
-          }, 100);
-        },
-        error: (err) => {
-          this._error.set(err.message || 'Failed to execute dispatch');
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  // ── Utility ──────────────────────────────────────────────────────────────
-  clearMessages(): void {
-    this._error.set('');
-    this._successMsg.set('');
+    request.subscribe({
+      next: (value) => { done(value); this._isLoading.set(false); },
+      error: (err) => { this._error.set(err.message || fallback); this._isLoading.set(false); },
+    });
   }
 }

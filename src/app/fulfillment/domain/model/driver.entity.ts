@@ -1,3 +1,5 @@
+export type DriverStatus = 'AVAILABLE' | 'ASSIGNED' | 'SUSPENDED' | 'INACTIVE' | 'ON_LEAVE';
+
 import { BaseEntity } from '../../../shared/domain/model/base-entity';
 
 /**
@@ -7,29 +9,35 @@ import { BaseEntity } from '../../../shared/domain/model/base-entity';
  * @author FullTank Platform
  */
 export class Driver implements BaseEntity {
-  id: string;
-  providerId: string;
+  id: number;
+  providerId: number;
+  userId: number | null;
+  active: boolean;
   firstName: string;
   lastName: string;
   licenseNumber: string;
   phoneNumber: string;
   email: string;
-  status: string; // AVAILABLE, ASSIGNED, ON_LEAVE, INACTIVE
+  status: DriverStatus; // AVAILABLE, ASSIGNED, ON_LEAVE, INACTIVE
   createdAt: string;
 
   constructor(params: {
-    id: string;
-    providerId: string;
+    id: number;
+    providerId: number;
+    userId?: number | null;
+    active?: boolean;
     firstName: string;
     lastName: string;
     licenseNumber: string;
     phoneNumber: string;
     email: string;
-    status: string;
+    status: DriverStatus;
     createdAt: string;
   }) {
     this.id = params.id;
     this.providerId = params.providerId;
+    this.userId = params.userId ?? null;
+    this.active = params.active ?? true;
     this.firstName = params.firstName;
     this.lastName = params.lastName;
     this.licenseNumber = params.licenseNumber;

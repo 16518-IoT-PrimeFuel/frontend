@@ -1,116 +1,56 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { BaseApi } from '../../shared/infrastructure/base-api';
 
-import { Vehicle } from '../domain/model/vehicle.entity';
+import { Tanker } from '../domain/model/tanker.entity';
 import { Driver } from '../domain/model/driver.entity';
-import { Delivery } from '../domain/model/delivery.entity';
 
-import { VehicleApiEndpoint } from './vehicle-api-endpoint';
+import { TankerApiEndpoint } from './tanker-api-endpoint';
 import { DriverApiEndpoint } from './driver-api-endpoint';
 import { DeliveryApiEndpoint } from './delivery-api-endpoint';
 
-
 /**
  * @summary API gateway para el bounded context Fulfillment.
- * @remarks Agrega VehicleApiEndpoint, DriverApiEndpoint y DeliveryApiEndpoint,
- * exponiendo operaciones de logística y despacho al application layer.
+ * @remarks Agrega TankerApiEndpoint, DriverApiEndpoint y DeliveryApiEndpoint.
+ * El distribuidor lo deriva el backend del token, por eso ningún método recibe providerId.
  * @author FullTank Platform
  */
 @Injectable({ providedIn: 'root' })
-export class FulfillmentApi extends BaseApi {
-  private readonly _vehicleEndpoint: VehicleApiEndpoint;
+export class FulfillmentApi {
+  private readonly _tankerEndpoint: TankerApiEndpoint;
   private readonly _driverEndpoint: DriverApiEndpoint;
   private readonly _deliveryEndpoint: DeliveryApiEndpoint;
 
   constructor(http: HttpClient) {
-    super();
-    this._vehicleEndpoint = new VehicleApiEndpoint(http);
+    this._tankerEndpoint = new TankerApiEndpoint(http);
     this._driverEndpoint = new DriverApiEndpoint(http);
     this._deliveryEndpoint = new DeliveryApiEndpoint(http);
   }
 
-  // ── Vehicles ─────────────────────────────────────────────────────────────
-  getVehiclesByProvider(providerId: string): Observable<Vehicle[]> {
-    return this._vehicleEndpoint.getVehiclesByProvider(providerId);
-  }
-
-  getAvailableVehicles(providerId: string): Observable<Vehicle[]> {
-    return this._vehicleEndpoint.getAvailableVehicles(providerId);
-  }
-
-  registerVehicle(request: Omit<Vehicle, 'id' | 'createdAt'>): Observable<Vehicle> {
-    return this._vehicleEndpoint.registerVehicle(request);
-  }
-
-  updateVehicleStatus(vehicleId: string, request: Pick<Vehicle, 'status'>): Observable<Vehicle> {
-    return this._vehicleEndpoint.updateVehicleStatus(vehicleId, request);
-  }
-
-  getVehicleById(vehicleId: string): Observable<Vehicle> {
-    return this._vehicleEndpoint.getById(vehicleId);
-  }
-
-  updateVehicle(
-    vehicleId: string,
-    request: Partial<Omit<Vehicle, 'id' | 'providerId' | 'createdAt'>>
-  ): Observable<Vehicle> {
-    return this._vehicleEndpoint.updateVehicle(vehicleId, request);
-  }
-
-  deleteVehicle(vehicleId: string): Observable<void> {
-    return this._vehicleEndpoint.delete(vehicleId);
-  }
+  // ── Tankers ──────────────────────────────────────────────────────────────
+  getTankers(): Observable<Tanker[]> { return this._tankerEndpoint.list(); }
+  getEligibleTankers(): Observable<Tanker[]> { return this._tankerEndpoint.list(true); }
+  getTankerById(id: number): Observable<Tanker> { return this._tankerEndpoint.get(id); }
+  registerTanker(request: Omit<Tanker, 'id' | 'providerId' | 'createdAt'>): Observable<Tanker> { return this._tankerEndpoint.save(request); }
+  updateTanker(id: number, request: Partial<Omit<Tanker, 'id' | 'providerId' | 'createdAt'>>): Observable<Tanker> { return this._tankerEndpoint.save(request, id); }
+  updateTankerStatus(id: number, request: Pick<Tanker, 'status'>): Observable<Tanker> { return this._tankerEndpoint.setActive(id, request.status !== 'INACTIVE'); }
 
   // ── Drivers ──────────────────────────────────────────────────────────────
-  getDriversByProvider(providerId: string): Observable<Driver[]> {
-    return this._driverEndpoint.getDriversByProvider(providerId);
-  }
-
-  getAvailableDrivers(providerId: string): Observable<Driver[]> {
-    return this._driverEndpoint.getAvailableDrivers(providerId);
-  }
-
-  registerDriver(request: Omit<Driver, 'id' | 'createdAt'>): Observable<Driver> {
-    return this._driverEndpoint.registerDriver(request);
-  }
-
-  updateDriverStatus(driverId: string, request: Pick<Driver, 'status'>): Observable<Driver> {
-    return this._driverEndpoint.updateDriverStatus(driverId, request);
-  }
-
-  getDriverById(driverId: string): Observable<Driver> {
-    return this._driverEndpoint.getById(driverId);
-  }
-
-  updateDriver(
-    driverId: string,
-    request: Partial<Omit<Driver, 'id' | 'providerId' | 'createdAt'>>
-  ): Observable<Driver> {
-    return this._driverEndpoint.updateDriver(driverId, request);
-  }
-
-  deleteDriver(driverId: string): Observable<void> {
-    return this._driverEndpoint.delete(driverId);
-  }
+  getDrivers(): Observable<Driver[]> { return this._driverEndpoint.list(); }
+  getEligibleDrivers(): Observable<Driver[]> { return this._driverEndpoint.list(true); }
+  getDriverById(id: number): Observable<Driver> { return this._driverEndpoint.get(id); }
+  registerDriver(request: Omit<Driver, 'id' | 'providerId' | 'createdAt'>): Observable<Driver> { return this._driverEndpoint.save(request); }
+  updateDriver(id: number, request: Partial<Omit<Driver, 'id' | 'providerId' | 'createdAt'>>): Observable<Driver> { return this._driverEndpoint.save(request, id); }
+  updateDriverStatus(id: number, request: Pick<Driver, 'status'>): Observable<Driver> { return this._driverEndpoint.setActive(id, request.status !== 'INACTIVE'); }
+  checkDriverEligibility(id: number) { return this._driverEndpoint.eligibility(id); }
 
   // ── Deliveries ───────────────────────────────────────────────────────────
-  getDeliveriesByProvider(providerId: string): Observable<Delivery[]> {
-    return this._deliveryEndpoint.getDeliveriesByProvider(providerId);
-  }
-
-  getDeliveryByOrder(orderId: string): Observable<Delivery> {
-    return this._deliveryEndpoint.getDeliveryByOrder(orderId);
-  }
-
-  assignResources(
-    request: Omit<Delivery, 'id' | 'status' | 'actualDeliveryDate' | 'createdAt'>
-  ): Observable<Delivery> {
-    return this._deliveryEndpoint.assignResources(request);
-  }
-
-  executeDispatch(deliveryId: string, request: any): Observable<Delivery> {
-    return this._deliveryEndpoint.executeDispatch(deliveryId, request);
-  }
+  delivery(id: number) { return this._deliveryEndpoint.detail(id); }
+  tracking(id: number) { return this._deliveryEndpoint.tracking(id); }
+  trackingSamples(id: number) { return this._deliveryEndpoint.samples(id); }
+  deliveryTransitions(id: number) { return this._deliveryEndpoint.transitions(id); }
+  deliveryTimeline(id: number) { return this._deliveryEndpoint.timeline(id); }
+  deliveryCommand(id: number, action: string, body: object = {}) { return this._deliveryEndpoint.command(id, action, body); }
+  createGeofence(id: number, body: object) { return this._deliveryEndpoint.geofence(id, body); }
+  assignDelivery(body: object) { return this._deliveryEndpoint.assign(body); }
 }
