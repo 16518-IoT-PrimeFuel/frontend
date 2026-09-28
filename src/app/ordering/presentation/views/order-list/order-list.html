@@ -1,61 +1,9 @@
 <h1 class="title">{{ 'order-list.title' | translate }}</h1>
-
-@if (store.loading()) {
-  <mat-spinner diameter="40"></mat-spinner>
-}
-@if (store.error()) {
-  <mat-error>{{ store.error() }}</mat-error>
-}
-
-<table mat-table [dataSource]="dataSource()" class="mat-elevation-z8" matSort matSortActive="id" matSortDirection="asc" matSortDisableClear>
-  <ng-container matColumnDef="id">
-    <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'order-list.id' | translate }}</th>
-    <td mat-cell *matCellDef="let order" class="mono">{{ shortId(order.id) }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="requestId">
-    <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'order-list.request' | translate }}</th>
-    <td mat-cell *matCellDef="let order" class="mono">{{ shortId(order.requestId) }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="quantity">
-    <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'order-list.quantity' | translate }}</th>
-    <td mat-cell *matCellDef="let order">{{ order.quantity }} {{ order.unit }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="totalAmount">
-    <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'order-list.total' | translate }}</th>
-    <td mat-cell *matCellDef="let order">S/ {{ order.totalAmount | number:'1.2-2' }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="status">
-    <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'order-list.status' | translate }}</th>
-    <td mat-cell *matCellDef="let order">
-      <mat-chip-set>
-        <mat-chip [class]="statusClass(order.status)">
-          {{ 'order-status.' + order.status.toLowerCase() | translate }}
-        </mat-chip>
-      </mat-chip-set>
-    </td>
-  </ng-container>
-
-  <ng-container matColumnDef="actions">
-    <th mat-header-cell *matHeaderCellDef>{{ 'order-list.actions' | translate }}</th>
-    <td mat-cell *matCellDef="let order">
-      <button mat-icon-button color="primary"
-              [matTooltip]="'order-list.view' | translate"
-              (click)="viewOrder(order.id)">
-        <mat-icon>visibility</mat-icon>
-      </button>
-      <button mat-icon-button
-              [matTooltip]="'order-list.delete' | translate"
-              (click)="deleteOrder(order.id)">
-        <mat-icon>delete</mat-icon>
-      </button>
-    </td>
-  </ng-container>
-
-  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-</table>
-<mat-paginator [pageSizeOptions]="[5,10,20]" showFirstLastButtons></mat-paginator>
+@if (store.loading()) { <p>{{ 'common.loading' | translate }}</p> }
+@if (store.error()) { <p>{{ store.error() | translate }}</p> }
+<div class="filters">
+  <mat-form-field appearance="outline"><mat-label>{{ 'order-list.search-id' | translate }}</mat-label><input matInput [ngModel]="search()" (ngModelChange)="search.set($event)"></mat-form-field>
+  <mat-form-field appearance="outline"><mat-label>{{ 'order-list.filter-status' | translate }}</mat-label><mat-select [ngModel]="status()" (ngModelChange)="status.set($event)"><mat-option value="">{{ 'order-list.all-statuses' | translate }}</mat-option>@for (value of statuses; track value) { <mat-option [value]="value">{{ 'order-status.' + value.toLowerCase() | translate }}</mat-option> }</mat-select></mat-form-field>
+</div>
+<table><thead><tr><th>{{ 'order-list.id' | translate }}</th><th>{{ 'order-list.request' | translate }}</th><th>{{ 'order-list.quantity' | translate }}</th><th>{{ 'order-list.total' | translate }}</th><th>{{ 'order-list.status' | translate }}</th><th>{{ 'order-list.actions' | translate }}</th></tr></thead>
+<tbody>@for (order of filtered(); track order.id) { <tr><td>{{ order.id }}</td><td>{{ order.requestId }}</td><td>{{ order.requestedQuantity }}</td><td>{{ order.totalPrice | currency:'PEN':'symbol':'1.2-2' }}</td><td><mat-chip-set><mat-chip>{{ 'order-status.' + order.status.toLowerCase() | translate }}</mat-chip></mat-chip-set></td><td><button mat-button (click)="open(order.id)">{{ 'order-list.view' | translate }}</button></td></tr> } @empty { <tr><td colspan="6">{{ 'order-list.empty' | translate }}</td></tr> }</tbody></table>
