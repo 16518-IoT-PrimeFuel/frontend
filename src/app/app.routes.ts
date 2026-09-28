@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { Home } from './shared/presentation/views/home/home';
-import { authGuard, buyerGuard, providerGuard, supportedRoleGuard } from './iam/infrastructure/auth.guard';
+import { authGuard, adminGuard, buyerGuard, providerGuard, supportedRoleGuard } from './iam/infrastructure/auth.guard';
 import { Login } from './iam/presentation/views/login/login';
 import { Register } from './iam/presentation/views/register/register';
 import { PasswordReset } from './iam/presentation/views/password-reset/password-reset';
@@ -31,6 +31,8 @@ const notificationRoutes = () =>
 
 const equipmentRoutes = () => import('./equipment/presentation/equipment-routes').then((m) => m.equipmentRoutes);
 
+const adminRoutes = () => import('./admin/presentation/admin-routes').then((m) => m.adminRoutes);
+
 const baseTitle = 'FullTank';
 
 export const routes: Routes = [
@@ -49,6 +51,7 @@ export const routes: Routes = [
   { path: 'ordering', canActivate: [authGuard, supportedRoleGuard], loadChildren: orderingRoutes },
   { path: 'reporting', canActivate: [authGuard, supportedRoleGuard], loadChildren: reportingRoutes },
   { path: 'notification', canActivate: [authGuard, supportedRoleGuard], loadChildren: notificationRoutes },
+  { path: 'admin', canActivate: [authGuard, adminGuard], loadChildren: adminRoutes, title: `Admin - ${baseTitle}` },
   { path: 'tanks', canActivate: [authGuard, buyerGuard], loadChildren: equipmentRoutes },
   { path: '', redirectTo: '/home', pathMatch: 'full' },
   { path: '**', loadComponent: pageNotFound, title: `Page Not Found - ${baseTitle}` },

@@ -1,7 +1,7 @@
 @if (delivery(); as d) {
   <header><h1>{{ 'fulfillment.delivery' | translate }} #{{ d.id }}</h1><button (click)="print()">{{ 'fulfillment.dossier' | translate }}</button></header>
   @if (message()) { <p role="status">{{ message() | translate }}</p> }
-  <section><h2>{{ 'fulfillment.physical-state' | translate }}: {{ d.physicalState }}</h2>
+  <section><h2>{{ 'fulfillment.physical-state' | translate }}: {{ 'delivery-status.' + d.physicalState.toLowerCase() | translate }}</h2>
     @if (can('start')) { <button (click)="command('start')">{{ 'fulfillment.start' | translate }}</button> }
     @if (can('arrive')) { <button (click)="command('arrive')">{{ 'fulfillment.arrive' | translate }}</button> }
     @if (can('complete')) { <label>{{ 'fulfillment.delivered-volume' | translate }} <input type="number" min="0.001" step="any" [(ngModel)]="deliveredVolume"></label><button [disabled]="!deliveredVolume || deliveredVolume <= 0" (click)="command('complete')">{{ 'fulfillment.complete' | translate }}</button> }
@@ -22,4 +22,9 @@
   <section><h2>{{ 'fulfillment.transitions' | translate }}</h2>@for (item of transitions(); track item.id) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.fromState || '—' }} → {{ item.toState }} · v{{ item.aggregateVersion }}</p> }</section>
   <section><h2>{{ 'fulfillment.timeline' | translate }}</h2>@for (item of timeline(); track item.refId + item.type) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.type }} · {{ item.summary }}</p> }</section>
   <section><h2>{{ 'fulfillment.samples' | translate }}</h2>@for (item of samples(); track item.evidenceId) { <p>{{ item.recordedAt | date:'medium' }} · {{ item.kind }} · {{ item.latitude }}, {{ item.longitude }} · {{ item.milestone }} {{ item.volume }} {{ item.unit }}</p> }</section>
+}
+@else if (loadError()) {
+  <p role="alert">{{ 'fulfillment.delivery-load-failed' | translate }}</p>
+} @else {
+  <p role="status">{{ 'fulfillment.delivery-loading' | translate }}</p>
 }

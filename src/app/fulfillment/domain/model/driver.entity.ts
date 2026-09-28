@@ -1,4 +1,4 @@
-export type DriverStatus = 'AVAILABLE' | 'ASSIGNED' | 'SUSPENDED' | 'INACTIVE' | 'ON_LEAVE';
+export type DriverStatus = 'AVAILABLE' | 'ASSIGNED' | 'SUSPENDED' | 'INACTIVE';
 
 import { BaseEntity } from '../../../shared/domain/model/base-entity';
 
@@ -18,7 +18,7 @@ export class Driver implements BaseEntity {
   licenseNumber: string;
   phoneNumber: string;
   email: string;
-  status: DriverStatus; // AVAILABLE, ASSIGNED, ON_LEAVE, INACTIVE
+  status: DriverStatus; // AVAILABLE, ASSIGNED, SUSPENDED, INACTIVE
   createdAt: string;
 
   constructor(params: {

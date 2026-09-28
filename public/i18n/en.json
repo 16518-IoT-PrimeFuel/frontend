@@ -7,7 +7,8 @@
     "ordering": "Orders",
     "fulfillment": "Fulfillment",
     "notifications": "Notifications",
-    "reports": "Reports"
+    "reports": "Reports",
+    "admin": "Administration"
   },
   "profile": {
     "title": "Profile",
@@ -509,7 +510,7 @@
     },
     "denied": {
       "title": "Access denied",
-      "message": "This account does not have a supported buyer or distributor role."
+      "message": "This account does not have a supported buyer, distributor or administrator role."
     },
     "error": {
       "user-conflict": "An account already exists for this email.",
@@ -576,6 +577,45 @@
     "order_accepted": "Order Accepted",
     "delivery_completed": "Delivery Completed",
     "delivery_failed": "Delivery Failed"
+  },
+  "admin": {
+    "title": "Administration",
+    "error": "The request could not be completed.",
+    "cancel": "Cancel",
+    "users": {
+      "tab": "Users",
+      "search": "Search by username",
+      "id": "ID", "username": "Username", "roles": "Roles", "company": "Company", "provider": "Provider", "actions": "Actions",
+      "promote": "Promote to admin",
+      "is-admin": "Admin",
+      "empty": "No users found.",
+      "confirm-title": "Promote {{username}} to admin?",
+      "confirm-message": "The user will get full administrator access. They must sign in again for the new role to take effect.",
+      "promoted": "User promoted. They must sign in again for the role to take effect."
+    },
+    "metrics": {
+      "tab": "API metrics",
+      "version": "Version",
+      "route": "Route", "handler": "Handler", "count": "Calls", "last-seen": "Last seen", "callers": "Distinct callers",
+      "empty": "No metrics recorded for this version."
+    },
+    "payments": {
+      "tab": "Payments",
+      "status": "Status",
+      "all": "All",
+      "id": "ID", "order": "Order", "company": "Company", "amount": "Amount", "method": "Method", "reference": "Reference", "paid-at": "Paid at",
+      "empty": "No payments found."
+    },
+    "evidence": {
+      "tab": "Transport evidence",
+      "delivery-id": "Delivery ID",
+      "export": "Export JSON",
+      "delete": "Delete evidence",
+      "confirm-title": "Delete transport evidence for delivery {{id}}?",
+      "confirm-message": "This permanently deletes the evidence and cannot be undone. Type the delivery ID to confirm.",
+      "confirm-delete": "Delete permanently",
+      "deleted": "Transport evidence deleted."
+    }
   },
   "common": {
     "loading": "Loading…"

@@ -7,7 +7,8 @@
     "ordering": "Pedidos",
     "fulfillment": "Despacho",
     "notifications": "Notificaciones",
-    "reports": "Reportes"
+    "reports": "Reportes",
+    "admin": "Administración"
   },
   "profile": {
     "title": "Perfil",
@@ -509,7 +510,7 @@
     },
     "denied": {
       "title": "Sin acceso",
-      "message": "Esta cuenta no tiene un rol compatible de solicitante o distribuidor."
+      "message": "Esta cuenta no tiene un rol compatible de solicitante, distribuidor o administrador."
     },
     "error": {
       "user-conflict": "Ya existe una cuenta con este correo.",
@@ -576,6 +577,45 @@
     "order_accepted": "Pedido Aceptado",
     "delivery_completed": "Entrega Completada",
     "delivery_failed": "Entrega Fallida"
+  },
+  "admin": {
+    "title": "Administración",
+    "error": "No se pudo completar la solicitud.",
+    "cancel": "Cancelar",
+    "users": {
+      "tab": "Usuarios",
+      "search": "Buscar por usuario",
+      "id": "ID", "username": "Usuario", "roles": "Roles", "company": "Empresa", "provider": "Distribuidor", "actions": "Acciones",
+      "promote": "Promover a admin",
+      "is-admin": "Admin",
+      "empty": "No se encontraron usuarios.",
+      "confirm-title": "¿Promover a {{username}} a administrador?",
+      "confirm-message": "El usuario tendrá acceso total de administrador. Debe volver a iniciar sesión para que el nuevo rol tenga efecto.",
+      "promoted": "Usuario promovido. Debe volver a iniciar sesión para que el rol tenga efecto."
+    },
+    "metrics": {
+      "tab": "Métricas de API",
+      "version": "Versión",
+      "route": "Ruta", "handler": "Manejador", "count": "Llamadas", "last-seen": "Última vez", "callers": "Llamantes distintos",
+      "empty": "No hay métricas registradas para esta versión."
+    },
+    "payments": {
+      "tab": "Pagos",
+      "status": "Estado",
+      "all": "Todos",
+      "id": "ID", "order": "Orden", "company": "Empresa", "amount": "Monto", "method": "Método", "reference": "Referencia", "paid-at": "Pagado el",
+      "empty": "No se encontraron pagos."
+    },
+    "evidence": {
+      "tab": "Evidencia de transporte",
+      "delivery-id": "ID de entrega",
+      "export": "Exportar JSON",
+      "delete": "Borrar evidencia",
+      "confirm-title": "¿Borrar la evidencia de transporte de la entrega {{id}}?",
+      "confirm-message": "Se borrará de forma permanente y no se puede deshacer. Escribe el ID de la entrega para confirmar.",
+      "confirm-delete": "Borrar definitivamente",
+      "deleted": "Evidencia de transporte borrada."
+    }
   },
   "common": {
     "loading": "Cargando…"

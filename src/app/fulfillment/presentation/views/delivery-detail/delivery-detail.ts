@@ -15,6 +15,7 @@ export class DeliveryDetail {
   readonly transitions = signal<any[]>([]);
   readonly timeline = signal<any[]>([]);
   readonly message = signal('');
+  readonly loadError = signal(false);
   deliveredVolume: number | null = null;
   reason = '';
   centerLatitude: number | null = null;
@@ -22,7 +23,7 @@ export class DeliveryDetail {
   radiusMeters: number | null = null;
   constructor() { this.reload(); }
   reload(): void {
-    this.api.delivery(this.id).subscribe(x => this.delivery.set(x));
+    this.api.delivery(this.id).subscribe({ next: x => { this.loadError.set(false); this.delivery.set(x); }, error: () => this.loadError.set(true) });
     this.api.tracking(this.id).subscribe({ next: x => this.tracking.set(x), error: () => this.tracking.set(null) });
     this.api.trackingSamples(this.id).subscribe(x => this.samples.set(x));
     this.api.deliveryTransitions(this.id).subscribe(x => this.transitions.set(x));

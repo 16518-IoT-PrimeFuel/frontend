@@ -67,7 +67,7 @@ export class Layout implements OnInit {
       roles: ['BUYER', 'PROVIDER'],
       children: [
         { label: 'ordering.requests', link: '/ordering/request-list' },
-        { label: 'ordering.create-request', link: '/ordering/request-form' },
+        { label: 'ordering.create-request', link: '/ordering/request-form', roles: ['BUYER'] },
         { label: 'ordering.orders', link: '/ordering/order-list' },
       ],
     },
