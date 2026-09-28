@@ -1,52 +1,40 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { BaseApi } from '../../shared/infrastructure/base-api';
+import { environment } from '../../../environments/environment';
 
-import { ClientPortfolio } from '../domain/model/client-portfolio.entity';
-import { SalesMetrics } from '../domain/model/sales-metrics.entity';
-import { FulfillmentMetrics } from '../domain/model/fulfillment-metrics.entity';
-import { SectorDistribution } from '../domain/model/sector-distribution.entity';
+export interface MonthlyAmount {
+  month: string;
+  monthIndex: number;
+  amount: number;
+}
 
-import { ClientPortfolioApiEndpoint } from './client-portfolio-api-endpoint';
-import { MetricsApiEndpoint } from './metrics-api-endpoint';
+export interface ProviderAnalytics {
+  totalOrders: number;
+  confirmedOrders: number;
+  cancelledOrders: number;
+  totalRevenue: number;
+  monthlyRevenue: MonthlyAmount[];
+}
 
-/**
- * @summary API gateway para el bounded context Reporting.
- * @remarks Agrega ClientPortfolioApiEndpoint y MetricsApiEndpoint,
- * exponiendo operaciones de reportes y análisis al application layer.
- * @author FullTank Platform
- */
+export interface BuyerAnalytics {
+  totalOrders: number;
+  totalSpent: number;
+  completedPayments: number;
+  pendingPayments: number;
+  monthlySpending: MonthlyAmount[];
+}
+
 @Injectable({ providedIn: 'root' })
-export class ReportingApi extends BaseApi {
-  private readonly _clientPortfolioEndpoint: ClientPortfolioApiEndpoint;
-  private readonly _metricsEndpoint: MetricsApiEndpoint;
+export class ReportingApi {
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.serverBasePath}/analytics`;
 
-  constructor(http: HttpClient) {
-    super();
-    this._clientPortfolioEndpoint = new ClientPortfolioApiEndpoint(http);
-    this._metricsEndpoint = new MetricsApiEndpoint(http);
+  getProviderAnalytics(providerId: number): Observable<ProviderAnalytics> {
+    return this.http.get<ProviderAnalytics>(`${this.base}/providers/${providerId}`);
   }
 
-  // ── Client Portfolio ─────────────────────────────────────────────────────
-  getClientPortfolio(providerId: string): Observable<ClientPortfolio[]> {
-    return this._clientPortfolioEndpoint.getClientPortfolio(providerId);
-  }
-
-  getClientsBySector(providerId: string, sector: string): Observable<ClientPortfolio[]> {
-    return this._clientPortfolioEndpoint.getClientsBySector(providerId, sector);
-  }
-
-  // ── Metrics ──────────────────────────────────────────────────────────────
-  getSalesMetrics(providerId: string, period: string): Observable<SalesMetrics | null> {
-    return this._metricsEndpoint.getSalesMetrics(providerId, period);
-  }
-
-  getFulfillmentMetrics(providerId: string, period: string): Observable<FulfillmentMetrics | null> {
-    return this._metricsEndpoint.getFulfillmentMetrics(providerId, period);
-  }
-
-  getSectorDistribution(providerId: string, period: string): Observable<SectorDistribution[]> {
-    return this._metricsEndpoint.getSectorDistribution(providerId, period);
+  getBuyerAnalytics(companyId: number): Observable<BuyerAnalytics> {
+    return this.http.get<BuyerAnalytics>(`${this.base}/buyers/${companyId}`);
   }
 }
