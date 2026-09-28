@@ -45,6 +45,8 @@ export class TankerForm implements OnInit {
   protected isEditMode = false;
   protected tankerId: number | null = null;
 
+  protected readonly statuses = ['AVAILABLE', 'IN_ROUTE', 'MAINTENANCE', 'SUSPENDED', 'INACTIVE'];
+
   protected readonly units = [
     { value: 'LITERS', label: 'unit.liters' },
     { value: 'GALLONS', label: 'unit.gallons' },

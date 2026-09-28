@@ -93,6 +93,17 @@
           </mat-form-field>
         </div>
 
+        @if (isEditMode) {
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'tanker-form.fields.status' | translate }}</mat-label>
+            <mat-select formControlName="status">
+              @for (status of statuses; track status) {
+                <mat-option [value]="status">{{ 'vehicle-status.' + status.toLowerCase() | translate }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+
         <!-- Form Actions -->
         <div class="form-actions">
           <button mat-button type="button" (click)="onCancel()" [disabled]="store.isLoading()">
