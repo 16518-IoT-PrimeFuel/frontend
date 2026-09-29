@@ -56,6 +56,7 @@ export class FulfillmentStore {
   }
 
   updateTanker(id: number, request: Partial<TankerRequest>, onSuccess?: () => void): void {
+    this._successMsg.set('');
     this.run(this.api.updateTanker(id, request), 'errors.generic', (row) => {
       this._tankerList.update((list) => list.map((t) => (t.id === id ? row : t)));
       this._selectedTanker.set(row);
@@ -65,6 +66,7 @@ export class FulfillmentStore {
   }
 
   updateTankerStatus(id: number, request: Pick<Tanker, 'status'>): void {
+    this._successMsg.set('');
     this.run(this.api.updateTankerStatus(id, request), 'errors.generic', (row) => {
       this._tankerList.update((list) => list.map((t) => (t.id === id ? row : t)));
       this._successMsg.set('tanker-form.saved');
@@ -86,6 +88,7 @@ export class FulfillmentStore {
   }
 
   updateDriver(id: number, request: Partial<DriverRequest>, onSuccess?: () => void): void {
+    this._successMsg.set('');
     this.run(this.api.updateDriver(id, request), 'errors.generic', (row) => {
       this._driverList.update((list) => list.map((d) => (d.id === id ? row : d)));
       this._selectedDriver.set(row);
@@ -95,6 +98,7 @@ export class FulfillmentStore {
   }
 
   updateDriverStatus(id: number, request: Pick<Driver, 'status'>): void {
+    this._successMsg.set('');
     this.run(this.api.updateDriverStatus(id, request), 'errors.generic', (row) => {
       this._driverList.update((list) => list.map((d) => (d.id === id ? row : d)));
       this._successMsg.set('driver-form.saved');
@@ -106,7 +110,6 @@ export class FulfillmentStore {
   private run<T>(request: Observable<T>, fallback: string, done: (value: T) => void): void {
     this._isLoading.set(true);
     this._error.set('');
-    this._successMsg.set('');
     request.subscribe({
       next: (value) => { done(value); this._isLoading.set(false); },
       error: (err) => { this._error.set(err.message || fallback); this._isLoading.set(false); },

@@ -1,8 +1,8 @@
 <div class="tanker-form-container">
   <header class="page-header">
     <div class="header-content">
-      <h1>{{ 'tanker-form.title' | translate }}</h1>
-      <p>{{ 'tanker-form.subtitle' | translate }}</p>
+      <h1>{{ (isEditMode ? 'tanker-form.edit-title' : 'tanker-form.title') | translate }}</h1>
+      <p>{{ (isEditMode ? 'tanker-form.edit-subtitle' : 'tanker-form.subtitle') | translate }}</p>
     </div>
   </header>
 
@@ -116,7 +116,7 @@
             } @else {
               <mat-icon>save</mat-icon>
             }
-            {{ 'tanker-form.register' | translate }}
+            {{ (isEditMode ? 'tanker-form.save' : 'tanker-form.register') | translate }}
           </button>
         </div>
       </form>
