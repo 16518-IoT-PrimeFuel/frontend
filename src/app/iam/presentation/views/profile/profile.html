@@ -1,38 +1,107 @@
-<main class="iam-page">
-  <section class="iam-card">
-    <h1>{{ 'profile.title' | translate }}</h1>
-    @if (loading()) { <p>{{ 'profile.loading' | translate }}</p> }
-    @else {
-      @if (error()) { <p class="iam-error" role="alert">{{ error() | translate }}</p> }
-      @if (user()) {
-        <h2>{{ 'profile.user' | translate }}</h2>
-        <p><strong>{{ 'profile.username' | translate }}:</strong> {{ user()!.username }}</p>
-        <p><strong>{{ 'profile.roles' | translate }}:</strong> {{ user()!.roles.join(', ') }}</p>
-        <h2>{{ 'profile.company' | translate }}</h2>
-        <form (ngSubmit)="save()">
-          @if (isBuyer) {
-            <label>{{ 'auth.company' | translate }}<input name="name" [(ngModel)]="buyer.name" required></label>
-            <label>{{ 'auth.ruc' | translate }}<input name="ruc" [(ngModel)]="buyer.ruc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11"></label>
-            <label>{{ 'auth.sector' | translate }}<input name="sector" [(ngModel)]="buyer.sector" required></label>
-            <label>{{ 'auth.address' | translate }}<input name="address" [(ngModel)]="buyer.address" required></label>
-            <label>{{ 'profile.contact-email' | translate }}<input name="contactEmail" type="email" [(ngModel)]="buyer.contactEmail" required></label>
-            <label>{{ 'auth.phone' | translate }}<input name="phone" type="tel" [(ngModel)]="buyer.phone" required></label>
-          } @else {
-            <label>{{ 'auth.company' | translate }}<input name="name" [(ngModel)]="provider.name" required></label>
-            <label>{{ 'auth.ruc' | translate }}<input name="ruc" [(ngModel)]="provider.ruc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11"></label>
-            <label>{{ 'auth.address' | translate }}<input name="address" [(ngModel)]="provider.address" required></label>
-            <label>{{ 'auth.phone' | translate }}<input name="phone" type="tel" [(ngModel)]="provider.phone" required></label>
-            <label>{{ 'auth.fuel-types' | translate }}<input name="fuelTypes" [(ngModel)]="fuelTypes" required></label>
-            <label>{{ 'auth.description' | translate }}<textarea name="description" [(ngModel)]="provider.description"></textarea></label>
-          }
-          <button type="submit" [disabled]="saving()">{{ (saving() ? 'profile.saving' : 'profile.save') | translate }}</button>
-          @if (saved()) { <p role="status">{{ 'profile.saved' | translate }}</p> }
+<header class="head">
+  <span class="avatar" aria-hidden="true"><mat-icon>person</mat-icon></span>
+  <div class="who">
+    <h2 mat-dialog-title>{{ 'profile.title' | translate }}</h2>
+    @if (user()) { <p class="sub">{{ user()!.username }}</p> }
+  </div>
+  <button mat-icon-button mat-dialog-close [attr.aria-label]="'profile.close' | translate"><mat-icon>close</mat-icon></button>
+</header>
+
+<mat-dialog-content class="body">
+  @if (loading()) {
+    <div class="skeleton" aria-busy="true" [attr.aria-label]="'profile.loading' | translate"><span></span><span></span><span></span></div>
+  } @else if (!user()) {
+    <p class="error" role="alert">{{ error() | translate }}</p>
+  } @else {
+    <mat-tab-group animationDuration="150ms" [selectedIndex]="tab()" (selectedIndexChange)="tab.set($event)">
+      <mat-tab [label]="'profile.tab-account' | translate">
+        <dl class="account">
+          <div><dt>{{ 'profile.username' | translate }}</dt><dd>{{ user()!.username }}</dd></div>
+          <div><dt>{{ 'profile.roles' | translate }}</dt><dd class="roles">@for (r of user()!.roles; track r) { <span class="chip">{{ role(r) }}</span> }</dd></div>
+        </dl>
+      </mat-tab>
+      <mat-tab [label]="'profile.tab-company' | translate">
+        <form id="companyForm" #companyForm="ngForm" class="grid" (ngSubmit)="save()">
+@if (isBuyer) {
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.company' | translate }}</mat-label>
+            <input matInput name="name" #name="ngModel" [(ngModel)]="buyer.name" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'auth.ruc' | translate }}</mat-label>
+            <input matInput name="ruc" #ruc="ngModel" [(ngModel)]="buyer.ruc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11">
+            @if (ruc.errors?.['pattern']) { <mat-error>{{ 'profile.ruc-invalid' | translate }}</mat-error> } @else { <mat-error>{{ 'validation.required' | translate }}</mat-error> }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'auth.sector' | translate }}</mat-label>
+            <input matInput name="sector" #sector="ngModel" [(ngModel)]="buyer.sector" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.address' | translate }}</mat-label>
+            <input matInput name="address" #address="ngModel" [(ngModel)]="buyer.address" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'profile.contact-email' | translate }}</mat-label>
+            <input matInput name="contactEmail" #contactEmail="ngModel" [(ngModel)]="buyer.contactEmail" required type="email">
+            @if (contactEmail.errors?.['email']) { <mat-error>{{ 'validation.email' | translate }}</mat-error> } @else { <mat-error>{{ 'validation.required' | translate }}</mat-error> }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'auth.phone' | translate }}</mat-label>
+            <input matInput name="phone" #phone="ngModel" [(ngModel)]="buyer.phone" required type="tel">
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+} @else {
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.company' | translate }}</mat-label>
+            <input matInput name="name" #name="ngModel" [(ngModel)]="provider.name" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'auth.ruc' | translate }}</mat-label>
+            <input matInput name="ruc" #ruc="ngModel" [(ngModel)]="provider.ruc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11">
+            @if (ruc.errors?.['pattern']) { <mat-error>{{ 'profile.ruc-invalid' | translate }}</mat-error> } @else { <mat-error>{{ 'validation.required' | translate }}</mat-error> }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'auth.phone' | translate }}</mat-label>
+            <input matInput name="phone" #phone="ngModel" [(ngModel)]="provider.phone" required type="tel">
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.address' | translate }}</mat-label>
+            <input matInput name="address" #address="ngModel" [(ngModel)]="provider.address" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.fuel-types' | translate }}</mat-label>
+            <input matInput name="fuelTypes" #fuelTypes="ngModel" [(ngModel)]="fuelTypes" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.description' | translate }}</mat-label>
+            <textarea matInput rows="3" name="description" [(ngModel)]="provider.description"></textarea>
+          </mat-form-field>
+}
         </form>
-        <h2>{{ 'profile.organizations' | translate }}</h2>
+      </mat-tab>
+      <mat-tab [label]="'profile.tab-organizations' | translate">
         @if (organizations().length) {
-          <ul>@for (org of organizations(); track org.id) { <li>{{ org.name }} — {{ org.type }} ({{ org.role }})</li> }</ul>
-        } @else { <p>{{ 'profile.no-organizations' | translate }}</p> }
-      }
-    }
-  </section>
-</main>
+          <ul class="orgs">@for (org of organizations(); track org.id) { <li><span class="org-name">{{ org.name }}</span><span class="chip">{{ org.type }}</span><span class="chip">{{ org.role }}</span></li> }</ul>
+        } @else { <p class="empty">{{ 'profile.no-organizations' | translate }}</p> }
+      </mat-tab>
+    </mat-tab-group>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions class="foot">
+  <p class="status" aria-live="polite">
+    @if (error() && user()) { <span class="error" role="alert">{{ error() | translate }}</span> }
+    @else if (saved()) { <span class="ok">{{ 'profile.saved' | translate }}</span> }
+  </p>
+  <button mat-button mat-dialog-close>{{ 'profile.close' | translate }}</button>
+  @if (user() && tab() === 1) {
+    <button mat-flat-button type="button" [disabled]="!canSave" (click)="save()">{{ (saving() ? 'profile.saving' : 'profile.save') | translate }}</button>
+  }
+</mat-dialog-actions>
