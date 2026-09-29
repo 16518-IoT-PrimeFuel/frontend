@@ -1,12 +1,34 @@
 <main class="iam-page">
-  <form class="iam-card" (ngSubmit)="submit()">
-    <h1>{{ 'auth.login.title' | translate }}</h1>
-    <label>{{ 'auth.username' | translate }}<input name="username" type="email" [(ngModel)]="username" required autocomplete="username"></label>
-    <label>{{ 'auth.password' | translate }}<input name="password" type="password" [(ngModel)]="password" required autocomplete="current-password"></label>
-    @if (error()) { <p class="iam-error" role="alert">{{ error() | translate }}</p> }
-    <button type="submit" [disabled]="sending()">{{ 'auth.login.submit' | translate }}</button>
-    <a routerLink="/forgot-password">{{ 'auth.forgot' | translate }}</a>
-    <a routerLink="/register/buyer">{{ 'auth.register.buyer-link' | translate }}</a>
-    <a routerLink="/register/distributor">{{ 'auth.register.provider-link' | translate }}</a>
+  <form class="iam-card" (ngSubmit)="submit()" [attr.aria-busy]="sending()">
+    <div>
+      <h1>{{ 'auth.login.title' | translate }}</h1>
+      <p class="iam-subtitle">{{ 'auth.login.subtitle' | translate }}</p>
+    </div>
+    @if (sessionRequired() && !error()) { <p class="iam-note" role="status">{{ 'auth.login.session-required' | translate }}</p> }
+    <label>{{ 'auth.username' | translate }}
+      <input name="username" type="email" [(ngModel)]="username" (ngModelChange)="error.set('')" required autofocus autocomplete="username" [attr.aria-invalid]="error() ? true : null" [attr.aria-describedby]="error() ? 'login-error' : null">
+    </label>
+    <div class="iam-field">
+      <label>{{ 'auth.password' | translate }}
+        <span class="iam-password">
+          <input name="password" [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" (ngModelChange)="error.set('')" required autocomplete="current-password" [attr.aria-invalid]="error() ? true : null" [attr.aria-describedby]="error() ? 'login-error' : null">
+          <button type="button" class="iam-password-toggle" (click)="showPassword.set(!showPassword())" [attr.aria-pressed]="showPassword()" [attr.aria-label]="(showPassword() ? 'auth.hide-password' : 'auth.show-password') | translate">
+            @if (showPassword()) {
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+            } @else {
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            }
+          </button>
+        </span>
+      </label>
+      <a class="iam-forgot" routerLink="/forgot-password">{{ 'auth.forgot' | translate }}</a>
+    </div>
+    @if (error()) { <p id="login-error" class="iam-error" role="alert">{{ error() | translate }}</p> }
+    <button type="submit" [disabled]="sending()">{{ (sending() ? 'auth.login.submitting' : 'auth.login.submit') | translate }}</button>
+    <nav class="iam-alt" [attr.aria-label]="'auth.login.no-account' | translate">
+      <span>{{ 'auth.login.no-account' | translate }}</span>
+      <a routerLink="/register/buyer">{{ 'auth.register.buyer-link' | translate }}</a>
+      <a routerLink="/register/distributor">{{ 'auth.register.provider-link' | translate }}</a>
+    </nav>
   </form>
 </main>

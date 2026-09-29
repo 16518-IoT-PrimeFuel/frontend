@@ -500,9 +500,15 @@
     "all-read": "Todas las notificaciones marcadas como leídas"
   },
   "auth": {
+    "show-password": "Mostrar contraseña",
+    "hide-password": "Ocultar contraseña",
     "login": {
       "title": "Iniciar sesión",
+      "subtitle": "Accede a tu cuenta de FullTank",
       "submit": "Iniciar sesión",
+      "submitting": "Iniciando sesión…",
+      "session-required": "Inicia sesión para continuar.",
+      "no-account": "¿No tienes cuenta?",
       "link": "Volver al inicio de sesión"
     },
     "register": {

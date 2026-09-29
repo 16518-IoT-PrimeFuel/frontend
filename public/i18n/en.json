@@ -500,9 +500,15 @@
     "all-read": "All notifications marked as read"
   },
   "auth": {
+    "show-password": "Show password",
+    "hide-password": "Hide password",
     "login": {
       "title": "Sign in",
+      "subtitle": "Access your FullTank account",
       "submit": "Sign in",
+      "submitting": "Signing in…",
+      "session-required": "Sign in to continue.",
+      "no-account": "Don't have an account?",
       "link": "Back to sign in"
     },
     "register": {

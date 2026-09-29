@@ -7,4 +7,17 @@
 .iam-card input, .iam-card textarea { box-sizing: border-box; width: 100%; padding: 10px 12px; border: 1px solid #b8c0cc; border-radius: 6px; font: inherit; }
 .iam-card button { min-height: 42px; border: 0; border-radius: 6px; background: #1e3a8a; color: white; font: inherit; cursor: pointer; }
 .iam-card a { color: #1e3a8a; }
-.iam-error { color: #a32121; }
+.iam-subtitle { margin: 4px 0 0; color: #4b5563; }
+.iam-note { margin: 0; padding: 10px 12px; border-radius: 6px; background: #eef2ff; color: #1e3a8a; }
+.iam-field { display: grid; gap: 8px; }
+.iam-forgot { justify-self: end; font-size: 0.9rem; }
+.iam-card input[aria-invalid="true"] { border-color: #a32121; }
+.iam-card button:disabled { opacity: 0.7; cursor: progress; }
+.iam-alt { display: grid; gap: 8px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+.iam-alt span { color: #4b5563; font-size: 0.9rem; }
+.iam-password { position: relative; display: block; }
+.iam-password input { padding-right: 44px; }
+.iam-card .iam-password-toggle { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); display: grid; place-items: center; width: 36px; height: 36px; min-height: 0; padding: 0; background: transparent; color: #4b5563; }
+.iam-card .iam-password-toggle:hover { color: #1e3a8a; }
+.iam-card .iam-password-toggle:focus-visible { outline: 2px solid #1e3a8a; outline-offset: 2px; }
+.iam-error { margin: 0; color: #a32121; }

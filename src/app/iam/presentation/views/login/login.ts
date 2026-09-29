@@ -16,6 +16,8 @@ export class Login {
   private readonly route = inject(ActivatedRoute);
   readonly error = signal('');
   readonly sending = signal(false);
+  readonly showPassword = signal(false);
+  readonly sessionRequired = signal(!!this.route.snapshot.queryParamMap.get('returnUrl'));
   username = '';
   password = '';
 
