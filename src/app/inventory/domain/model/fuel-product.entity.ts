@@ -1,6 +1,8 @@
 import { BaseEntity } from '../../../shared/domain/model/base-entity';
 
 export type FuelType = 'DIESEL' | 'GASOLINE' | 'GASOLINE_84' | 'GASOLINE_90' | 'GASOLINE_95' | 'GASOLINE_97' | 'GLP' | 'GNV';
+/** Valores del enum del backend (inventory.FuelType); lista fija para selects y chips. */
+export const FUEL_TYPES: FuelType[] = ['DIESEL', 'GASOLINE', 'GASOLINE_84', 'GASOLINE_90', 'GASOLINE_95', 'GASOLINE_97', 'GLP', 'GNV'];
 
 export class FuelProduct implements BaseEntity {
   id!: number;
