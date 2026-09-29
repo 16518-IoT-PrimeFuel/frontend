@@ -28,7 +28,7 @@ export class Dashboard {
   readonly buyerData = computed(() => this.analytics() as BuyerAnalytics | null);
   readonly providerData = computed(() => this.analytics() as ProviderAnalytics | null);
   readonly orders = signal<Order[]>([]);
-  readonly statuses: OrderStatus[] = ['PENDING', 'CONFIRMED', 'DISPATCHED', 'PENDING_PAYMENT', 'PAID', 'CANCELLED'];
+  readonly statuses: OrderStatus[] = ['PENDING', 'CONFIRMED', 'DISPATCHED', 'PENDING_PAYMENT', 'PAID', 'IN_PROGRESS', 'DELIVERED', 'CANCELLED'];
   readonly statusCounts = computed(() => this.statuses.map(status => ({ status, count: this.orders().filter(order => order.status === status).length })));
   readonly months = computed(() => {
     const data = this.isBuyer

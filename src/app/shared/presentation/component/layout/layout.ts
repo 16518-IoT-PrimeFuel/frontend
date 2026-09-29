@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
@@ -37,6 +38,7 @@ import { NotificationStore } from '../../../../notification/application/notifica
 })
 export class Layout implements OnInit {
   private readonly iam = inject(IamStore);
+  private readonly dialog = inject(MatDialog);
   protected readonly notifications = inject(NotificationStore);
   @ViewChild(MatSidenav) drawer!: MatSidenav;
 
@@ -85,7 +87,7 @@ export class Layout implements OnInit {
       label: 'nav.reports',
       icon: 'analytics',
       link: '/reporting/report-main',
-      roles: ['PROVIDER'],
+      roles: ['BUYER', 'PROVIDER'],
     },
     { label: 'nav.admin', icon: 'admin_panel_settings', link: '/admin', roles: [], admin: true },
   ];
@@ -109,7 +111,9 @@ export class Layout implements OnInit {
   }
 
   navigateTo(link: string): void {
-    this.router.navigate([link]).then();
+    // El perfil es un modal: se abre sobre la vista actual sin navegar (la URL /profile queda para enlaces directos).
+    if (link === '/profile') import('../../../../iam/presentation/views/profile/profile').then((m) => this.dialog.open(m.ProfileDialog, m.PROFILE_DIALOG_CONFIG));
+    else this.router.navigate([link]).then();
     if (this.sidenavMode === 'over') {
       this.drawer.toggle().then();
     }
