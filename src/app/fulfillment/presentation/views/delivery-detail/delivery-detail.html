@@ -2,6 +2,21 @@
   <header><h1>{{ 'fulfillment.delivery' | translate }} #{{ d.id }}</h1><button (click)="print()">{{ 'fulfillment.dossier' | translate }}</button></header>
   @if (message()) { <p role="status">{{ message() | translate }}</p> }
   <section><h2>{{ 'fulfillment.physical-state' | translate }}: {{ 'delivery-status.' + d.physicalState.toLowerCase() | translate }}</h2>
+    <dl>
+      <dt>{{ 'fulfillment.driver' | translate }}</dt><dd>{{ driverName() || ('#' + d.driverId) }}</dd>
+      <dt>{{ 'fulfillment.tanker' | translate }}</dt><dd>{{ tankerName() || ('#' + d.vehicleId) }}</dd>
+      <dt>{{ 'fulfillment.order' | translate }}</dt><dd>#{{ d.orderId }}</dd>
+      <dt>{{ 'fulfillment.requested-volume' | translate }}</dt><dd>{{ d.requestedVolume ?? '—' }}</dd>
+      <dt>{{ 'fulfillment.delivered-volume' | translate }}</dt><dd>{{ d.deliveredVolume ?? '—' }}</dd>
+      @if (d.notes) { <dt>{{ 'fulfillment.notes' | translate }}</dt><dd>{{ d.notes }}</dd> }
+    </dl>
+    <dl>
+      <dt>{{ 'fulfillment.dispatched-at' | translate }}</dt><dd>{{ (d.dispatchedAt | date:'medium') || '—' }}</dd>
+      <dt>{{ 'fulfillment.started-at' | translate }}</dt><dd>{{ (d.startedAt | date:'medium') || '—' }}</dd>
+      <dt>{{ 'fulfillment.arrived-at' | translate }}</dt><dd>{{ (d.arrivedAt | date:'medium') || '—' }}</dd>
+      <dt>{{ 'fulfillment.delivering-at' | translate }}</dt><dd>{{ (d.deliveringAt | date:'medium') || '—' }}</dd>
+      <dt>{{ 'fulfillment.delivered-at' | translate }}</dt><dd>{{ (d.deliveredAt | date:'medium') || '—' }}</dd>
+    </dl>
     @if (can('start')) { <button (click)="command('start')">{{ 'fulfillment.start' | translate }}</button> }
     @if (can('arrive')) { <button (click)="command('arrive')">{{ 'fulfillment.arrive' | translate }}</button> }
     @if (can('complete')) { <label>{{ 'fulfillment.delivered-volume' | translate }} <input type="number" min="0.001" step="any" [(ngModel)]="deliveredVolume"></label><button [disabled]="!deliveredVolume || deliveredVolume <= 0" (click)="command('complete')">{{ 'fulfillment.complete' | translate }}</button> }
@@ -10,7 +25,16 @@
     @if (can('cancel')) { <button [disabled]="!reason.trim()" (click)="command('cancel')">{{ 'fulfillment.cancel-delivery' | translate }}</button> }
   </section>
   <section><h2>{{ 'fulfillment.tracking' | translate }}</h2>
-    @if (tracking(); as t) { <p>{{ t.lastLatitude }}, {{ t.lastLongitude }} · {{ t.lastPositionAt | date:'medium' }} · {{ t.loaded ? ('fulfillment.loaded' | translate) : ('fulfillment.not-loaded' | translate) }}</p> }
+    @if (tracking(); as t) {
+      <dl>
+        <dt>{{ 'fulfillment.position' | translate }}</dt><dd>@if (t.lastLatitude != null) { {{ t.lastLatitude }}, {{ t.lastLongitude }} · <a [href]="mapUrl(t)" target="_blank" rel="noopener">{{ 'fulfillment.open-map' | translate }}</a> } @else { — }</dd>
+        <dt>{{ 'fulfillment.accuracy' | translate }}</dt><dd>{{ t.lastAccuracyMeters != null ? (t.lastAccuracyMeters + ' m') : '—' }}</dd>
+        <dt>{{ 'fulfillment.last-position-at' | translate }}</dt><dd>{{ (t.lastPositionAt | date:'medium') || '—' }}</dd>
+        <dt>{{ 'fulfillment.load-state' | translate }}</dt><dd>{{ t.loaded ? ('fulfillment.loaded' | translate) : ('fulfillment.not-loaded' | translate) }}</dd>
+        <dt>{{ 'fulfillment.load-milestone' | translate }}</dt><dd>{{ t.lastLoadMilestone ?? '—' }}</dd>
+        <dt>{{ 'fulfillment.load-volume' | translate }}</dt><dd>{{ t.lastLoadVolume != null ? (t.lastLoadVolume + ' ' + (t.lastLoadUnit ?? '')) : '—' }}</dd>
+      </dl>
+    }
     @else { <p>{{ 'fulfillment.no-tracking' | translate }}</p> }
   </section>
   <section><h2>{{ 'fulfillment.geofence' | translate }}</h2>
@@ -19,7 +43,7 @@
     <label>{{ 'fulfillment.radius' | translate }} <input type="number" min="1" [(ngModel)]="radiusMeters"></label>
     <button [disabled]="centerLatitude == null || centerLongitude == null || !radiusMeters || radiusMeters <= 0" (click)="saveGeofence()">{{ 'fulfillment.save-geofence' | translate }}</button>
   </section>
-  <section><h2>{{ 'fulfillment.transitions' | translate }}</h2>@for (item of transitions(); track item.id) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.fromState || '—' }} → {{ item.toState }} · v{{ item.aggregateVersion }}</p> }</section>
+  <section><h2>{{ 'fulfillment.transitions' | translate }}</h2>@for (item of transitions(); track item.id) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.fromState ? ('delivery-status.' + item.fromState.toLowerCase() | translate) : '—' }} → {{ 'delivery-status.' + item.toState.toLowerCase() | translate }} · v{{ item.aggregateVersion }}</p> }</section>
   <section><h2>{{ 'fulfillment.timeline' | translate }}</h2>@for (item of timeline(); track item.refId + item.type) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.type }} · {{ item.summary }}</p> }</section>
   <section><h2>{{ 'fulfillment.samples' | translate }}</h2>@for (item of samples(); track item.evidenceId) { <p>{{ item.recordedAt | date:'medium' }} · {{ item.kind }} · {{ item.latitude }}, {{ item.longitude }} · {{ item.milestone }} {{ item.volume }} {{ item.unit }}</p> }</section>
 }

@@ -16,6 +16,8 @@ export class DeliveryDetail {
   readonly timeline = signal<any[]>([]);
   readonly message = signal('');
   readonly loadError = signal(false);
+  readonly driverName = signal('');
+  readonly tankerName = signal('');
   deliveredVolume: number | null = null;
   reason = '';
   centerLatitude: number | null = null;
@@ -23,12 +25,17 @@ export class DeliveryDetail {
   radiusMeters: number | null = null;
   constructor() { this.reload(); }
   reload(): void {
-    this.api.delivery(this.id).subscribe({ next: x => { this.loadError.set(false); this.delivery.set(x); }, error: () => this.loadError.set(true) });
+    this.api.delivery(this.id).subscribe({ next: x => { this.loadError.set(false); this.delivery.set(x); this.loadParties(x); }, error: () => this.loadError.set(true) });
     this.api.tracking(this.id).subscribe({ next: x => this.tracking.set(x), error: () => this.tracking.set(null) });
     this.api.trackingSamples(this.id).subscribe(x => this.samples.set(x));
     this.api.deliveryTransitions(this.id).subscribe(x => this.transitions.set(x));
     this.api.deliveryTimeline(this.id).subscribe(x => this.timeline.set(x));
   }
+  private loadParties(d: any): void {
+    this.api.getDriverById(d.driverId).subscribe({ next: x => this.driverName.set(`${x.firstName} ${x.lastName}`), error: () => this.driverName.set('') });
+    this.api.getTankerById(d.vehicleId).subscribe({ next: x => this.tankerName.set(`${x.brand} ${x.model} · ${x.licensePlate}`), error: () => this.tankerName.set('') });
+  }
+  mapUrl(t: any): string { return `https://www.google.com/maps?q=${t.lastLatitude},${t.lastLongitude}`; }
   can(action: string): boolean {
     const state = this.delivery()?.physicalState;
     return action === 'start' ? state === 'ASSIGNED'
