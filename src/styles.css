@@ -1,7 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 /* Initial authentication screens */
 .iam-page { min-height: 75vh; display: grid; place-items: center; padding: 24px; }
-.iam-card { width: min(100%, 440px); display: grid; gap: 16px; padding: 28px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px #00000012; }
+.iam-card { box-sizing: border-box; width: min(100%, 440px); display: grid; gap: 16px; padding: 28px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px #00000012; }
 .iam-card h1 { margin: 0; }
 .iam-card label { display: grid; gap: 6px; font-weight: 500; }
 .iam-card input, .iam-card textarea { box-sizing: border-box; width: 100%; padding: 10px 12px; border: 1px solid #b8c0cc; border-radius: 6px; font: inherit; }
@@ -67,3 +67,6 @@
   .dl-table tr.link:hover td { background: transparent; }
 }
 @media (prefers-reduced-motion: reduce) { .dl-chip { transition: none; } }
+.iam-card .dl-chip { min-height: 36px; border: 1px solid #b8c0cc; background: #fff; color: #243447; }
+.iam-card .dl-chip:hover { background: #eef2ff; }
+.iam-card .dl-chip[aria-pressed="true"] { border-color: #1e3a8a; background: #1e3a8a; color: #fff; }

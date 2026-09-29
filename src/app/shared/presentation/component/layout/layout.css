@@ -7,10 +7,11 @@
   z-index: 1000;
   display: flex;
   align-items: center;
-  padding: 0 24px;
+  padding: 0 16px 0 24px;
   height: 64px;
   background: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #e8eaed;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   color: #1e3a8a;
 }
 
@@ -196,3 +197,17 @@ mat-sidenav-content {
   padding: 24px;
   min-height: 100%;
 }
+
+/* Acciones de la derecha: mismo tamaño, mismo color, mismo ritmo. */
+.toolbar app-language-switcher { margin-right: 8px; }
+.toolbar-action { --mat-icon-button-icon-color: #1e3a8a; --mat-icon-button-state-layer-color: #1e3a8a; margin-left: 4px; }
+.toolbar-action:focus-visible { outline: 2px solid #1e3a8a; outline-offset: -2px; }
+.toolbar-user .mat-icon { width: 32px; height: 32px; font-size: 32px; }
+
+/* Menú de usuario (el panel se pinta en el overlay, fuera del componente). */
+::ng-deep .user-menu.mat-mdc-menu-panel { min-width: 240px; border-radius: 12px; }
+::ng-deep .user-menu .mat-mdc-menu-content { padding: 0 0 8px; }
+.user-menu-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 14px 16px; border-bottom: 1px solid #e5e7eb; cursor: default; }
+.user-menu-avatar { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 50%; background: #eef2ff; color: #1e3a8a; }
+.user-menu-name { min-width: 0; overflow: hidden; color: #111827; font-size: 0.9375rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+::ng-deep .user-menu .mat-mdc-menu-item .mat-icon { color: #4b5563; }

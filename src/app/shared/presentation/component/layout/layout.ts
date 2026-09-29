@@ -1,10 +1,10 @@
 import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatDialog } from '@angular/material/dialog';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -26,6 +26,7 @@ import { NotificationStore } from '../../../../notification/application/notifica
     MatExpansionModule,
     MatIconModule,
     MatButtonModule,
+    MatMenuModule,
     MatTooltipModule,
     MatBadgeModule,
     TranslatePipe,
@@ -37,8 +38,7 @@ import { NotificationStore } from '../../../../notification/application/notifica
   styleUrl: './layout.css',
 })
 export class Layout implements OnInit {
-  private readonly iam = inject(IamStore);
-  private readonly dialog = inject(MatDialog);
+  protected readonly iam = inject(IamStore);
   protected readonly notifications = inject(NotificationStore);
   @ViewChild(MatSidenav) drawer!: MatSidenav;
 
@@ -48,7 +48,6 @@ export class Layout implements OnInit {
   ngOnInit(): void { this.notifications.refreshUnreadCount(); }
 
   options = [
-    { label: 'nav.profile', icon: 'person', link: '/profile', roles: ['BUYER', 'PROVIDER'] },
     { label: 'nav.equipment', icon: 'oil_barrel', link: '/tanks', roles: ['BUYER'] },
     { label: 'nav.dashboard', icon: 'dashboard', link: '/dashboard', roles: ['BUYER', 'PROVIDER'] },
     {
@@ -111,9 +110,7 @@ export class Layout implements OnInit {
   }
 
   navigateTo(link: string): void {
-    // El perfil es un modal: se abre sobre la vista actual sin navegar (la URL /profile queda para enlaces directos).
-    if (link === '/profile') import('../../../../iam/presentation/views/profile/profile').then((m) => this.dialog.open(m.ProfileDialog, m.PROFILE_DIALOG_CONFIG));
-    else this.router.navigate([link]).then();
+    this.router.navigate([link]).then();
     if (this.sidenavMode === 'over') {
       this.drawer.toggle().then();
     }

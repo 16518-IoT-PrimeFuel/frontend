@@ -1,7 +1,6 @@
 {
   "nav": {
     "dashboard": "Dashboard",
-    "profile": "Profile",
     "equipment": "Customers & Tanks",
     "inventory": "Inventory",
     "ordering": "Orders",
@@ -26,8 +25,10 @@
     "tab-account": "Account",
     "tab-company": "Company",
     "tab-organizations": "Organizations",
-    "close": "Close",
-    "ruc-invalid": "RUC must have 11 digits"
+    "account-settings": "Account settings",
+    "ruc-invalid": "RUC must have 11 digits",
+    "rating": "Rating",
+    "rating-readonly": "Assigned by the platform; it cannot be edited."
   },
   "inventory": {
     "products": "Products",
@@ -96,7 +97,11 @@
     "last-position-at": "Last position",
     "load-state": "Load status",
     "load-milestone": "Load milestone",
-    "load-volume": "Loaded volume"
+    "load-volume": "Loaded volume",
+    "latitude-range": "Latitude must be between -90 and 90.",
+    "longitude-range": "Longitude must be between -180 and 180.",
+    "radius-positive": "Radius must be greater than 0.",
+    "geofence-once": "A delivery accepts a single geofence and it cannot be edited afterwards."
   },
   "analytics": {
     "buyer-title": "Purchasing dashboard",
@@ -556,7 +561,8 @@
     "address": "Address",
     "phone": "Phone",
     "sector": "Business sector",
-    "fuel-types": "Fuel types offered (comma-separated)",
+    "fuel-types": "Fuel types offered",
+      "fuel-types-required": "Select at least one fuel type.",
     "description": "Description",
     "new-password": "New password",
     "forgot": "Forgot password?",
@@ -613,15 +619,22 @@
     "low-level": "Low level (%)",
     "hysteresis": "Hysteresis (%)",
     "target-level": "Target level (%)",
-    "provider-id": "Distributor ID",
-    "product-id": "Fuel product ID",
     "auto-generate": "Allow automatic request generation",
     "save-policy": "Save policy",
     "episodes": "Refill episodes",
     "request-emitted": "Request generated",
     "no-episodes": "No refill episodes",
     "missing-company": "The signed-in buyer has no company ID; the customer cannot be mapped to an order.",
-    "request-failed": "The request could not be completed."
+    "request-failed": "The request could not be completed.",
+    "provider": "Distributor",
+    "product": "Fuel product",
+    "not-set": "Not set",
+    "auto-needs-both": "Choose a distributor and a fuel product to allow automatic requests.",
+    "err-low-range": "Low level must be greater than 0 and less than 100.",
+    "err-hysteresis-positive": "Hysteresis must be greater than 0.",
+    "err-low-plus-hysteresis": "Low level plus hysteresis cannot exceed 100.",
+    "err-target-range": "Target level must be greater than 0 and at most 100.",
+    "policy-saved": "Policy saved."
   },
   "notification-type": {
     "new_request": "New Request",
@@ -714,7 +727,8 @@
     "min-value": "Minimum value is {{n}}",
     "email": "Invalid email format",
     "phone": "Invalid phone format",
-    "positive": "Value must be greater than 0"
+    "positive": "Value must be greater than 0",
+    "max-length": "Maximum length is {{n}}"
   },
   "confirm": {
     "title": "Confirm action",

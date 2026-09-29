@@ -9,25 +9,37 @@
   <span class="toolbar-title">FullTank</span>
   <span class="spacer"></span>
   <app-language-switcher/>
-  <button mat-button (click)="logout()">{{ 'auth.logout' | translate }}</button>
   <button mat-icon-button
           [attr.aria-label]="'notification-list.title' | translate"
           routerLink="/notification/notification-list"
           [matBadge]="notifications.unreadCount() || null"
           matBadgeColor="warn"
+          matBadgeSize="small"
           [matTooltip]="'notification-list.title' | translate"
-          class="notif-btn">
-    <svg width="20" height="20" viewBox="0 0 24 24"
-         fill="black"
-         stroke="black"
-         stroke-width="2"
-         stroke-linecap="round"
-         stroke-linejoin="round">
-
-      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
-      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-    </svg>
+          class="toolbar-action">
+    <mat-icon>notifications</mat-icon>
   </button>
+  <button mat-icon-button
+          [matMenuTriggerFor]="userMenu"
+          [attr.aria-label]="'profile.user' | translate"
+          [matTooltip]="'profile.user' | translate"
+          class="toolbar-action toolbar-user">
+    <mat-icon>account_circle</mat-icon>
+  </button>
+  <mat-menu #userMenu="matMenu" xPosition="before" class="user-menu">
+    <div class="user-menu-head" (click)="$event.stopPropagation()">
+      <span class="user-menu-avatar" aria-hidden="true"><mat-icon>person</mat-icon></span>
+      <span class="user-menu-name">{{ iam.session()?.username }}</span>
+    </div>
+    <button mat-menu-item routerLink="/profile">
+      <mat-icon>manage_accounts</mat-icon>
+      <span>{{ 'profile.account-settings' | translate }}</span>
+    </button>
+    <button mat-menu-item (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      <span>{{ 'auth.logout' | translate }}</span>
+    </button>
+  </mat-menu>
 </mat-toolbar>
 
 <!-- BODY CON SIDENAV -->

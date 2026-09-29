@@ -1,7 +1,6 @@
 {
   "nav": {
     "dashboard": "Tablero",
-    "profile": "Perfil",
     "equipment": "Clientes y tanques",
     "inventory": "Inventario",
     "ordering": "Pedidos",
@@ -26,8 +25,10 @@
     "tab-account": "Cuenta",
     "tab-company": "Empresa",
     "tab-organizations": "Organizaciones",
-    "close": "Cerrar",
-    "ruc-invalid": "El RUC debe tener 11 dígitos"
+    "account-settings": "Configuración de cuenta",
+    "ruc-invalid": "El RUC debe tener 11 dígitos",
+    "rating": "Calificación",
+    "rating-readonly": "La asigna la plataforma; no se puede editar."
   },
   "inventory": {
     "products": "Productos",
@@ -96,7 +97,11 @@
     "last-position-at": "Última posición",
     "load-state": "Estado de carga",
     "load-milestone": "Hito de carga",
-    "load-volume": "Volumen cargado"
+    "load-volume": "Volumen cargado",
+    "latitude-range": "La latitud debe estar entre -90 y 90.",
+    "longitude-range": "La longitud debe estar entre -180 y 180.",
+    "radius-positive": "El radio debe ser mayor que 0.",
+    "geofence-once": "Una entrega admite una sola geocerca y no se puede editar después."
   },
   "analytics": {
     "buyer-title": "Panel de compras",
@@ -556,7 +561,8 @@
     "address": "Dirección",
     "phone": "Teléfono",
     "sector": "Sector comercial",
-    "fuel-types": "Combustibles ofrecidos (separados por comas)",
+    "fuel-types": "Combustibles que ofreces",
+      "fuel-types-required": "Selecciona al menos un tipo de combustible.",
     "description": "Descripción",
     "new-password": "Nueva contraseña",
     "forgot": "¿Olvidaste tu contraseña?",
@@ -613,15 +619,22 @@
     "low-level": "Nivel bajo (%)",
     "hysteresis": "Histéresis (%)",
     "target-level": "Nivel objetivo (%)",
-    "provider-id": "ID del distribuidor",
-    "product-id": "ID del producto",
     "auto-generate": "Permitir generación automática de solicitudes",
     "save-policy": "Guardar política",
     "episodes": "Episodios de reposición",
     "request-emitted": "Solicitud generada",
     "no-episodes": "Sin episodios de reposición",
     "missing-company": "El comprador no tiene un ID de empresa en la sesión; no se puede asociar el cliente a una orden.",
-    "request-failed": "No se pudo completar la solicitud."
+    "request-failed": "No se pudo completar la solicitud.",
+    "provider": "Distribuidor",
+    "product": "Producto de combustible",
+    "not-set": "Sin definir",
+    "auto-needs-both": "Elige un distribuidor y un producto para permitir solicitudes automáticas.",
+    "err-low-range": "El nivel bajo debe ser mayor que 0 y menor que 100.",
+    "err-hysteresis-positive": "La histéresis debe ser mayor que 0.",
+    "err-low-plus-hysteresis": "El nivel bajo más la histéresis no puede superar 100.",
+    "err-target-range": "El nivel objetivo debe ser mayor que 0 y como máximo 100.",
+    "policy-saved": "Política guardada."
   },
   "notification-type": {
     "new_request": "Nueva solicitud",
@@ -714,7 +727,8 @@
     "min-value": "Valor mínimo: {{n}}",
     "email": "Formato de correo inválido",
     "phone": "Formato de teléfono inválido",
-    "positive": "El valor debe ser mayor que 0"
+    "positive": "El valor debe ser mayor que 0",
+    "max-length": "La longitud máxima es {{n}}"
   },
   "confirm": {
     "title": "Confirmar acción",
