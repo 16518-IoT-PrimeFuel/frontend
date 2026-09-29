@@ -11,7 +11,7 @@ import { MatChip, MatChipSet } from '@angular/material/chips';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatError } from '@angular/material/input';
 import { MatTooltip } from '@angular/material/tooltip';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FulfillmentApi } from '../../../../fulfillment/infrastructure/fulfillment-api';
 import { Driver } from '../../../../fulfillment/domain/model/driver.entity';
@@ -19,7 +19,7 @@ import { Tanker } from '../../../../fulfillment/domain/model/tanker.entity';
 import { HttpErrorResponse } from '@angular/common/http';
 import { OrderingApi, Payment, PaymentMethod } from '../../../infrastructure/ordering-api';
 
-@Component({ selector: 'app-order-detail', imports: [DatePipe, DecimalPipe, FormsModule, TranslatePipe, MatButton, MatIconButton, MatIcon, MatCard, MatCardContent, MatChip, MatChipSet, MatProgressSpinner, MatError, MatTooltip], templateUrl: './order-detail.html', styleUrl: './order-detail.css' })
+@Component({ selector: 'app-order-detail', imports: [CurrencyPipe, DatePipe, DecimalPipe, FormsModule, TranslatePipe, MatButton, MatIconButton, MatIcon, MatCard, MatCardContent, MatChip, MatChipSet, MatProgressSpinner, MatError, MatTooltip], templateUrl: './order-detail.html', styleUrl: './order-detail.css' })
 export class OrderDetail {
   readonly store = inject(OrderingStore);
   private readonly iam = inject(IamStore);
@@ -29,6 +29,7 @@ export class OrderDetail {
   private readonly fulfillment = inject(FulfillmentApi);
   private readonly api = inject(OrderingApi);
   readonly assigning = signal(false);
+  readonly companyName = signal<string | null>(null);
   readonly drivers = signal<Driver[]>([]);
   readonly tankers = signal<Tanker[]>([]);
   driverId: number | null = null;
@@ -47,9 +48,11 @@ export class OrderDetail {
   constructor() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (id > 0) this.store.loadOrder(id);
+    this.store.loadNames();
     effect(() => {
       const order = this.order();
-      if (!order || order.status !== 'PENDING_PAYMENT' || this.paymentOrderLoaded === order.id) return;
+      if (order && this.isBuyer && this.companyName() === null) this.api.buyerCompany(order.companyId).subscribe({ next: company => this.companyName.set(company.name), error: () => undefined });
+      if (!order || !['PENDING_PAYMENT', 'PAID', 'IN_PROGRESS', 'DELIVERED'].includes(order.status) || this.paymentOrderLoaded === order.id) return;
       this.paymentOrderLoaded = order.id;
       this.paymentLoading.set(true);
       this.api.paymentForOrder(order.id).subscribe({
@@ -98,10 +101,10 @@ export class OrderDetail {
     });
   }
   assign(orderId: number): void {
-    if (!this.driverId || !this.tankerId || (!!this.windowStart !== !!this.windowEnd)) return;
+    if (!this.driverId || !this.tankerId || !this.windowStart || !this.windowEnd) return;
     this.assignmentError = '';
     this.fulfillment.assignDelivery({ commandId: crypto.randomUUID(), orderId, driverId: this.driverId, tankerId: this.tankerId,
-      ...(this.windowStart ? { windowStart: new Date(this.windowStart).toISOString(), windowEnd: new Date(this.windowEnd).toISOString() } : {}),
+      windowStart: new Date(this.windowStart).toISOString(), windowEnd: new Date(this.windowEnd).toISOString(),
       scheduledDate: this.order()?.scheduledDate ?? undefined }).subscribe({
       next: result => { this.assigning.set(false); this.router.navigate(['/fulfillment/delivery-detail', result.deliveryId]); },
       error: error => this.assignmentError = error?.error?.message ?? 'fulfillment.assignment-failed',

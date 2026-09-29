@@ -1,9 +1,24 @@
-<h1 class="title">{{ 'order-list.title' | translate }}</h1>
-@if (store.loading()) { <p>{{ 'common.loading' | translate }}</p> }
-@if (store.error()) { <p>{{ store.error() | translate }}</p> }
-<div class="filters">
-  <mat-form-field appearance="outline"><mat-label>{{ 'order-list.search-id' | translate }}</mat-label><input matInput [ngModel]="search()" (ngModelChange)="search.set($event)"></mat-form-field>
-  <mat-form-field appearance="outline"><mat-label>{{ 'order-list.filter-status' | translate }}</mat-label><mat-select [ngModel]="status()" (ngModelChange)="status.set($event)"><mat-option value="">{{ 'order-list.all-statuses' | translate }}</mat-option>@for (value of statuses; track value) { <mat-option [value]="value">{{ 'order-status.' + value.toLowerCase() | translate }}</mat-option> }</mat-select></mat-form-field>
+<header class="dl-head"><h1>{{ 'order-list.title' | translate }}</h1></header>
+@if (store.error()) { <p class="dl-error" role="alert">{{ store.error() | translate }}</p> }
+<div class="dl-toolbar">
+  <mat-form-field appearance="outline" class="dl-search" subscriptSizing="dynamic"><mat-label>{{ 'order-list.search-id' | translate }}</mat-label><input matInput type="search" inputmode="numeric" [ngModel]="search()" (ngModelChange)="search.set($event)"></mat-form-field>
+  <div class="dl-chips" role="group" [attr.aria-label]="'order-list.filter-status' | translate">
+    <button type="button" class="dl-chip" [attr.aria-pressed]="!status()" (click)="status.set('')">{{ 'order-list.all-statuses' | translate }} <span>{{ store.orders().length }}</span></button>
+    @for (item of counts(); track item.value) { <button type="button" class="dl-chip" [attr.aria-pressed]="status() === item.value" (click)="status.set(item.value)">{{ 'order-status.' + item.value.toLowerCase() | translate }} <span>{{ item.count }}</span></button> }
+  </div>
 </div>
-<table><thead><tr><th>{{ 'order-list.id' | translate }}</th><th>{{ 'order-list.request' | translate }}</th><th>{{ 'order-list.quantity' | translate }}</th><th>{{ 'order-list.total' | translate }}</th><th>{{ 'order-list.status' | translate }}</th><th>{{ 'order-list.actions' | translate }}</th></tr></thead>
-<tbody>@for (order of filtered(); track order.id) { <tr><td>{{ order.id }}</td><td>{{ order.requestId }}</td><td>{{ order.requestedQuantity }}</td><td>{{ order.totalPrice | currency:'PEN':'symbol':'1.2-2' }}</td><td><mat-chip-set><mat-chip>{{ 'order-status.' + order.status.toLowerCase() | translate }}</mat-chip></mat-chip-set></td><td><button mat-button (click)="open(order.id)">{{ 'order-list.view' | translate }}</button></td></tr> } @empty { <tr><td colspan="6">{{ 'order-list.empty' | translate }}</td></tr> }</tbody></table>
+@if (store.loading() && !store.orders().length) { <p role="status">{{ 'common.loading' | translate }}</p> }
+@else if (!filtered().length) {
+  <div class="dl-empty"><p>{{ (store.orders().length ? 'order-list.no-match' : 'order-list.empty') | translate }}</p>@if (store.orders().length) { <button mat-stroked-button (click)="clear()">{{ 'order-list.clear' | translate }}</button> }</div>
+} @else {
+  <div class="dl-wrap"><table class="dl-table"><thead><tr><th>{{ 'order-list.id' | translate }}</th><th>{{ 'order-list.provider' | translate }}</th><th>{{ 'order-list.product' | translate }}</th><th class="num">{{ 'order-list.quantity' | translate }}</th><th class="num">{{ 'order-list.total' | translate }}</th><th>{{ 'order-list.status' | translate }}</th></tr></thead>
+  <tbody>@for (order of filtered(); track order.id) {
+    <tr class="link" (click)="open(order.id)">
+      <td [attr.data-label]="'order-list.id' | translate"><a [routerLink]="['/ordering/order-detail', order.id]" (click)="$event.stopPropagation()">#{{ order.id }}</a></td>
+      <td [attr.data-label]="'order-list.provider' | translate">{{ store.providerNames()[order.providerId] ?? order.providerId }}</td>
+      <td [attr.data-label]="'order-list.product' | translate">{{ store.productNames()[order.fuelProductId] ?? order.fuelProductId }}</td>
+      <td class="num" [attr.data-label]="'order-list.quantity' | translate">{{ order.requestedQuantity }}</td>
+      <td class="num" [attr.data-label]="'order-list.total' | translate">{{ order.totalPrice | currency:'PEN':'S/':'1.2-2' }}</td>
+      <td [attr.data-label]="'order-list.status' | translate"><span class="dl-badge st-{{ order.status.toLowerCase() }}">{{ 'order-status.' + order.status.toLowerCase() | translate }}</span></td>
+    </tr> }</tbody></table></div>
+}

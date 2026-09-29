@@ -38,5 +38,8 @@ export class OrderingApi {
   customers(): Observable<Customer[]> { return this.http.get<Customer[]>(`${this.base}/customers`); }
   tanks(): Observable<Tank[]> { return this.http.get<Tank[]>(`${this.base}/tanks`); }
   providers(): Observable<{ id: number; name: string }[]> { return this.http.get<{ id: number; name: string }[]>(`${this.base}/provider-companies`); }
+  provider(id: number): Observable<{ id: number; name: string }> { return this.http.get<{ id: number; name: string }>(`${this.base}/provider-companies/${id}`); }
+  buyerCompany(id: number): Observable<{ id: number; name: string }> { return this.http.get<{ id: number; name: string }>(`${this.base}/buyer-companies/${id}`); }
+  allProducts(): Observable<FuelProduct[]> { return this.http.get<FuelProduct[]>(`${this.base}/fuel-products`); }
   products(providerId: number): Observable<FuelProduct[]> { return this.http.get<FuelProduct[]>(`${this.base}/fuel-products/provider/${providerId}`); }
 }

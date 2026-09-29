@@ -27,19 +27,19 @@
       <div class="grid">
         <div class="item">
           <label>{{ 'order-detail.request-id' | translate }}</label>
-          <span>{{ o.requestId }}</span>
+          <span>{{ o.requestId ?? '—' }}</span>
         </div>
         <div class="item">
           <label>{{ 'order-detail.client' | translate }}</label>
-          <span>{{ o.companyId }}</span>
+          <span>{{ companyName() ?? o.companyId }}</span>
         </div>
         <div class="item">
           <label>{{ 'order-detail.provider' | translate }}</label>
-          <span>{{ o.providerId }}</span>
+          <span>{{ store.providerNames()[o.providerId] ?? o.providerId }}</span>
         </div>
         <div class="item">
           <label>{{ 'order-detail.product' | translate }}</label>
-          <span>{{ o.fuelProductId }}</span>
+          <span>{{ store.productNames()[o.fuelProductId] ?? o.fuelProductId }}</span>
         </div>
         <div class="item">
           <label>{{ 'order-detail.quantity' | translate }}</label>
@@ -61,19 +61,21 @@
         @if (!isBuyer && (o.status === 'PENDING' || o.status === 'CONFIRMED')) { <button mat-raised-button color="primary" (click)="openAssignment()">{{ 'fulfillment.assign' | translate }}</button> }
         @if (o.status === 'PENDING' || o.status === 'CONFIRMED') { <button mat-button color="warn" (click)="cancelOrder(o.id)">{{ 'order-detail.cancel' | translate }}</button> }
       </div>
-      @if (o.status === 'PENDING_PAYMENT') {
+      @if (['PENDING_PAYMENT', 'PAID', 'IN_PROGRESS', 'DELIVERED'].includes(o.status)) {
         <section class="payment">
           <h3>{{ 'order-detail.payment' | translate }}</h3>
           @if (paymentLoading()) { <mat-spinner diameter="28"></mat-spinner> }
           @if (payment(); as p) {
             <p>{{ 'order-detail.payment-status' | translate }}: {{ 'payment-status.' + p.status.toLowerCase() | translate }}</p>
             <p>{{ 'order-detail.payment-method' | translate }}: {{ 'order-detail.method-' + p.paymentMethod.toLowerCase() | translate }}</p>
+            <p>{{ 'order-detail.payment-amount' | translate }}: {{ p.amount | currency:'PEN':'S/':'1.2-2' }}</p>
+            @if (p.paidAt) { <p>{{ 'order-detail.paid-at' | translate }}: {{ p.paidAt | date:'medium' }}</p> }
             @if (p.transactionReference) { <p>{{ 'order-detail.transaction-reference' | translate }}: {{ p.transactionReference }}</p> }
             @if (isBuyer && p.status === 'PENDING') {
               <label>{{ 'order-detail.transaction-reference' | translate }} <input [(ngModel)]="transactionReference" required></label>
               <button mat-raised-button color="primary" [disabled]="paying() || !transactionReference.trim()" (click)="completePayment(o.id)">{{ 'order-detail.complete-payment' | translate }}</button>
             }
-          } @else if (!paymentLoading() && isBuyer) {
+          } @else if (!paymentLoading() && isBuyer && o.status === 'PENDING_PAYMENT') {
             <label>{{ 'order-detail.payment-method' | translate }}
               <select [(ngModel)]="paymentMethod">
                 <option value="BANK_TRANSFER">{{ 'order-detail.method-bank_transfer' | translate }}</option>
@@ -92,10 +94,10 @@
           <h3>{{ 'fulfillment.assign' | translate }}</h3>
           <label>{{ 'fulfillment.driver' | translate }} <select [(ngModel)]="driverId"><option [ngValue]="null">—</option>@for (driver of drivers(); track driver.id) { <option [ngValue]="driver.id">{{ driver.firstName }} {{ driver.lastName }}</option> }</select></label>
           <label>{{ 'fulfillment.tanker' | translate }} <select [(ngModel)]="tankerId"><option [ngValue]="null">—</option>@for (tanker of tankers(); track tanker.id) { <option [ngValue]="tanker.id">{{ tanker.licensePlate }} · {{ tanker.capacity }}</option> }</select></label>
-          <label>{{ 'fulfillment.window-start' | translate }} <input type="datetime-local" [(ngModel)]="windowStart"></label>
-          <label>{{ 'fulfillment.window-end' | translate }} <input type="datetime-local" [(ngModel)]="windowEnd"></label>
+          <label>{{ 'fulfillment.window-start' | translate }} <input type="datetime-local" required [(ngModel)]="windowStart"></label>
+          <label>{{ 'fulfillment.window-end' | translate }} <input type="datetime-local" required [(ngModel)]="windowEnd"></label>
           @if (assignmentError) { <p class="error">{{ assignmentError | translate }}</p> }
-          <button mat-raised-button color="primary" [disabled]="!driverId || !tankerId || (!!windowStart !== !!windowEnd)" (click)="assign(o.id)">{{ 'fulfillment.submit-assignment' | translate }}</button>
+          <button mat-raised-button color="primary" [disabled]="!driverId || !tankerId || !windowStart || !windowEnd" (click)="assign(o.id)">{{ 'fulfillment.submit-assignment' | translate }}</button>
         </section>
       }
     </mat-card-content>

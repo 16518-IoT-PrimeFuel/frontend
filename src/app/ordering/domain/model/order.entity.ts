@@ -2,7 +2,7 @@ export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'DISPATCHED' | 'PENDING_PAYM
 
 export interface Order {
   id: number;
-  requestId: number;
+  requestId: number | null;
   companyId: number;
   providerId: number;
   fuelProductId: number;
