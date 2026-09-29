@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -20,6 +21,7 @@ import { IamStore } from '../../../../iam/application/iam.store';
   selector: 'app-driver-list',
   standalone: true,
   imports: [
+    MatDialogModule,
     CommonModule,
     MatTableModule,
     MatButtonModule,
@@ -34,6 +36,8 @@ import { IamStore } from '../../../../iam/application/iam.store';
   styleUrl: './driver-list.css',
 })
 export class DriverList implements OnInit {
+  private readonly dialog = inject(MatDialog);
+  @ViewChild('confirmDialog') private confirmDialog!: TemplateRef<unknown>;
   protected readonly store = inject(FulfillmentStore);
 
 
@@ -64,7 +68,9 @@ export class DriverList implements OnInit {
   }
 
   protected onToggleActive(driverId: number, active: boolean): void {
-    this.store.updateDriverStatus(driverId, { status: active ? 'INACTIVE' : 'AVAILABLE' });
+    const apply = () => this.store.updateDriverStatus(driverId, { status: active ? 'INACTIVE' : 'AVAILABLE' });
+    if (active) this.dialog.open(this.confirmDialog).afterClosed().subscribe((ok) => ok && apply());
+    else apply();
   }
 
   protected getStatusClass(status: string): string {
