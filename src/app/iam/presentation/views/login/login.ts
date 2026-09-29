@@ -15,14 +15,16 @@ export class Login {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   readonly error = signal('');
+  readonly sending = signal(false);
   username = '';
   password = '';
 
   submit(): void {
     this.error.set('');
+    this.sending.set(true);
     this.iam.signIn(this.username, this.password).subscribe({
       next: () => void this.router.navigateByUrl(this.route.snapshot.queryParamMap.get('returnUrl') || (this.iam.role() === 'ADMIN' ? '/admin' : '/dashboard')),
-      error: (error) => this.error.set(displayAuthError(error)),
+      error: (error) => { this.error.set(displayAuthError(error)); this.sending.set(false); },
     });
   }
 }

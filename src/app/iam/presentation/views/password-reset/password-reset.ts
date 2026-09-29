@@ -17,17 +17,19 @@ export class PasswordReset {
   readonly mode = this.route.snapshot.queryParamMap.has('token') ? 'confirm' : 'request';
   readonly message = signal('');
   readonly error = signal('');
+  readonly sending = signal(false);
   email = '';
   password = '';
 
   submit(): void {
     this.error.set('');
+    this.sending.set(true);
     const request = this.mode === 'confirm'
       ? this.api.confirmPasswordReset(this.route.snapshot.queryParamMap.get('token') ?? '', this.password)
       : this.api.requestPasswordReset(this.email);
     request.subscribe({
-      next: () => this.message.set(this.mode === 'confirm' ? 'auth.reset.done' : 'auth.reset.sent'),
-      error: (error) => this.error.set(displayAuthError(error)),
+      next: () => { this.message.set(this.mode === 'confirm' ? 'auth.reset.done' : 'auth.reset.sent'); this.sending.set(false); },
+      error: (error) => { this.error.set(displayAuthError(error)); this.sending.set(false); },
     });
   }
 
