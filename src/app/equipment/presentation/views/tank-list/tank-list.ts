@@ -9,6 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { EquipmentStore } from '../../../application/equipment.store';
+import { FUEL_TYPES } from '../../../../inventory/domain/model/fuel-product.entity';
 
 @Component({
   selector: 'app-tank-list', standalone: true,
@@ -48,9 +49,9 @@ import { EquipmentStore } from '../../../application/equipment.store';
           <form #tankForm="ngForm" (ngSubmit)="addTank()">
             <mat-form-field><mat-label>{{ 'equipment.name' | translate }}</mat-label><input matInput name="tankName" [(ngModel)]="tank.name" required maxlength="150"></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.site' | translate }}</mat-label><mat-select name="siteId" [(ngModel)]="tank.siteId"><mat-option [value]="null">—</mat-option>@for (site of store.sites(); track site.id) { <mat-option [value]="site.id">{{ site.name }}</mat-option> }</mat-select></mat-form-field>
-            <mat-form-field><mat-label>{{ 'equipment.fuel-type' | translate }}</mat-label><input matInput name="fuelType" [(ngModel)]="tank.fuelType"></mat-form-field>
+            <mat-form-field><mat-label>{{ 'equipment.fuel-type' | translate }}</mat-label><mat-select name="fuelType" [(ngModel)]="tank.fuelType"><mat-option value="">—</mat-option>@for (type of fuelTypes; track type) { <mat-option [value]="type">{{ 'fuel-type.' + type.toLowerCase() | translate }}</mat-option> }</mat-select></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.capacity' | translate }}</mat-label><input matInput type="number" min="0.01" name="capacity" [(ngModel)]="tank.capacity" required></mat-form-field>
-            <mat-form-field><mat-label>{{ 'equipment.unit' | translate }}</mat-label><input matInput name="unit" [(ngModel)]="tank.unit"></mat-form-field>
+            <mat-form-field><mat-label>{{ 'equipment.unit' | translate }}</mat-label><mat-select name="unit" [(ngModel)]="tank.unit" required><mat-option value="LITERS">{{ 'unit.liters' | translate }}</mat-option><mat-option value="GALLONS">{{ 'unit.gallons' | translate }}</mat-option></mat-select></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.initial-level' | translate }}</mat-label><input matInput type="number" min="0" [max]="tank.capacity" name="initialLevel" [(ngModel)]="tank.initialLevel"></mat-form-field>
             <button mat-flat-button color="primary" [disabled]="tankForm.invalid">{{ 'equipment.create-tank' | translate }}</button>
           </form>
@@ -68,7 +69,8 @@ export class TankList implements OnInit {
   protected selectedCustomerId: number | null = null;
   protected customer = { name: '', ruc: '', address: '', contactEmail: '', phone: '' };
   protected site = { name: '', address: '' };
-  protected tank = { name: '', siteId: null as number | null, fuelType: '', capacity: 0, unit: 'L', initialLevel: 0 };
+  protected tank = { name: '', siteId: null as number | null, fuelType: '', capacity: 0, unit: 'LITERS', initialLevel: 0 };
+  protected readonly fuelTypes = FUEL_TYPES;
   protected get customerTanks() { return this.store.tanks().filter((tank) => tank.customerAccountId === this.selectedCustomerId); }
 
   ngOnInit(): void { this.store.load(); }
@@ -77,6 +79,6 @@ export class TankList implements OnInit {
   protected addSite(): void { if (this.selectedCustomerId === null) return; this.store.createSite(this.selectedCustomerId, this.site, () => this.site = { name: '', address: '' }); }
   protected addTank(): void {
     if (this.selectedCustomerId === null) return;
-    this.store.createTank({ customerAccountId: this.selectedCustomerId, ...this.tank }, () => this.tank = { name: '', siteId: null, fuelType: '', capacity: 0, unit: 'L', initialLevel: 0 });
+    this.store.createTank({ customerAccountId: this.selectedCustomerId, ...this.tank }, () => this.tank = { name: '', siteId: null, fuelType: '', capacity: 0, unit: 'LITERS', initialLevel: 0 });
   }
 }

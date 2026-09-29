@@ -55,9 +55,9 @@ export class TankerForm implements OnInit {
 
   constructor() {
     this.tankerForm = this.fb.group({
-      licensePlate: ['', [Validators.required, Validators.minLength(6)]],
-      brand: ['', [Validators.required, Validators.minLength(2)]],
-      model: ['', [Validators.required, Validators.minLength(2)]],
+      licensePlate: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(20)]],
+      brand: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
+      model: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
       capacity: [0, [Validators.required, Validators.min(1)]],
       unit: ['LITERS', Validators.required],
       status: ['AVAILABLE', Validators.required],
@@ -123,6 +123,7 @@ export class TankerForm implements OnInit {
     const control = this.tankerForm.get(field);
     if (control?.hasError('required')) return this.translate.instant('validation.required');
     if (control?.hasError('minlength')) return this.translate.instant('validation.min-length', { n: control.errors?.['minlength'].requiredLength });
+    if (control?.hasError('maxlength')) return this.translate.instant('validation.max-length', { n: control.errors?.['maxlength'].requiredLength });
     if (control?.hasError('min')) return this.translate.instant('validation.positive');
     return '';
   }
