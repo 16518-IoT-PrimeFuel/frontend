@@ -1,13 +1,13 @@
 <header class="head">
   <span class="avatar" aria-hidden="true"><mat-icon>person</mat-icon></span>
   <div class="who">
-    <h2 mat-dialog-title>{{ 'profile.title' | translate }}</h2>
+    <h1 class="title">{{ 'profile.title' | translate }}</h1>
     @if (user()) { <p class="sub">{{ user()!.username }}</p> }
   </div>
-  <button mat-icon-button mat-dialog-close [attr.aria-label]="'profile.close' | translate"><mat-icon>close</mat-icon></button>
 </header>
 
-<mat-dialog-content class="body">
+<div class="panel">
+<section class="body">
   @if (loading()) {
     <div class="skeleton" aria-busy="true" [attr.aria-label]="'profile.loading' | translate"><span></span><span></span><span></span></div>
   } @else if (!user()) {
@@ -74,10 +74,14 @@
             <input matInput name="address" #address="ngModel" [(ngModel)]="provider.address" required>
             <mat-error>{{ 'validation.required' | translate }}</mat-error>
           </mat-form-field>
+          <div class="full" role="group" [attr.aria-label]="'auth.fuel-types' | translate">
+            <span class="fuel-label">{{ 'auth.fuel-types' | translate }}</span>
+            <div class="dl-chips">@for (type of fuelTypeOptions; track type) { <button type="button" class="dl-chip" [attr.aria-pressed]="fuelTypes.includes(type)" (click)="toggleFuelType(type)">{{ 'fuel-type.' + type.toLowerCase() | translate }}</button> }</div>
+          </div>
           <mat-form-field appearance="outline" class="full">
-            <mat-label>{{ 'auth.fuel-types' | translate }}</mat-label>
-            <input matInput name="fuelTypes" #fuelTypes="ngModel" [(ngModel)]="fuelTypes" required>
-            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+            <mat-label>{{ 'profile.rating' | translate }}</mat-label>
+            <input matInput name="rating" [value]="provider.rating ?? '—'" readonly>
+            <mat-hint>{{ 'profile.rating-readonly' | translate }}</mat-hint>
           </mat-form-field>
           <mat-form-field appearance="outline" class="full">
             <mat-label>{{ 'auth.description' | translate }}</mat-label>
@@ -89,19 +93,19 @@
       <mat-tab [label]="'profile.tab-organizations' | translate">
         @if (organizations().length) {
           <ul class="orgs">@for (org of organizations(); track org.id) { <li><span class="org-name">{{ org.name }}</span><span class="chip">{{ org.type }}</span><span class="chip">{{ org.role }}</span></li> }</ul>
-        } @else { <p class="empty">{{ 'profile.no-organizations' | translate }}</p> }
+        } @else { <div class="empty"><mat-icon aria-hidden="true">apartment</mat-icon><p>{{ 'profile.no-organizations' | translate }}</p></div> }
       </mat-tab>
     </mat-tab-group>
   }
-</mat-dialog-content>
+</section>
 
-<mat-dialog-actions class="foot">
+@if (user() && tab() === 1) {
+<footer class="foot">
   <p class="status" aria-live="polite">
     @if (error() && user()) { <span class="error" role="alert">{{ error() | translate }}</span> }
     @else if (saved()) { <span class="ok">{{ 'profile.saved' | translate }}</span> }
   </p>
-  <button mat-button mat-dialog-close>{{ 'profile.close' | translate }}</button>
-  @if (user() && tab() === 1) {
-    <button mat-flat-button type="button" [disabled]="!canSave" (click)="save()">{{ (saving() ? 'profile.saving' : 'profile.save') | translate }}</button>
-  }
-</mat-dialog-actions>
+  <button mat-flat-button type="button" [disabled]="!canSave" (click)="save()">{{ (saving() ? 'profile.saving' : 'profile.save') | translate }}</button>
+</footer>
+}
+</div>

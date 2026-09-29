@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { IamStore } from '../../../application/iam.store';
 import { displayAuthError } from '../../../infrastructure/auth-error';
+import { FUEL_TYPES } from '../../../../inventory/domain/model/fuel-product.entity';
 
 @Component({
   standalone: true,
@@ -22,15 +23,19 @@ export class Register {
   address = '';
   phone = '';
   sector = '';
-  fuelTypes = 'DIESEL';
+  readonly fuelTypeOptions = FUEL_TYPES;
+  fuelTypes: string[] = ['DIESEL'];
   description = '';
 
+  toggleFuelType(type: string): void { this.fuelTypes = this.fuelTypes.includes(type) ? this.fuelTypes.filter((value) => value !== type) : [...this.fuelTypes, type]; }
+
   submit(): void {
+    if (this.role === 'PROVIDER' && !this.fuelTypes.length) return;
     this.error.set('');
     this.iam.signUp({
       role: this.role, username: this.username, password: this.password,
       name: this.name, ruc: this.ruc, address: this.address, phone: this.phone,
-      sector: this.sector, fuelTypesOffered: this.fuelTypes.split(',').map((value) => value.trim()).filter(Boolean),
+      sector: this.sector, fuelTypesOffered: this.fuelTypes,
       description: this.description,
     }).subscribe({
       next: () => void this.router.navigate(['/dashboard']),
