@@ -43,7 +43,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: PasswordReset, title: `Password recovery - ${baseTitle}` },
   { path: 'reset-password', component: PasswordReset, title: `Reset password - ${baseTitle}` },
   { path: 'access-denied', component: AccessDenied, title: `Access denied - ${baseTitle}` },
-  { path: 'profile', canActivate: [authGuard, supportedRoleGuard], loadComponent: () => import('./iam/presentation/views/profile/profile').then((m) => m.Profile), title: `Profile - ${baseTitle}` },
+  { path: 'profile', canActivate: [authGuard, supportedRoleGuard], loadComponent: () => import('./shared/presentation/component/layout/layout').then((m) => m.Layout), title: `Profile - ${baseTitle}`, children: [{ path: '', loadComponent: () => import('./iam/presentation/views/profile/profile').then((m) => m.Profile) }] },
   { path: 'about', loadComponent: about, title: `About - ${baseTitle}` },
   { path: 'fuel-products', canActivate: [authGuard, supportedRoleGuard], loadChildren: fuelProductRoutes },
   { path: 'fulfillment', canActivate: [authGuard, providerGuard], loadChildren: fulfillmentRoutes },
