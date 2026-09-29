@@ -21,7 +21,7 @@ export class RequestForm {
   readonly providers = signal<{id: number; name: string}[]>([]);
   readonly products = signal<FuelProduct[]>([]);
   readonly minDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-  readonly form = this.fb.nonNullable.group({ customerAccountId: [0, Validators.min(1)], tankId: [0, Validators.min(1)], providerId: [0, Validators.min(1)], fuelProductId: [0, Validators.min(1)], quantity: [1, [Validators.required, Validators.min(1)]], unit: ['LITERS', Validators.required], deliveryDate: [this.minDate, Validators.required], deliveryAddress: [''] });
+  readonly form = this.fb.nonNullable.group({ customerAccountId: [0, Validators.min(1)], tankId: [0], providerId: [0, Validators.min(1)], fuelProductId: [0, Validators.min(1)], quantity: [1, [Validators.required, Validators.min(1)]], unit: ['LITERS', Validators.required], deliveryDate: [this.minDate, Validators.required], deliveryAddress: ['', [Validators.required, Validators.maxLength(255)]] });
 
   constructor() {
     this.api.customers().subscribe(values => this.customers.set(values));
@@ -38,7 +38,7 @@ export class RequestForm {
   submit(): void {
     if (this.form.invalid) return;
     const { customerAccountId, tankId, providerId, fuelProductId, ...details } = this.form.getRawValue();
-    this.store.createRequest({ ...details, customerAccountId, tankId, providerId, fuelProductId }, () => this.router.navigate(['/ordering/request-list']).then());
+    this.store.createRequest({ ...details, customerAccountId, tankId: tankId || null, providerId, fuelProductId }, () => this.router.navigate(['/ordering/request-list']).then());
   }
   cancel(): void { this.router.navigate(['/ordering/request-list']).then(); }
 }

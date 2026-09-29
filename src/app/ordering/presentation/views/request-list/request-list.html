@@ -1,6 +1,7 @@
-<h1 class="title">{{ 'request-list.title' | translate }}</h1>
-@if (store.loading()) { <p>{{ 'common.loading' | translate }}</p> }
-@if (store.error()) { <p class="error">{{ store.error() | translate }}</p> }
+<header class="dl-head"><h1>{{ 'request-list.title' | translate }}</h1>@if (!store.isProvider()) { <button mat-raised-button color="primary" (click)="create()">{{ 'request-list.new' | translate }}</button> }</header>
+@if (store.loading() && !store.requests().length) { <p role="status">{{ 'common.loading' | translate }}</p> }
+@if (store.error()) { <p class="dl-error" role="alert">{{ store.error() | translate }}</p> }
+@if (store.notice()) { <p class="dl-notice" role="status">{{ store.notice() | translate }}</p> }
 @if (store.isProvider()) {
   <p>{{ 'request-list.provider-inbox-pending' | translate }}</p>
   <section aria-label="{{ 'request-list.provider-actions' | translate }}">
@@ -10,13 +11,28 @@
     <button mat-button color="warn" (click)="rejectById()" [disabled]="!providerRequestId || providerRequestId < 1 || !providerRejectReason.trim()">{{ 'request-list.reject-by-id' | translate }}</button>
   </section>
 } @else {
-  <button mat-raised-button color="primary" (click)="create()">{{ 'request-list.new' | translate }}</button>
-  <table><thead><tr><th>{{ 'request-list.id' | translate }}</th><th>{{ 'request-list.product' | translate }}</th><th>{{ 'request-list.quantity' | translate }}</th><th>{{ 'request-list.delivery-date' | translate }}</th><th>{{ 'request-list.status' | translate }}</th><th>{{ 'request-list.rejection-reason' | translate }}</th><th>{{ 'request-list.actions' | translate }}</th></tr></thead>
-    <tbody>@for (request of store.requests(); track request.id) { <tr>
-      <td>{{ request.id }}</td><td>{{ request.fuelProductId }}</td><td>{{ request.quantity }} {{ request.unit }}</td><td>{{ request.deliveryDate | date:'mediumDate' }}</td>
-      <td><mat-chip-set><mat-chip [class]="statusClass(request.status)">{{ 'request-status.' + request.status.toLowerCase() | translate }}</mat-chip>@if (request.source === 'AUTOMATIC') { <mat-chip>{{ 'request-list.automatic' | translate }}</mat-chip> }</mat-chip-set></td>
-      <td>{{ request.rejectionReason || '—' }}</td>
-      <td>@if (request.status === 'PENDING') { <button mat-button color="warn" (click)="cancel(request.id)">{{ 'request-list.cancel' | translate }}</button> }</td>
-    </tr> } @empty { <tr><td colspan="7">{{ 'request-list.empty' | translate }}</td></tr> }</tbody>
-  </table>
+  <div class="dl-toolbar">
+    <div class="dl-chips" role="group" [attr.aria-label]="'request-list.filter-status' | translate">
+      <button type="button" class="dl-chip" [attr.aria-pressed]="!status()" (click)="status.set('')">{{ 'request-list.all-statuses' | translate }} <span>{{ store.requests().length }}</span></button>
+      @for (item of counts(); track item.value) { <button type="button" class="dl-chip" [attr.aria-pressed]="status() === item.value" (click)="status.set(item.value)">{{ 'request-status.' + item.value.toLowerCase() | translate }} <span>{{ item.count }}</span></button> }
+    </div>
+  </div>
+  @if (!filtered().length && !store.loading()) {
+    <div class="dl-empty"><p>{{ (store.requests().length ? 'request-list.no-match' : 'request-list.empty') | translate }}</p>@if (store.requests().length) { <button mat-stroked-button (click)="status.set('')">{{ 'request-list.clear' | translate }}</button> } @else { <button mat-raised-button color="primary" (click)="create()">{{ 'request-list.new' | translate }}</button> }</div>
+  } @else if (filtered().length) {
+  <div class="dl-wrap"><table class="dl-table"><thead><tr><th>{{ 'request-list.id' | translate }}</th><th>{{ 'request-list.product' | translate }}</th><th>{{ 'request-list.provider' | translate }}</th><th class="num">{{ 'request-list.quantity' | translate }}</th><th class="num">{{ 'request-list.unit-price' | translate }}</th><th>{{ 'request-list.delivery-date' | translate }}</th><th>{{ 'request-list.address' | translate }}</th><th>{{ 'request-list.status' | translate }}</th><th>{{ 'request-list.order' | translate }}</th><th>{{ 'request-list.actions' | translate }}</th></tr></thead>
+    <tbody>@for (request of filtered(); track request.id) { <tr>
+      <td class="nw" [attr.data-label]="'request-list.id' | translate">#{{ request.id }}</td>
+      <td [attr.data-label]="'request-list.product' | translate">{{ store.productNames()[request.fuelProductId] ?? request.fuelProductId }}</td>
+      <td [attr.data-label]="'request-list.provider' | translate">{{ store.providerNames()[request.providerId] ?? request.providerId }}</td>
+      <td class="num nw" [attr.data-label]="'request-list.quantity' | translate">{{ request.quantity }} {{ request.unit }}</td>
+      <td class="num nw" [attr.data-label]="'request-list.unit-price' | translate">{{ request.unitPrice != null ? (request.unitPrice | currency:'PEN':'S/':'1.2-2') : '—' }}</td>
+      <td class="nw" [attr.data-label]="'request-list.delivery-date' | translate">{{ request.deliveryDate | date:'mediumDate' }}</td>
+      <td [attr.data-label]="'request-list.address' | translate">{{ request.deliveryAddress || '—' }}</td>
+      <td [attr.data-label]="'request-list.status' | translate"><span class="dl-badge st-{{ request.status.toLowerCase() }}">{{ 'request-status.' + request.status.toLowerCase() | translate }}</span>@if (request.source === 'AUTOMATIC') { <small>{{ 'request-list.automatic' | translate }}</small> }@if (request.rejectionReason) { <small>{{ 'request-list.rejection-reason' | translate }}: {{ request.rejectionReason }}</small> }</td>
+      <td class="nw" [attr.data-label]="'request-list.order' | translate">@if (request.orderId) { <a [routerLink]="['/ordering/order-detail', request.orderId]">#{{ request.orderId }}</a> } @else { — }</td>
+      <td class="nw" [attr.data-label]="'request-list.actions' | translate">@if (request.status === 'PENDING') { <button mat-button color="warn" (click)="cancel(request.id)">{{ 'request-list.cancel' | translate }}</button> }</td>
+    </tr> }</tbody>
+  </table></div>
+  }
 }
