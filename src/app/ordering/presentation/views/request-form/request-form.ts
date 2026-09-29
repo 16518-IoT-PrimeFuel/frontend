@@ -3,14 +3,14 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { MatButton } from '@angular/material/button';
-import { MatFormField, MatInput, MatLabel } from '@angular/material/input';
+import { MatError, MatFormField, MatInput, MatLabel } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { OrderingApi } from '../../../infrastructure/ordering-api';
 import { OrderingStore } from '../../../application/ordering.store';
 import { Customer, Tank } from '../../../../equipment/domain/model/equipment.entity';
 import { FuelProduct } from '../../../../inventory/domain/model/fuel-product.entity';
 
-@Component({ selector: 'app-request-form', imports: [TranslatePipe, ReactiveFormsModule, MatFormField, MatLabel, MatInput, MatButton, MatSelect, MatOption], templateUrl: './request-form.html', styleUrl: './request-form.css' })
+@Component({ selector: 'app-request-form', imports: [TranslatePipe, ReactiveFormsModule, MatFormField, MatLabel, MatError, MatInput, MatButton, MatSelect, MatOption], templateUrl: './request-form.html', styleUrl: './request-form.css' })
 export class RequestForm {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(OrderingApi);

@@ -48,7 +48,7 @@ export class NotificationStore {
   refreshUnreadCount(): void {
     this.api.getUnreadNotifications().subscribe({
       next: (items) => this.unread.set(items.length),
-      error: (error) => this.errorMessage.set(error.message || 'Failed to load unread notifications'),
+      error: (error) => this.errorMessage.set(error.message || 'errors.generic'),
     });
   }
 
@@ -73,7 +73,7 @@ export class NotificationStore {
       next: () => {
         this.list.update((items) => items.map((item) => { item.read = true; return item; }));
         this.unread.set(0);
-        this.successMessage.set('All notifications marked as read');
+        this.successMessage.set('notification-list.all-read');
         this.loading.set(false);
       },
       error: (error) => this.fail(error),
@@ -83,7 +83,7 @@ export class NotificationStore {
   clearMessages(): void { this.errorMessage.set(''); this.successMessage.set(''); }
 
   private fail(error: { message?: string }): void {
-    this.errorMessage.set(error.message || 'Failed to load notifications');
+    this.errorMessage.set(error.message || 'errors.generic');
     this.loading.set(false);
   }
 }

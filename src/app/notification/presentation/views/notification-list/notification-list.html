@@ -53,14 +53,14 @@
   @if (store.error()) {
     <div class="error-container">
       <mat-icon>error_outline</mat-icon>
-      <p>{{ store.error() }}</p>
+      <p>{{ store.error() | translate }}</p>
     </div>
   }
 
   @if (store.successMsg()) {
     <div class="success-container">
       <mat-icon>check_circle</mat-icon>
-      <p>{{ store.successMsg() }}</p>
+      <p>{{ store.successMsg() | translate }}</p>
     </div>
   }
 
