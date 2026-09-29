@@ -9,7 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FulfillmentStore } from '../../../application/fulfillment.store';
 import { Tanker } from '../../../domain/model/tanker.entity';
 @Component({
@@ -37,6 +37,7 @@ export class TankerForm implements OnInit {
     if (tanker && this.tankerForm) this.tankerForm.patchValue(tanker);
   });
   private readonly fb = inject(FormBuilder);
+  private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -64,6 +65,7 @@ export class TankerForm implements OnInit {
   }
 
   ngOnInit(): void {
+    this.store.clearMessages();
     this.tankerId = Number(this.route.snapshot.paramMap.get('id')) || null;
     this.isEditMode = !!this.tankerId;
 
@@ -119,10 +121,9 @@ export class TankerForm implements OnInit {
 
   protected getErrorMessage(field: string): string {
     const control = this.tankerForm.get(field);
-    if (control?.hasError('required')) return 'This field is required';
-    if (control?.hasError('minlength'))
-      return `Minimum length is ${control.errors?.['minlength'].requiredLength}`;
-    if (control?.hasError('min')) return 'Value must be greater than 0';
+    if (control?.hasError('required')) return this.translate.instant('validation.required');
+    if (control?.hasError('minlength')) return this.translate.instant('validation.min-length', { n: control.errors?.['minlength'].requiredLength });
+    if (control?.hasError('min')) return this.translate.instant('validation.positive');
     return '';
   }
 }

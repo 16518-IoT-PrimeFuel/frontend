@@ -33,7 +33,7 @@
   @if (store.error()) {
     <div class="error-container">
       <mat-icon>error_outline</mat-icon>
-      <p>{{ store.error() }}</p>
+      <p>{{ store.error() | translate }}</p>
     </div>
   }
 
@@ -107,3 +107,12 @@
     </table>
   </div>
 </div>
+
+<ng-template #confirmDialog>
+  <h2 mat-dialog-title>{{ 'confirm.title' | translate }}</h2>
+  <mat-dialog-content>{{ 'confirm.deactivate' | translate }}</mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [mat-dialog-close]="false">{{ 'confirm.cancel' | translate }}</button>
+    <button mat-flat-button color="warn" [mat-dialog-close]="true">{{ 'confirm.confirm' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>

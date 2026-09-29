@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -19,6 +20,7 @@ import { FulfillmentStore } from '../../../application/fulfillment.store';
   selector: 'app-tanker-list',
   standalone: true,
   imports: [
+    MatDialogModule,
     CommonModule,
     MatTableModule,
     MatButtonModule,
@@ -33,6 +35,8 @@ import { FulfillmentStore } from '../../../application/fulfillment.store';
   styleUrl: './tanker-list.css',
 })
 export class TankerList implements OnInit {
+  private readonly dialog = inject(MatDialog);
+  @ViewChild('confirmDialog') private confirmDialog!: TemplateRef<unknown>;
   protected readonly store = inject(FulfillmentStore);
 
 
@@ -62,7 +66,9 @@ export class TankerList implements OnInit {
   }
 
   protected onToggleActive(tankerId: number, active: boolean): void {
-    this.store.updateTankerStatus(tankerId, { status: active ? 'INACTIVE' : 'AVAILABLE' });
+    const apply = () => this.store.updateTankerStatus(tankerId, { status: active ? 'INACTIVE' : 'AVAILABLE' });
+    if (active) this.dialog.open(this.confirmDialog).afterClosed().subscribe((ok) => ok && apply());
+    else apply();
   }
 
   protected getStatusClass(status: string): string {

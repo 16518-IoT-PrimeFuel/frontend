@@ -73,11 +73,10 @@ export class TankList implements OnInit {
 
   ngOnInit(): void { this.store.load(); }
   protected selectCustomer(id: number): void { this.selectedCustomerId = id; this.store.loadSites(id); }
-  protected addCustomer(): void { this.store.createCustomer({ ...this.customer }); this.customer = { name: '', ruc: '', address: '', contactEmail: '', phone: '' }; }
-  protected addSite(): void { if (this.selectedCustomerId === null) return; this.store.createSite(this.selectedCustomerId, this.site); this.site = { name: '', address: '' }; }
+  protected addCustomer(): void { this.store.createCustomer({ ...this.customer }, () => this.customer = { name: '', ruc: '', address: '', contactEmail: '', phone: '' }); }
+  protected addSite(): void { if (this.selectedCustomerId === null) return; this.store.createSite(this.selectedCustomerId, this.site, () => this.site = { name: '', address: '' }); }
   protected addTank(): void {
     if (this.selectedCustomerId === null) return;
-    this.store.createTank({ customerAccountId: this.selectedCustomerId, ...this.tank });
-    this.tank = { name: '', siteId: null, fuelType: '', capacity: 0, unit: 'L', initialLevel: 0 };
+    this.store.createTank({ customerAccountId: this.selectedCustomerId, ...this.tank }, () => this.tank = { name: '', siteId: null, fuelType: '', capacity: 0, unit: 'L', initialLevel: 0 });
   }
 }
