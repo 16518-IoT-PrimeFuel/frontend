@@ -9,7 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FulfillmentStore } from '../../../application/fulfillment.store';
 import { Driver } from '../../../domain/model/driver.entity';
 @Component({
@@ -37,6 +37,7 @@ export class DriverForm implements OnInit {
     if (driver && this.driverForm) this.driverForm.patchValue(driver);
   });
   private readonly fb = inject(FormBuilder);
+  private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -59,6 +60,7 @@ export class DriverForm implements OnInit {
   }
 
   ngOnInit(): void {
+    this.store.clearMessages();
     this.driverId = Number(this.route.snapshot.paramMap.get('id')) || null;
     this.isEditMode = !!this.driverId;
 
@@ -116,11 +118,10 @@ export class DriverForm implements OnInit {
 
   protected getErrorMessage(field: string): string {
     const control = this.driverForm.get(field);
-    if (control?.hasError('required')) return 'This field is required';
-    if (control?.hasError('minlength'))
-      return `Minimum length is ${control.errors?.['minlength'].requiredLength}`;
-    if (control?.hasError('email')) return 'Invalid email format';
-    if (control?.hasError('pattern')) return 'Invalid phone format';
+    if (control?.hasError('required')) return this.translate.instant('validation.required');
+    if (control?.hasError('minlength')) return this.translate.instant('validation.min-length', { n: control.errors?.['minlength'].requiredLength });
+    if (control?.hasError('email')) return this.translate.instant('validation.email');
+    if (control?.hasError('pattern')) return this.translate.instant('validation.phone');
     return '';
   }
 }
