@@ -37,6 +37,13 @@
     </div>
   }
 
+  @if (store.successMsg()) {
+    <div class="success-container" role="status">
+      <mat-icon>check_circle</mat-icon>
+      <p>{{ store.successMsg() | translate }}</p>
+    </div>
+  }
+
   <div class="table-container mat-elevation-z2">
     <table mat-table [dataSource]="store.driverList()">
       <!-- Full Name Column -->

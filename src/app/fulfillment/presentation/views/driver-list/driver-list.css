@@ -92,3 +92,13 @@ mat-chip.inactive {
   align-items: center;
   gap: 12px;
 }
+
+.success-container {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
