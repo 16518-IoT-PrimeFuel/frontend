@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -21,6 +22,7 @@ import { IamStore } from '../../../../iam/application/iam.store';
   selector: 'app-product-inventory',
   standalone: true,
   imports: [
+    MatDialogModule,
     CommonModule,
     MatTableModule,
     MatButtonModule,
@@ -35,6 +37,8 @@ import { IamStore } from '../../../../iam/application/iam.store';
   styleUrl: './product-inventory.css',
 })
 export class ProductInventory implements OnInit {
+  private readonly dialog = inject(MatDialog);
+  @ViewChild('confirmDialog') private confirmDialog!: TemplateRef<unknown>;
   protected readonly store = inject(InventoryStore);
   protected readonly iam = inject(IamStore);
   protected readonly stockValues: Record<number, number> = {};
@@ -68,6 +72,6 @@ export class ProductInventory implements OnInit {
   }
 
   protected onDelete(productId: number): void {
-    this.store.deleteProduct(productId);
+    this.dialog.open(this.confirmDialog).afterClosed().subscribe((ok) => ok && this.store.deleteProduct(productId));
   }
 }

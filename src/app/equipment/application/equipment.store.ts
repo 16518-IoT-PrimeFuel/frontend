@@ -21,11 +21,12 @@ export class EquipmentStore {
     this.sites.set([]);
     this.api.sites(customerId).subscribe({ next: (rows) => this.sites.set(rows), error: (e) => this.error.set(apiError(e)) });
   }
-  createCustomer(value: Partial<Customer>): void {
+  createCustomer(value: Partial<Customer>, done?: () => void): void {
     const legacyCompanyId = this.iam.companyId();
+    this.error.set('');
     if (legacyCompanyId == null) { this.error.set('equipment.missing-company'); return; }
-    this.api.createCustomer({ ...value, legacyCompanyId }).subscribe({ next: () => this.load(), error: (e) => this.error.set(apiError(e)) });
+    this.api.createCustomer({ ...value, legacyCompanyId }).subscribe({ next: () => { this.load(); done?.(); }, error: (e) => this.error.set(apiError(e)) });
   }
-  createSite(id: number, value: { name: string; address: string }): void { this.api.createSite(id, value).subscribe({ next: () => this.loadSites(id), error: (e) => this.error.set(apiError(e)) }); }
-  createTank(value: { customerAccountId: number; siteId: number | null; name: string; fuelType: string; capacity: number; unit: string; initialLevel: number }): void { this.api.createTank(value).subscribe({ next: () => this.load(), error: (e) => this.error.set(apiError(e)) }); }
+  createSite(id: number, value: { name: string; address: string }, done?: () => void): void { this.error.set(''); this.api.createSite(id, value).subscribe({ next: () => { this.loadSites(id); done?.(); }, error: (e) => this.error.set(apiError(e)) }); }
+  createTank(value: { customerAccountId: number; siteId: number | null; name: string; fuelType: string; capacity: number; unit: string; initialLevel: number }, done?: () => void): void { this.error.set(''); this.api.createTank(value).subscribe({ next: () => { this.load(); done?.(); }, error: (e) => this.error.set(apiError(e)) }); }
 }

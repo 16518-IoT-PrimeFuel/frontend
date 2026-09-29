@@ -10,7 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { InventoryStore } from '../../../application/inventory.store';
 import { IamStore } from '../../../../iam/application/iam.store';
 import {
@@ -51,6 +51,7 @@ export class ProductForm implements OnInit {
     if (product && this.productForm) this.productForm.patchValue(product);
   });
   private readonly fb = inject(FormBuilder);
+  private readonly translate = inject(TranslateService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -75,6 +76,7 @@ export class ProductForm implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.store.clearError();
     this.productId = Number(this.route.snapshot.paramMap.get('id')) || null;
     this.isEditMode = !!this.productId;
 
@@ -160,9 +162,9 @@ export class ProductForm implements OnInit {
     const field = this.productForm.get(fieldName);
     if (!field || !field.errors) return '';
 
-    if (field.errors['required']) return 'This field is required';
-    if (field.errors['minlength']) return `Minimum length: ${field.errors['minlength'].requiredLength}`;
-    if (field.errors['min']) return `Minimum value: ${field.errors['min'].min}`;
+    if (field.errors['required']) return this.translate.instant('validation.required');
+    if (field.errors['minlength']) return this.translate.instant('validation.min-length', { n: field.errors['minlength'].requiredLength });
+    if (field.errors['min']) return this.translate.instant('validation.min-value', { n: field.errors['min'].min });
 
     return '';
   }

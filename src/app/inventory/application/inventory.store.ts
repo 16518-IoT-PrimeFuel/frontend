@@ -14,52 +14,59 @@ export class InventoryStore {
   readonly isLoading = this._isLoading.asReadonly();
   readonly error = this._error.asReadonly();
 
+  clearError(): void { this._error.set(null); }
+
   loadAllProducts(providerId?: number): void {
     this._isLoading.set(true);
     this._error.set(null);
     (providerId === undefined ? this.api.getAllProducts() : this.api.getProductsByProvider(providerId)).subscribe({
       next: (products) => { this._productList.set(products); this._isLoading.set(false); },
-      error: (error) => { this._error.set(error.message ?? 'Failed to load products'); this._isLoading.set(false); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
     });
   }
 
   loadProductById(id: number): void {
     this._isLoading.set(true);
+    this._error.set(null);
     this.api.getProductById(id).subscribe({
       next: (product) => { this._selectedProduct.set(product); this._isLoading.set(false); },
-      error: (error) => { this._error.set(error.message ?? 'Failed to load product'); this._isLoading.set(false); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
     });
   }
 
   createProduct(payload: CreateProductPayload, done?: () => void): void {
     this._isLoading.set(true);
+    this._error.set(null);
     this.api.createProduct(payload).subscribe({
       next: (product) => { this._productList.update((list) => [...list, product]); this._isLoading.set(false); done?.(); },
-      error: (error) => { this._error.set(error.message ?? 'Failed to create product'); this._isLoading.set(false); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
     });
   }
 
   updateProduct(id: number, payload: UpdateProductPayload, done?: () => void): void {
     this._isLoading.set(true);
+    this._error.set(null);
     this.api.updateProduct(id, payload).subscribe({
       next: (product) => { this._productList.update((list) => list.map((item) => item.id === id ? product : item)); this._selectedProduct.set(product); this._isLoading.set(false); done?.(); },
-      error: (error) => { this._error.set(error.message ?? 'Failed to update product'); this._isLoading.set(false); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
     });
   }
 
   updateStock(id: number, stock: number): void {
     this._isLoading.set(true);
+    this._error.set(null);
     this.api.updateStock(id, stock).subscribe({
       next: (product) => { this._productList.update((list) => list.map((item) => item.id === id ? product : item)); this._isLoading.set(false); },
-      error: (error) => { this._error.set(error.message ?? 'Failed to update stock'); this._isLoading.set(false); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
     });
   }
 
   deleteProduct(id: number): void {
     this._isLoading.set(true);
+    this._error.set(null);
     this.api.deleteProduct(id).subscribe({
       next: () => { this._productList.update((list) => list.filter((item) => item.id !== id)); this._isLoading.set(false); },
-      error: (error) => { this._error.set(error.message ?? 'Failed to delete product'); this._isLoading.set(false); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
     });
   }
 }

@@ -1,6 +1,6 @@
 <div class="product-form-container">
   <header class="page-header"><div class="header-content"><h1>{{ (isEditMode ? 'product-form.edit-title' : 'product-form.create-title') | translate }}</h1><p>{{ (isEditMode ? 'product-form.edit-subtitle' : 'product-form.create-subtitle') | translate }}</p></div></header>
-  @if (store.error()) { <div class="error-container"><mat-icon>error_outline</mat-icon><p>{{ store.error() }}</p></div> }
+  @if (store.error()) { <div class="error-container"><mat-icon>error_outline</mat-icon><p>{{ store.error() | translate }}</p></div> }
   <mat-card class="form-card"><mat-card-content><form [formGroup]="productForm" (ngSubmit)="onSubmit()">
     <mat-form-field appearance="outline"><mat-label>{{ 'product-form.fields.name' | translate }}</mat-label><input matInput formControlName="name"></mat-form-field>
     <mat-form-field appearance="outline"><mat-label>{{ 'product-form.fields.type' | translate }}</mat-label><mat-select formControlName="fuelType">@for (type of fuelTypes; track type.value) { <mat-option [value]="type.value">{{ type.label | translate }}</mat-option> }</mat-select></mat-form-field>

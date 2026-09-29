@@ -37,73 +37,76 @@ export class FulfillmentStore {
   checkDriverEligibility(id: number): void {
     this.api.checkDriverEligibility(id).subscribe({
       next: (result) => this._driverEligibility.update((current) => ({ ...current, [id]: result })),
-      error: (err) => this._error.set(err.message || 'Failed to check driver eligibility'),
+      error: (err) => this._error.set(err.message || 'errors.generic'),
     });
   }
 
   // ── Tankers ──────────────────────────────────────────────────────────────
-  loadTankers(): void { this.run(this.api.getTankers(), 'Failed to load tankers', (rows) => this._tankerList.set(rows)); }
-  loadAvailableTankers(): void { this.run(this.api.getEligibleTankers(), 'Failed to load available tankers', (rows) => this._tankerList.set(rows)); }
-  loadTankerById(id: number): void { this.run(this.api.getTankerById(id), 'Failed to load tanker', (row) => this._selectedTanker.set(row)); }
+  loadTankers(): void { this.run(this.api.getTankers(), 'errors.generic', (rows) => this._tankerList.set(rows)); }
+  loadAvailableTankers(): void { this.run(this.api.getEligibleTankers(), 'errors.generic', (rows) => this._tankerList.set(rows)); }
+  loadTankerById(id: number): void { this.run(this.api.getTankerById(id), 'errors.generic', (row) => this._selectedTanker.set(row)); }
 
   registerTanker(request: TankerRequest, onSuccess?: () => void): void {
     this._successMsg.set('');
-    this.run(this.api.registerTanker(request), 'Failed to register tanker', (row) => {
+    this.run(this.api.registerTanker(request), 'errors.generic', (row) => {
       this._tankerList.update((list) => [...list, row]);
-      this._successMsg.set('Tanker registered successfully');
+      this._successMsg.set('tanker-form.saved-created');
       onSuccess?.();
     });
   }
 
   updateTanker(id: number, request: Partial<TankerRequest>, onSuccess?: () => void): void {
-    this.run(this.api.updateTanker(id, request), 'Failed to update tanker', (row) => {
+    this.run(this.api.updateTanker(id, request), 'errors.generic', (row) => {
       this._tankerList.update((list) => list.map((t) => (t.id === id ? row : t)));
       this._selectedTanker.set(row);
-      this._successMsg.set('Tanker updated successfully');
+      this._successMsg.set('tanker-form.saved');
       onSuccess?.();
     });
   }
 
   updateTankerStatus(id: number, request: Pick<Tanker, 'status'>): void {
-    this.run(this.api.updateTankerStatus(id, request), 'Failed to update tanker status', (row) => {
+    this.run(this.api.updateTankerStatus(id, request), 'errors.generic', (row) => {
       this._tankerList.update((list) => list.map((t) => (t.id === id ? row : t)));
-      this._successMsg.set('Tanker status updated successfully');
+      this._successMsg.set('tanker-form.saved');
     });
   }
 
   // ── Drivers ──────────────────────────────────────────────────────────────
-  loadDrivers(): void { this.run(this.api.getDrivers(), 'Failed to load drivers', (rows) => this._driverList.set(rows)); }
-  loadAvailableDrivers(): void { this.run(this.api.getEligibleDrivers(), 'Failed to load available drivers', (rows) => this._driverList.set(rows)); }
-  loadDriverById(id: number): void { this.run(this.api.getDriverById(id), 'Failed to load driver', (row) => this._selectedDriver.set(row)); }
+  loadDrivers(): void { this.run(this.api.getDrivers(), 'errors.generic', (rows) => this._driverList.set(rows)); }
+  loadAvailableDrivers(): void { this.run(this.api.getEligibleDrivers(), 'errors.generic', (rows) => this._driverList.set(rows)); }
+  loadDriverById(id: number): void { this.run(this.api.getDriverById(id), 'errors.generic', (row) => this._selectedDriver.set(row)); }
 
   registerDriver(request: DriverRequest, onSuccess?: () => void): void {
     this._successMsg.set('');
-    this.run(this.api.registerDriver(request), 'Failed to register driver', (row) => {
+    this.run(this.api.registerDriver(request), 'errors.generic', (row) => {
       this._driverList.update((list) => [...list, row]);
-      this._successMsg.set('Driver registered successfully');
+      this._successMsg.set('driver-form.saved-created');
       onSuccess?.();
     });
   }
 
   updateDriver(id: number, request: Partial<DriverRequest>, onSuccess?: () => void): void {
-    this.run(this.api.updateDriver(id, request), 'Failed to update driver', (row) => {
+    this.run(this.api.updateDriver(id, request), 'errors.generic', (row) => {
       this._driverList.update((list) => list.map((d) => (d.id === id ? row : d)));
       this._selectedDriver.set(row);
-      this._successMsg.set('Driver updated successfully');
+      this._successMsg.set('driver-form.saved');
       onSuccess?.();
     });
   }
 
   updateDriverStatus(id: number, request: Pick<Driver, 'status'>): void {
-    this.run(this.api.updateDriverStatus(id, request), 'Failed to update driver status', (row) => {
+    this.run(this.api.updateDriverStatus(id, request), 'errors.generic', (row) => {
       this._driverList.update((list) => list.map((d) => (d.id === id ? row : d)));
-      this._successMsg.set('Driver status updated successfully');
+      this._successMsg.set('driver-form.saved');
     });
   }
+
+  clearMessages(): void { this._error.set(''); this._successMsg.set(''); }
 
   private run<T>(request: Observable<T>, fallback: string, done: (value: T) => void): void {
     this._isLoading.set(true);
     this._error.set('');
+    this._successMsg.set('');
     request.subscribe({
       next: (value) => { done(value); this._isLoading.set(false); },
       error: (err) => { this._error.set(err.message || fallback); this._isLoading.set(false); },
