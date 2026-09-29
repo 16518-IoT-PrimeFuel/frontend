@@ -33,7 +33,7 @@
             <mat-label>{{ 'driver-form.fields.first-name' | translate }}</mat-label>
             <input
               matInput
-              formControlName="firstName"
+              formControlName="firstName" maxlength="80"
               [placeholder]="'driver-form.placeholders.first-name' | translate"
             />
             <mat-icon matPrefix>person</mat-icon>
@@ -46,7 +46,7 @@
             <mat-label>{{ 'driver-form.fields.last-name' | translate }}</mat-label>
             <input
               matInput
-              formControlName="lastName"
+              formControlName="lastName" maxlength="80"
               [placeholder]="'driver-form.placeholders.last-name' | translate"
             />
             <mat-icon matPrefix>person</mat-icon>
@@ -61,7 +61,7 @@
           <mat-label>{{ 'driver-form.fields.license-number' | translate }}</mat-label>
           <input
             matInput
-            formControlName="licenseNumber"
+            formControlName="licenseNumber" maxlength="60"
             [placeholder]="'driver-form.placeholders.license-number' | translate"
           />
           <mat-icon matPrefix>badge</mat-icon>
@@ -90,7 +90,7 @@
             <input
               matInput
               type="email"
-              formControlName="email"
+              formControlName="email" maxlength="160"
               [placeholder]="'driver-form.placeholders.email' | translate"
             />
             <mat-icon matPrefix>email</mat-icon>

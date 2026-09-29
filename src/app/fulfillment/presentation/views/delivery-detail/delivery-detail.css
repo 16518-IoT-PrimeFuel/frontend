@@ -13,3 +13,5 @@ dl { display:grid; grid-template-columns:max-content 1fr; gap:6px 16px; margin:0
 dt { color:#5b6b7c }
 dd { margin:0 }
 @media (max-width:560px) { dl { grid-template-columns:1fr; gap:0 } dd { margin-bottom:8px } }
+.field-error { color:#a32121 }
+input[aria-invalid="true"] { border-color:#a32121 }

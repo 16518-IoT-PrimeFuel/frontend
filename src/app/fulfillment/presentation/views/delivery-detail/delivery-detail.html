@@ -38,10 +38,11 @@
     @else { <p>{{ 'fulfillment.no-tracking' | translate }}</p> }
   </section>
   <section><h2>{{ 'fulfillment.geofence' | translate }}</h2>
-    <label>{{ 'fulfillment.latitude' | translate }} <input type="number" [(ngModel)]="centerLatitude"></label>
-    <label>{{ 'fulfillment.longitude' | translate }} <input type="number" [(ngModel)]="centerLongitude"></label>
-    <label>{{ 'fulfillment.radius' | translate }} <input type="number" min="1" [(ngModel)]="radiusMeters"></label>
-    <button [disabled]="centerLatitude == null || centerLongitude == null || !radiusMeters || radiusMeters <= 0" (click)="saveGeofence()">{{ 'fulfillment.save-geofence' | translate }}</button>
+    <label>{{ 'fulfillment.latitude' | translate }} <input type="number" min="-90" max="90" step="any" [(ngModel)]="centerLatitude" [attr.aria-invalid]="latitudeInvalid">@if (latitudeInvalid) { <small class="field-error" role="alert">{{ 'fulfillment.latitude-range' | translate }}</small> }</label>
+    <label>{{ 'fulfillment.longitude' | translate }} <input type="number" min="-180" max="180" step="any" [(ngModel)]="centerLongitude" [attr.aria-invalid]="longitudeInvalid">@if (longitudeInvalid) { <small class="field-error" role="alert">{{ 'fulfillment.longitude-range' | translate }}</small> }</label>
+    <label>{{ 'fulfillment.radius' | translate }} <input type="number" min="1" step="any" [(ngModel)]="radiusMeters" [attr.aria-invalid]="radiusInvalid">@if (radiusInvalid) { <small class="field-error" role="alert">{{ 'fulfillment.radius-positive' | translate }}</small> }</label>
+    <button [disabled]="!geofenceValid" (click)="saveGeofence()">{{ 'fulfillment.save-geofence' | translate }}</button>
+    <p><small>{{ 'fulfillment.geofence-once' | translate }}</small></p>
   </section>
   <section><h2>{{ 'fulfillment.transitions' | translate }}</h2>@for (item of transitions(); track item.id) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.fromState ? ('delivery-status.' + item.fromState.toLowerCase() | translate) : '—' }} → {{ 'delivery-status.' + item.toState.toLowerCase() | translate }} · v{{ item.aggregateVersion }}</p> }</section>
   <section><h2>{{ 'fulfillment.timeline' | translate }}</h2>@for (item of timeline(); track item.refId + item.type) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.type }} · {{ item.summary }}</p> }</section>

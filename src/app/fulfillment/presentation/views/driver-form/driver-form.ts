@@ -51,11 +51,11 @@ export class DriverForm implements OnInit {
     this.driverForm = this.fb.group({
       userId: [null],
       status: ['AVAILABLE'],
-      firstName: ['', [Validators.required, Validators.minLength(2)]],
-      lastName: ['', [Validators.required, Validators.minLength(2)]],
-      licenseNumber: ['', [Validators.required, Validators.minLength(8)]],
+      firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
+      lastName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
+      licenseNumber: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(60)]],
       phoneNumber: ['', [Validators.required, Validators.pattern(/^\+?[0-9]{9,15}$/)]],
-      email: ['', [Validators.required, Validators.email]],
+      email: ['', [Validators.required, Validators.email, Validators.maxLength(160)]],
     });
   }
 
@@ -120,6 +120,7 @@ export class DriverForm implements OnInit {
     const control = this.driverForm.get(field);
     if (control?.hasError('required')) return this.translate.instant('validation.required');
     if (control?.hasError('minlength')) return this.translate.instant('validation.min-length', { n: control.errors?.['minlength'].requiredLength });
+    if (control?.hasError('maxlength')) return this.translate.instant('validation.max-length', { n: control.errors?.['maxlength'].requiredLength });
     if (control?.hasError('email')) return this.translate.instant('validation.email');
     if (control?.hasError('pattern')) return this.translate.instant('validation.phone');
     return '';

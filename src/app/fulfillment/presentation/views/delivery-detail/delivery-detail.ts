@@ -48,9 +48,14 @@ export class DeliveryDetail {
     const body = action === 'complete' ? { deliveredVolume: this.deliveredVolume } : ['fail','cancel'].includes(action) ? { reason: this.reason } : {};
     this.api.deliveryCommand(this.id, action, body).subscribe({ next: () => { this.message.set(''); this.reason = ''; this.reload(); }, error: e => this.message.set(e?.error?.message ?? 'fulfillment.command-failed') });
   }
+  /** Rangos del backend (GeofencePolicy): latitud [-90, 90], longitud [-180, 180], radio > 0. */
+  get latitudeInvalid(): boolean { return this.centerLatitude != null && (this.centerLatitude < -90 || this.centerLatitude > 90); }
+  get longitudeInvalid(): boolean { return this.centerLongitude != null && (this.centerLongitude < -180 || this.centerLongitude > 180); }
+  get radiusInvalid(): boolean { return this.radiusMeters != null && this.radiusMeters <= 0; }
+  get geofenceValid(): boolean { return this.centerLatitude != null && this.centerLongitude != null && this.radiusMeters != null && !this.latitudeInvalid && !this.longitudeInvalid && !this.radiusInvalid; }
   saveGeofence(): void {
-    if (this.centerLatitude == null || this.centerLongitude == null || !this.radiusMeters) return;
-    this.api.createGeofence(this.id, { centerLatitude: this.centerLatitude, centerLongitude: this.centerLongitude, radiusMeters: this.radiusMeters })
+    if (!this.geofenceValid) return;
+    this.api.createGeofence(this.id, { centerLatitude: this.centerLatitude, centerLongitude: this.centerLongitude, radiusMeters: this.radiusMeters! })
       .subscribe({ next: () => this.message.set('fulfillment.geofence-saved'), error: e => this.message.set(e.status === 409 ? 'fulfillment.geofence-exists' : (e?.error?.message ?? 'fulfillment.geofence-failed')) });
   }
   print(): void { window.print(); }
