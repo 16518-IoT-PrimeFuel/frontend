@@ -1,4 +1,4 @@
-import { Component, OnInit, effect, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -15,7 +15,8 @@ import { InventoryStore } from '../../../application/inventory.store';
 import { IamStore } from '../../../../iam/application/iam.store';
 import {
   CreateProductPayload,
-  UpdateProductPayload
+  UpdateProductPayload,
+  FUEL_TYPES
 } from '../../../domain/model/fuel-product.entity';
 
 /**
@@ -48,8 +49,9 @@ export class ProductForm implements OnInit {
   private readonly iam = inject(IamStore);
   private readonly syncProduct = effect(() => {
     const product = this.store.selectedProduct();
-    if (product && this.productForm) this.productForm.patchValue(product);
+    if (this.isEditMode && product?.id === this.productId && this.productForm) this.productForm.patchValue(product);
   });
+  private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
   private readonly translate = inject(TranslateService);
   private readonly route = inject(ActivatedRoute);
@@ -59,16 +61,7 @@ export class ProductForm implements OnInit {
   protected isEditMode = false;
   protected productId: number | null = null;
 
-  protected readonly fuelTypes = [
-    { value: 'DIESEL', label: 'fuel-type.diesel' },
-    { value: 'GASOLINE', label: 'fuel-type.gasoline' },
-    { value: 'GASOLINE_84', label: 'fuel-type.gasoline_84' },
-    { value: 'GASOLINE_90', label: 'fuel-type.gasoline_90' },
-    { value: 'GASOLINE_95', label: 'fuel-type.gasoline_95' },
-    { value: 'GASOLINE_97', label: 'fuel-type.gasoline_97' },
-    { value: 'GLP', label: 'fuel-type.glp' },
-    { value: 'GNV', label: 'fuel-type.gnv' },
-  ];
+  protected readonly fuelTypes = FUEL_TYPES.map(value => ({ value, label: 'fuel-type.' + value.toLowerCase() }));
 
   protected readonly units = [
     { value: 'LITERS', label: 'unit.liters' },
@@ -105,6 +98,7 @@ export class ProductForm implements OnInit {
   }
 
   protected onSubmit(): void {
+    if (this.store.isLoading()) return;
     if (this.productForm.invalid) {
       this.productForm.markAllAsTouched();
       return;
@@ -132,7 +126,7 @@ export class ProductForm implements OnInit {
     };
 
     this.store.createProduct(payload, () => {
-      this.router.navigateByUrl('/fuel-products');
+      if (!this.destroyRef.destroyed) void this.router.navigateByUrl('/fuel-products');
     });
   }
 
@@ -150,7 +144,7 @@ export class ProductForm implements OnInit {
     };
 
     this.store.updateProduct(this.productId, payload, () => {
-      this.router.navigateByUrl('/fuel-products');
+      if (!this.destroyRef.destroyed) void this.router.navigateByUrl('/fuel-products');
     });
   }
 

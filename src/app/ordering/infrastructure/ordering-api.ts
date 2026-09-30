@@ -1,7 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { Observable } from 'rxjs';
+import { catchError, Observable } from 'rxjs';
+import { ErrorHandlingEnabledBaseType } from '../../shared/infrastructure/error-handling-enabled-base-type';
 import { CreateRequest, Request } from '../domain/model/request.entity';
 import { Order } from '../domain/model/order.entity';
 import { Customer, Tank } from '../../equipment/domain/model/equipment.entity';
@@ -11,7 +12,7 @@ export type PaymentMethod = 'BANK_TRANSFER' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CA
 export interface Payment { id: number; orderId: number; companyId: number; amount: number; status: string; paymentMethod: PaymentMethod; transactionReference: string | null; paidAt: string | null; }
 
 @Injectable({ providedIn: 'root' })
-export class OrderingApi {
+export class OrderingApi extends ErrorHandlingEnabledBaseType {
   private readonly http = inject(HttpClient);
   private readonly base = environment.serverBasePath;
 
@@ -27,6 +28,8 @@ export class OrderingApi {
   confirmOrder(id: number): Observable<Order> { return this.http.post<Order>(`${this.base}/fuel-orders/${id}/confirm`, {}); }
   cancelOrder(id: number): Observable<Order> { return this.http.post<Order>(`${this.base}/fuel-orders/${id}/cancel`, {}); }
 
+  paymentsForCompany(companyId: number): Observable<Payment[]> { return this.http.get<Payment[]>(`${this.base}/payments/company/${companyId}`).pipe(catchError(this.handleError('paymentsForCompany', true))); }
+  refundPayment(id: number): Observable<Payment> { return this.http.post<Payment>(`${this.base}/payments/${id}/refund`, null).pipe(catchError(this.handleError('refundPayment', true))); }
   paymentForOrder(orderId: number): Observable<Payment> { return this.http.get<Payment>(`${this.base}/payments/order/${orderId}`); }
   createPayment(orderId: number, companyId: number, amount: number, paymentMethod: PaymentMethod): Observable<Payment> {
     return this.http.post<Payment>(`${this.base}/payments`, { orderId, companyId, amount, paymentMethod });
