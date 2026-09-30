@@ -43,6 +43,8 @@ export const routes: Routes = [
   { path: 'forgot-password', component: PasswordReset, title: `Password recovery - ${baseTitle}` },
   { path: 'reset-password', component: PasswordReset, title: `Reset password - ${baseTitle}` },
   { path: 'access-denied', component: AccessDenied, title: `Access denied - ${baseTitle}` },
+  { path: 'accept-invitation', loadComponent: () => import('./iam/presentation/views/accept-invitation/accept-invitation').then(m => m.AcceptInvitation), title: `Invitation - ${baseTitle}` },
+  { path: 'accept-invitation/:token', loadComponent: () => import('./iam/presentation/views/accept-invitation/accept-invitation').then(m => m.AcceptInvitation), title: `Invitation - ${baseTitle}` },
   { path: 'profile', canActivate: [authGuard, supportedRoleGuard], loadComponent: () => import('./shared/presentation/component/layout/layout').then((m) => m.Layout), title: `Profile - ${baseTitle}`, children: [{ path: '', loadComponent: () => import('./iam/presentation/views/profile/profile').then((m) => m.Profile) }] },
   { path: 'about', loadComponent: about, title: `About - ${baseTitle}` },
   { path: 'fuel-products', canActivate: [authGuard, supportedRoleGuard], loadChildren: fuelProductRoutes },
