@@ -1,4 +1,4 @@
-import { Component, OnInit, effect, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -34,8 +34,9 @@ export class DriverForm implements OnInit {
   protected readonly store = inject(FulfillmentStore);
   private readonly syncForm = effect(() => {
     const driver = this.store.selectedDriver();
-    if (driver && this.driverForm) this.driverForm.patchValue(driver);
+    if (this.isEditMode && driver?.id === this.driverId && this.driverForm) this.driverForm.patchValue(driver);
   });
+  private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
@@ -54,7 +55,7 @@ export class DriverForm implements OnInit {
       firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
       lastName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
       licenseNumber: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(60)]],
-      phoneNumber: ['', [Validators.required, Validators.pattern(/^\+?[0-9]{9,15}$/)]],
+      phoneNumber: ['', [Validators.required, Validators.pattern(/^\+?[0-9]{9,15}$/), Validators.maxLength(30)]],
       email: ['', [Validators.required, Validators.email, Validators.maxLength(160)]],
     });
   }
@@ -70,6 +71,7 @@ export class DriverForm implements OnInit {
   }
 
   protected onSubmit(): void {
+    if (this.store.isLoading()) return;
     if (this.driverForm.invalid) {
       this.driverForm.markAllAsTouched();
       return;
@@ -93,7 +95,7 @@ export class DriverForm implements OnInit {
       active: true,
     };
     this.store.registerDriver(request, () => {
-      this.router.navigate(['/fulfillment/driver-list']);
+      if (!this.destroyRef.destroyed) void this.router.navigate(['/fulfillment/driver-list']);
     });
   }
 
@@ -108,7 +110,7 @@ export class DriverForm implements OnInit {
       email: this.driverForm.value.email,
     };
     this.store.updateDriver(this.driverId!, request, () => {
-      this.router.navigate(['/fulfillment/driver-list']);
+      if (!this.destroyRef.destroyed) void this.router.navigate(['/fulfillment/driver-list']);
     });
   }
 

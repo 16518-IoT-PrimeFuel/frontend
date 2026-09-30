@@ -76,7 +76,7 @@
             <mat-label>{{ 'driver-form.fields.phone' | translate }}</mat-label>
             <input
               matInput
-              formControlName="phoneNumber"
+              formControlName="phoneNumber" maxlength="30"
               [placeholder]="'driver-form.placeholders.phone' | translate"
             />
             <mat-icon matPrefix>phone</mat-icon>
