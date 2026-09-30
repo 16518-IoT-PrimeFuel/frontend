@@ -70,3 +70,11 @@
   .foot { padding: 12px 16px; flex-wrap: wrap; }
   .status { flex-basis: 100%; }
 }
+
+.invitations { padding: 16px; }
+.invitation-help { color: var(--muted); font-size: .875rem; }
+.invitation-form { padding: 0; }
+.invitation-table-wrap { overflow-x: auto; }
+.invitation-table { min-width: 660px; }
+.invitation-table th, .invitation-table td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; }
+.revoke-email { overflow-wrap: anywhere; }

@@ -27,8 +27,8 @@
     <button type="submit" [disabled]="sending()">{{ (sending() ? 'auth.login.submitting' : 'auth.login.submit') | translate }}</button>
     <nav class="iam-alt" [attr.aria-label]="'auth.login.no-account' | translate">
       <span>{{ 'auth.login.no-account' | translate }}</span>
-      <a routerLink="/register/buyer">{{ 'auth.register.buyer-link' | translate }}</a>
-      <a routerLink="/register/distributor">{{ 'auth.register.provider-link' | translate }}</a>
+      <a routerLink="/register/buyer" [queryParams]="sessionRequired() ? { returnUrl: returnUrl } : {}">{{ 'auth.register.buyer-link' | translate }}</a>
+      <a routerLink="/register/distributor" [queryParams]="sessionRequired() ? { returnUrl: returnUrl } : {}">{{ 'auth.register.provider-link' | translate }}</a>
     </nav>
   </form>
 </main>

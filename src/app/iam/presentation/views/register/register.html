@@ -1,7 +1,7 @@
 <main class="iam-page">
-  <form class="iam-card" (ngSubmit)="submit()">
+  <form #registerForm="ngForm" class="iam-card" (ngSubmit)="registerForm.valid && submit()">
     <h1>{{ (role === 'BUYER' ? 'auth.register.buyer-title' : 'auth.register.provider-title') | translate }}</h1>
-    <label>{{ 'auth.username' | translate }}<input name="username" type="email" [(ngModel)]="username" required maxlength="100" autocomplete="email"></label>
+    <label>{{ 'auth.username' | translate }}<input name="username" type="email" email [(ngModel)]="username" required maxlength="100" autocomplete="email"></label>
     <label>{{ 'auth.password' | translate }}<input name="password" type="password" [(ngModel)]="password" required minlength="8" maxlength="120" autocomplete="new-password"></label>
     <label>{{ 'auth.company' | translate }}<input name="name" [(ngModel)]="name" required></label>
     <label>{{ 'auth.ruc' | translate }}<input name="ruc" [(ngModel)]="ruc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11"></label>
@@ -18,7 +18,7 @@
       <label>{{ 'auth.description' | translate }}<textarea name="description" [(ngModel)]="description"></textarea></label>
     }
     @if (error()) { <p class="iam-error" role="alert">{{ error() | translate }}</p> }
-    <button type="submit" [disabled]="role === 'PROVIDER' && !fuelTypes.length">{{ 'auth.register.submit' | translate }}</button>
-    <a routerLink="/login">{{ 'auth.login.link' | translate }}</a>
+    <button type="submit" [disabled]="registerForm.invalid || submitting() || (role === 'PROVIDER' && !fuelTypes.length)">{{ 'auth.register.submit' | translate }}</button>
+    <a routerLink="/login" [queryParams]="returnUrl ? { returnUrl } : {}">{{ 'auth.login.link' | translate }}</a>
   </form>
 </main>
