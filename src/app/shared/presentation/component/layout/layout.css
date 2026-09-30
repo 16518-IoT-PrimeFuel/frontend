@@ -83,6 +83,9 @@ mat-sidenav {
   position: relative;
 }
 
+.nav-item, .sub-nav-item { text-decoration: none; }
+.sub-nav-item { display: block; }
+
 .nav-item:hover, .nav-item-header:hover {
   background: #eff6ff !important;
   color: #1e3a8a;
@@ -211,3 +214,12 @@ mat-sidenav-content {
 .user-menu-avatar { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 50%; background: #eef2ff; color: #1e3a8a; }
 .user-menu-name { min-width: 0; overflow: hidden; color: #111827; font-size: 0.9375rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 ::ng-deep .user-menu .mat-mdc-menu-item .mat-icon { color: #4b5563; }
+
+@media (max-width: 560px) {
+  .toolbar { padding: 0 8px; }
+  .toolbar img { height: 32px; margin-right: 8px; }
+  .toolbar-title { display: none; }
+  .toolbar app-language-switcher { margin-right: 0; }
+  .toolbar-action { margin-left: 0; }
+  .content-wrapper { padding: 16px; }
+}

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -12,7 +12,7 @@ import { EquipmentStore } from '../../../application/equipment.store';
 import { FUEL_TYPES } from '../../../../inventory/domain/model/fuel-product.entity';
 
 @Component({
-  selector: 'app-tank-list', standalone: true,
+  selector: 'app-tank-list', standalone: true, providers: [EquipmentStore],
   imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   template: `
     <main class="equipment-page">
@@ -20,13 +20,13 @@ import { FUEL_TYPES } from '../../../../inventory/domain/model/fuel-product.enti
       @if (store.error()) { <p role="alert">{{ store.error() | translate }}</p> }
       <section class="equipment-grid">
         <mat-card><mat-card-header><mat-card-title>{{ 'equipment.customers' | translate }}</mat-card-title></mat-card-header><mat-card-content>
-          <form #customerForm="ngForm" (ngSubmit)="addCustomer()">
+          <form #customerForm="ngForm" (ngSubmit)="addCustomer(customerForm)">
             <mat-form-field><mat-label>{{ 'equipment.name' | translate }}</mat-label><input matInput name="customerName" [(ngModel)]="customer.name" required maxlength="150"></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.ruc' | translate }}</mat-label><input matInput name="ruc" [(ngModel)]="customer.ruc" maxlength="11" pattern="[0-9]{11}"></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.address' | translate }}</mat-label><input matInput name="customerAddress" [(ngModel)]="customer.address"></mat-form-field>
-            <mat-form-field><mat-label>{{ 'equipment.email' | translate }}</mat-label><input matInput type="email" name="email" [(ngModel)]="customer.contactEmail"></mat-form-field>
+            <mat-form-field><mat-label>{{ 'equipment.email' | translate }}</mat-label><input matInput type="email" email name="email" [(ngModel)]="customer.contactEmail"></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.phone' | translate }}</mat-label><input matInput name="phone" [(ngModel)]="customer.phone"></mat-form-field>
-            <button mat-flat-button color="primary" [disabled]="customerForm.invalid">{{ 'equipment.add-customer' | translate }}</button>
+            <button mat-flat-button color="primary" [disabled]="customerForm.invalid || store.creatingCustomer()">{{ 'equipment.add-customer' | translate }}</button>
           </form>
           @for (customer of store.customers(); track customer.id) {
             <button mat-button (click)="selectCustomer(customer.id)" [attr.aria-pressed]="selectedCustomerId === customer.id">{{ customer.name }}</button>
@@ -34,10 +34,10 @@ import { FUEL_TYPES } from '../../../../inventory/domain/model/fuel-product.enti
         </mat-card-content></mat-card>
         <mat-card><mat-card-header><mat-card-title>{{ 'equipment.sites' | translate }}</mat-card-title></mat-card-header><mat-card-content>
           @if (selectedCustomerId !== null) {
-            <form #siteForm="ngForm" (ngSubmit)="addSite()">
+            <form #siteForm="ngForm" (ngSubmit)="addSite(siteForm)">
               <mat-form-field><mat-label>{{ 'equipment.name' | translate }}</mat-label><input matInput name="siteName" [(ngModel)]="site.name" required maxlength="150"></mat-form-field>
               <mat-form-field><mat-label>{{ 'equipment.address' | translate }}</mat-label><input matInput name="siteAddress" [(ngModel)]="site.address"></mat-form-field>
-              <button mat-flat-button color="primary" [disabled]="siteForm.invalid">{{ 'equipment.add-site' | translate }}</button>
+              <button mat-flat-button color="primary" [disabled]="siteForm.invalid || store.creatingSite()">{{ 'equipment.add-site' | translate }}</button>
             </form>
             @for (site of store.sites(); track site.id) { <p>{{ site.name }} <small>{{ site.address }}</small></p> }
             @if (!store.sites().length) { <p>{{ 'equipment.no-sites' | translate }}</p> }
@@ -46,14 +46,14 @@ import { FUEL_TYPES } from '../../../../inventory/domain/model/fuel-product.enti
       </section>
       <mat-card><mat-card-header><mat-card-title>{{ 'equipment.add-tank' | translate }}</mat-card-title></mat-card-header><mat-card-content>
         @if (selectedCustomerId !== null) {
-          <form #tankForm="ngForm" (ngSubmit)="addTank()">
+          <form #tankForm="ngForm" (ngSubmit)="addTank(tankForm)">
             <mat-form-field><mat-label>{{ 'equipment.name' | translate }}</mat-label><input matInput name="tankName" [(ngModel)]="tank.name" required maxlength="150"></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.site' | translate }}</mat-label><mat-select name="siteId" [(ngModel)]="tank.siteId"><mat-option [value]="null">—</mat-option>@for (site of store.sites(); track site.id) { <mat-option [value]="site.id">{{ site.name }}</mat-option> }</mat-select></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.fuel-type' | translate }}</mat-label><mat-select name="fuelType" [(ngModel)]="tank.fuelType"><mat-option value="">—</mat-option>@for (type of fuelTypes; track type) { <mat-option [value]="type">{{ 'fuel-type.' + type.toLowerCase() | translate }}</mat-option> }</mat-select></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.capacity' | translate }}</mat-label><input matInput type="number" min="0.01" name="capacity" [(ngModel)]="tank.capacity" required></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.unit' | translate }}</mat-label><mat-select name="unit" [(ngModel)]="tank.unit" required><mat-option value="LITERS">{{ 'unit.liters' | translate }}</mat-option><mat-option value="GALLONS">{{ 'unit.gallons' | translate }}</mat-option></mat-select></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.initial-level' | translate }}</mat-label><input matInput type="number" min="0" [max]="tank.capacity" name="initialLevel" [(ngModel)]="tank.initialLevel"></mat-form-field>
-            <button mat-flat-button color="primary" [disabled]="tankForm.invalid">{{ 'equipment.create-tank' | translate }}</button>
+            <button mat-flat-button color="primary" [disabled]="tankForm.invalid || store.creatingTank()">{{ 'equipment.create-tank' | translate }}</button>
           </form>
         } @else { <p>{{ 'equipment.select-customer' | translate }}</p> }
         <h2>{{ 'equipment.tanks' | translate }}</h2>
@@ -74,11 +74,11 @@ export class TankList implements OnInit {
   protected get customerTanks() { return this.store.tanks().filter((tank) => tank.customerAccountId === this.selectedCustomerId); }
 
   ngOnInit(): void { this.store.load(); }
-  protected selectCustomer(id: number): void { this.selectedCustomerId = id; this.store.loadSites(id); }
-  protected addCustomer(): void { this.store.createCustomer({ ...this.customer }, () => this.customer = { name: '', ruc: '', address: '', contactEmail: '', phone: '' }); }
-  protected addSite(): void { if (this.selectedCustomerId === null) return; this.store.createSite(this.selectedCustomerId, this.site, () => this.site = { name: '', address: '' }); }
-  protected addTank(): void {
-    if (this.selectedCustomerId === null) return;
+  protected selectCustomer(id: number): void { this.selectedCustomerId = id; this.tank.siteId = null; this.store.loadSites(id); }
+  protected addCustomer(form: NgForm): void { if (form.invalid || this.store.creatingCustomer()) return; this.store.createCustomer({ ...this.customer }, () => this.customer = { name: '', ruc: '', address: '', contactEmail: '', phone: '' }); }
+  protected addSite(form: NgForm): void { if (form.invalid || this.store.creatingSite() || this.selectedCustomerId === null) return; this.store.createSite(this.selectedCustomerId, this.site, () => this.site = { name: '', address: '' }); }
+  protected addTank(form: NgForm): void {
+    if (form.invalid || this.store.creatingTank() || this.selectedCustomerId === null) return;
     this.store.createTank({ customerAccountId: this.selectedCustomerId, ...this.tank }, () => this.tank = { name: '', siteId: null, fuelType: '', capacity: 0, unit: 'LITERS', initialLevel: 0 });
   }
 }

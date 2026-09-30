@@ -12,17 +12,18 @@ export abstract class ErrorHandlingEnabledBaseType {
   /**
    * Handles HTTP errors and returns an observable that throws a typed error.
    * @param operation - A human-readable description of the failed operation.
+   * @param localized - Return translation keys instead of backend text and technical details.
    * @returns A function that takes an HttpErrorResponse and returns an Observable<never>.
    */
-  protected handleError(operation: string) {
+  protected handleError(operation: string, localized = false) {
     return (error: HttpErrorResponse): Observable<never> => {
       const body = typeof error.error === 'object' ? error.error : null;
       const fallback = error.status === 0 ? 'errors.network' : error.status >= 500 ? 'errors.server' : `errors.http-${error.status}`;
-      const message = error.status >= 500 ? fallback : (body?.message ?? fallback);
-      const details = error.status < 500 && typeof body?.details === 'string' && body.details !== message ? body.details : '';
+      const message = localized || error.status === 0 || error.status >= 500 ? fallback : (body?.message ?? fallback);
+      const details = !localized && error.status < 500 && typeof body?.details === 'string' && body.details !== message ? body.details : '';
       const errorMessage = details ? `${message}: ${details}` : message;
 
-      console.error(`[FullTank API Error] ${errorMessage}`, error);
+      console.error(`[FullTank API Error] ${operation}: HTTP ${error.status}`);
       return throwError(() => new Error(errorMessage));
     };
   }

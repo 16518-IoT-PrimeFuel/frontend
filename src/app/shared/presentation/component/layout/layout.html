@@ -58,11 +58,12 @@
 
           @if (!option.children) {
             <!-- OPCIÓN SIMPLE (Sin sub-menú) -->
-            <div class="nav-item"
+            <a class="nav-item"
                  [class.active]="isActive(option.link)"
                  [matTooltip]="option.label | translate"
                  matTooltipPosition="right"
-                 (click)="navigateTo(option.link)">
+                 [routerLink]="option.link"
+                 (click)="closeNavigation()">
               <div class="nav-icon-wrapper">
                 <mat-icon aria-hidden="true">{{ option.icon }}</mat-icon>
               </div>
@@ -70,7 +71,7 @@
               @if (isActive(option.link)) {
                 <div class="active-indicator"></div>
               }
-            </div>
+            </a>
           } @else {
             <!-- OPCIÓN CON SUB-MENÚ (Acordeón) -->
             <mat-expansion-panel
@@ -89,11 +90,12 @@
               <!-- Lista de Sub-elementos sin iconos -->
               <div class="sub-menu-container">
                 @for (child of visibleChildren(option); track child.link) {
-                  <div class="sub-nav-item"
-                       [class.sub-active]="isActive(child.link)"
-                       (click)="navigateTo(child.link)">
+                  <a class="sub-nav-item"
+                       [class.sub-active]="isActive(child.link, true)"
+                       [routerLink]="child.link"
+                       (click)="closeNavigation()">
                     <span class="sub-nav-label">{{ child.label | translate }}</span>
-                  </div>
+                  </a>
                 }
               </div>
             </mat-expansion-panel>

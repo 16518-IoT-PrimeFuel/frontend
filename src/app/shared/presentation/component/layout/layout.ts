@@ -1,4 +1,5 @@
-import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -38,6 +39,7 @@ import { NotificationStore } from '../../../../notification/application/notifica
   styleUrl: './layout.css',
 })
 export class Layout implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly iam = inject(IamStore);
   protected readonly notifications = inject(NotificationStore);
   @ViewChild(MatSidenav) drawer!: MatSidenav;
@@ -70,6 +72,7 @@ export class Layout implements OnInit {
         { label: 'ordering.requests', link: '/ordering/request-list' },
         { label: 'ordering.create-request', link: '/ordering/request-form', roles: ['BUYER'] },
         { label: 'ordering.orders', link: '/ordering/order-list' },
+        { label: 'payment-history.title', link: '/ordering/payment-history', roles: ['BUYER'] },
       ],
     },
     {
@@ -98,7 +101,7 @@ export class Layout implements OnInit {
     private router: Router,
     private observer: BreakpointObserver,
   ) {
-    this.observer.observe(['(max-width: 768px)']).subscribe((result) => {
+    this.observer.observe(['(max-width: 768px)']).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((result) => {
       if (result.matches) {
         this.sidenavMode = 'over';
         this.sidenavOpened = false;
@@ -109,15 +112,13 @@ export class Layout implements OnInit {
     });
   }
 
-  navigateTo(link: string): void {
-    this.router.navigate([link]).then();
-    if (this.sidenavMode === 'over') {
-      this.drawer.toggle().then();
-    }
+  closeNavigation(): void {
+    if (this.sidenavMode === 'over') this.drawer.close().then();
   }
 
-  isActive(link: string): boolean {
-    return this.router.url.startsWith(link);
+  isActive(link: string, exact = false): boolean {
+    const path = this.router.url.split(/[?#]/)[0];
+    return path === link || (!exact && path.startsWith(link + '/'));
   }
 
   getCurrentYear(): number {
