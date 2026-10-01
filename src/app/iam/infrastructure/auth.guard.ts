@@ -26,6 +26,13 @@ export const adminGuard: CanActivateFn = () => {
   return iam.isAdmin() ? true : router.parseUrl(iam.isAuthenticated() ? '/access-denied' : '/login');
 };
 
+/** Analytics: comprador, proveedor o administrador (el admin solo ve el resumen de plataforma). */
+export const analyticsGuard: CanActivateFn = () => {
+  const iam = inject(IamStore);
+  const router = inject(Router);
+  return iam.isBuyer() || iam.isProvider() || iam.isAdmin() ? true : router.parseUrl('/access-denied');
+};
+
 export const supportedRoleGuard: CanActivateFn = () => {
   const iam = inject(IamStore);
   const router = inject(Router);

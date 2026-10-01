@@ -5,7 +5,7 @@ import { catchError, Observable } from 'rxjs';
 import { ErrorHandlingEnabledBaseType } from '../../shared/infrastructure/error-handling-enabled-base-type';
 import { CreateRequest, Request } from '../domain/model/request.entity';
 import { Order } from '../domain/model/order.entity';
-import { Customer, Tank } from '../../equipment/domain/model/equipment.entity';
+import { Tank } from '../../equipment/domain/model/equipment.entity';
 import { FuelProduct } from '../../inventory/domain/model/fuel-product.entity';
 
 export type PaymentMethod = 'BANK_TRANSFER' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CASH';
@@ -39,7 +39,6 @@ export class OrderingApi extends ErrorHandlingEnabledBaseType {
     return this.http.post<Payment>(`${this.base}/payments/${id}/complete`, { transactionReference });
   }
 
-  customers(): Observable<Customer[]> { return this.http.get<Customer[]>(`${this.base}/customers`); }
   tanks(): Observable<Tank[]> { return this.http.get<Tank[]>(`${this.base}/tanks`); }
   providers(): Observable<{ id: number; name: string }[]> { return this.http.get<{ id: number; name: string }[]>(`${this.base}/provider-companies`); }
   provider(id: number): Observable<{ id: number; name: string }> { return this.http.get<{ id: number; name: string }>(`${this.base}/provider-companies/${id}`); }
