@@ -1,6 +1,6 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { IamStore } from '../../../application/iam.store';
@@ -21,6 +21,7 @@ export class Register {
   readonly role = this.route.snapshot.data['role'] as 'BUYER' | 'PROVIDER';
   readonly error = signal('');
   readonly submitting = signal(false);
+  readonly showPassword = signal(false);
   username = '';
   password = '';
   name = '';
@@ -50,8 +51,11 @@ export class Register {
     return legacyToken ? '/accept-invitation' : returnUrl;
   }
 
-  submit(): void {
-    if (this.submitting() || (this.role === 'PROVIDER' && !this.fuelTypes.length)) return;
+  submit(form: NgForm): void {
+    if (this.submitting()) return;
+    form.control.markAllAsTouched();
+    if (form.invalid) { this.error.set('auth.validation.form-invalid'); return; }
+    if (this.role === 'PROVIDER' && !this.fuelTypes.length) { this.error.set('auth.fuel-types-required'); return; }
     this.error.set('');
     this.submitting.set(true);
     this.iam.signUp({
@@ -61,7 +65,7 @@ export class Register {
       description: this.description,
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => void this.router.navigateByUrl(this.returnUrl || '/dashboard'),
-      error: (error) => { this.error.set(displayAuthError(error)); this.submitting.set(false); },
+      error: (error) => { this.error.set(displayAuthError(error, 'sign-up')); this.submitting.set(false); },
     });
   }
 }
