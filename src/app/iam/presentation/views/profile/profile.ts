@@ -48,7 +48,7 @@ export class Profile {
   onboardingName = '';
   onboardingRuc = '';
   onboardingType: 'CUSTOMER' | 'DISTRIBUTOR' = 'CUSTOMER';
-  readonly membershipRoles: MembershipRole[] = ['OWNER', 'ADMIN', 'MEMBER'];
+  readonly membershipRoles: MembershipRole[] = ['ADMIN', 'MEMBER']; // el backend rechaza invitar OWNER
   invitationEmail = '';
   invitationRole: MembershipRole = 'MEMBER';
   @ViewChild('companyForm') companyForm?: NgForm;
