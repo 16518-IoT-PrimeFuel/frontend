@@ -10,6 +10,7 @@ import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dial
 import { HttpErrorResponse } from '@angular/common/http';
 import { EMPTY, Subject, catchError, combineLatest, finalize, map, of, startWith, switchMap, takeUntil } from 'rxjs';
 import { OrderingApi } from '../../../infrastructure/ordering-api';
+import { OrderingStore } from '../../../application/ordering.store';
 import { Request } from '../../../domain/model/request.entity';
 import { IamStore } from '../../../../iam/application/iam.store';
 
@@ -25,6 +26,7 @@ type RequestAction = 'cancel' | 'accept' | 'reject';
 })
 export class RequestDetail {
   readonly iam = inject(IamStore);
+  readonly store = inject(OrderingStore);
   private readonly api = inject(OrderingApi);
   private readonly route = inject(ActivatedRoute);
   private readonly dialog = inject(MatDialog);
@@ -45,6 +47,8 @@ export class RequestDetail {
   rejectionReason = '';
 
   constructor() {
+    // Reusa los nombres del store; si se entra directo por URL, se cargan una vez (fallback: #id).
+    if (!Object.keys(this.store.providerNames()).length || !Object.keys(this.store.productNames()).length) this.store.loadNames();
     this.destroyRef.onDestroy(() => this.dialogRef?.close());
     combineLatest([this.route.paramMap, this.refresh.pipe(startWith(undefined))]).pipe(
       switchMap(([params]) => {
