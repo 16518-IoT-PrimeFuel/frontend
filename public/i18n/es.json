@@ -266,7 +266,8 @@
       "model": "Modelo",
       "capacity": "Capacidad",
       "status": "Estado"
-    }
+    },
+    "eligibility": "Elegibilidad"
   },
   "tanker-form": {
     "title": "Registrar Cisterna",
@@ -823,5 +824,31 @@
     "http-401": "Inicia sesión para crear tu organización.",
     "http-403": "No se pudo crear la organización con esta sesión.",
     "http-409": "Ya existe una organización con ese RUC o no se pudo asignar la propiedad."
+  },
+  "eligibility": {
+    "outcomes": {
+      "ELIGIBLE": "Elegible",
+      "BUSY": "Ocupada",
+      "INELIGIBLE": "No elegible"
+    }
+  },
+  "request-detail": {
+    "title": "Detalle de solicitud",
+    "back": "Volver a solicitudes",
+    "organization": "Organización",
+    "customer": "Cliente",
+    "tank": "Tanque",
+    "unit": "Unidad",
+    "source": "Origen",
+    "manual": "Manual",
+    "version": "Versión",
+    "accept": "Aceptar solicitud",
+    "reject": "Rechazar solicitud",
+    "confirm-cancel": "¿Cancelar esta solicitud pendiente?",
+    "confirm-accept": "¿Aceptar esta solicitud pendiente?",
+    "confirm-reject": "¿Rechazar esta solicitud? Indica el motivo.",
+    "cancel-success": "Solicitud cancelada.",
+    "accept-success": "Solicitud aceptada.",
+    "reject-success": "Solicitud rechazada."
   }
 }

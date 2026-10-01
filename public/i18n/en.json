@@ -266,7 +266,8 @@
       "model": "Model",
       "capacity": "Capacity",
       "status": "Status"
-    }
+    },
+    "eligibility": "Eligibility"
   },
   "tanker-form": {
     "title": "Register Tanker",
@@ -823,5 +824,31 @@
     "http-401": "Sign in to create your organization.",
     "http-403": "The organization could not be created with this session.",
     "http-409": "An organization with this RUC already exists, or ownership could not be assigned."
+  },
+  "eligibility": {
+    "outcomes": {
+      "ELIGIBLE": "Eligible",
+      "BUSY": "Busy",
+      "INELIGIBLE": "Ineligible"
+    }
+  },
+  "request-detail": {
+    "title": "Request details",
+    "back": "Back to requests",
+    "organization": "Organization",
+    "customer": "Customer",
+    "tank": "Tank",
+    "unit": "Unit",
+    "source": "Source",
+    "manual": "Manual",
+    "version": "Version",
+    "accept": "Accept request",
+    "reject": "Reject request",
+    "confirm-cancel": "Cancel this pending request?",
+    "confirm-accept": "Accept this pending request?",
+    "confirm-reject": "Reject this request? Provide a reason.",
+    "cancel-success": "Request cancelled.",
+    "accept-success": "Request accepted.",
+    "reject-success": "Request rejected."
   }
 }
