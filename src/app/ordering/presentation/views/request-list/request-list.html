@@ -22,7 +22,7 @@
   } @else if (filtered().length) {
   <div class="dl-wrap"><table class="dl-table"><thead><tr><th>{{ 'request-list.id' | translate }}</th><th>{{ 'request-list.product' | translate }}</th><th>{{ 'request-list.provider' | translate }}</th><th class="num">{{ 'request-list.quantity' | translate }}</th><th class="num">{{ 'request-list.unit-price' | translate }}</th><th>{{ 'request-list.delivery-date' | translate }}</th><th>{{ 'request-list.address' | translate }}</th><th>{{ 'request-list.status' | translate }}</th><th>{{ 'request-list.order' | translate }}</th><th>{{ 'request-list.actions' | translate }}</th></tr></thead>
     <tbody>@for (request of filtered(); track request.id) { <tr>
-      <td class="nw" [attr.data-label]="'request-list.id' | translate">#{{ request.id }}</td>
+      <td class="nw" [attr.data-label]="'request-list.id' | translate"><a [routerLink]="['/ordering/request-detail', request.id]">#{{ request.id }}</a></td>
       <td [attr.data-label]="'request-list.product' | translate">{{ store.productNames()[request.fuelProductId] ?? request.fuelProductId }}</td>
       <td [attr.data-label]="'request-list.provider' | translate">{{ store.providerNames()[request.providerId] ?? request.providerId }}</td>
       <td class="num nw" [attr.data-label]="'request-list.quantity' | translate">{{ request.quantity }} {{ request.unit }}</td>
