@@ -78,7 +78,8 @@ export class DriverList implements OnInit {
   }
 
   protected eligibilityKey(outcome: string): string {
-    return ['ELIGIBLE', 'BUSY', 'INELIGIBLE'].includes(outcome) ? `eligibility.outcomes.${outcome}` : '';
+    if (outcome === 'BUSY') return 'eligibility.driver-busy';
+    return ['ELIGIBLE', 'INELIGIBLE'].includes(outcome) ? `eligibility.outcomes.${outcome}` : '';
   }
 
   protected eligibilityClass(outcome: string): string {

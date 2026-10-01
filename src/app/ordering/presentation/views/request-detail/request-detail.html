@@ -14,12 +14,11 @@
       <div><dt>{{ 'request-detail.organization' | translate }}</dt><dd>#{{ item.organizationId }}</dd></div>
       <div><dt>{{ 'request-detail.customer' | translate }}</dt><dd>#{{ item.customerAccountId }}</dd></div>
       <div><dt>{{ 'request-detail.tank' | translate }}</dt><dd>{{ item.tankId === null ? '—' : '#' + item.tankId }}</dd></div>
-      <div><dt>{{ 'request-list.provider' | translate }}</dt><dd>#{{ item.providerId }}</dd></div>
-      <div><dt>{{ 'request-list.product' | translate }}</dt><dd>#{{ item.fuelProductId }}</dd></div>
+      <div><dt>{{ 'request-list.provider' | translate }}</dt><dd>{{ store.providerNames()[item.providerId] ?? '#' + item.providerId }}</dd></div>
+      <div><dt>{{ 'request-list.product' | translate }}</dt><dd>{{ store.productNames()[item.fuelProductId] ?? '#' + item.fuelProductId }}</dd></div>
       <div><dt>{{ 'request-list.quantity' | translate }}</dt><dd>{{ item.quantity | number:'1.0-3':locale() }}</dd></div>
-      <div><dt>{{ 'request-detail.unit' | translate }}</dt><dd>{{ (item.unit === 'LITERS' ? 'unit.liters' : item.unit === 'GALLONS' ? 'unit.gallons' : item.unit) | translate }}</dd></div>
+      <div><dt>{{ 'request-detail.unit' | translate }}</dt><dd>{{ (item.unit === 'LITRE' || item.unit === 'LITERS' ? 'unit.liters' : item.unit === 'GALLON' || item.unit === 'GALLONS' ? 'unit.gallons' : item.unit) | translate }}</dd></div>
       <div><dt>{{ 'request-list.unit-price' | translate }}</dt><dd>{{ item.unitPrice | currency:'PEN':'S/':'1.2-2':locale() }}</dd></div>
-      <div><dt>{{ 'request-list.status' | translate }}</dt><dd>{{ 'request-status.' + item.status.toLowerCase() | translate }}</dd></div>
       <div><dt>{{ 'request-detail.source' | translate }}</dt><dd>{{ (item.source === 'AUTOMATIC' ? 'request-list.automatic' : 'request-detail.manual') | translate }}</dd></div>
       @if (item.rejectionReason) { <div><dt>{{ 'request-list.rejection-reason' | translate }}</dt><dd>{{ item.rejectionReason }}</dd></div> }
       <div><dt>{{ 'request-list.order' | translate }}</dt><dd>@if (item.orderId !== null) { <a [routerLink]="['/ordering/order-detail', item.orderId]">#{{ item.orderId }}</a> } @else { — }</dd></div>

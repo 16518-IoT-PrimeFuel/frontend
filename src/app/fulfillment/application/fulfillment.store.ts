@@ -75,8 +75,8 @@ export class FulfillmentStore {
   }
 
   // ── Tankers ──────────────────────────────────────────────────────────────
-  loadTankers(): void { this.run(this.api.getTankers(), 'errors.generic', (rows) => this._tankerList.set(rows)); }
-  loadAvailableTankers(): void { this.run(this.api.getEligibleTankers(), 'errors.generic', (rows) => this._tankerList.set(rows)); }
+  loadTankers(): void { this.clearTankerEligibility(); this.run(this.api.getTankers(), 'errors.generic', (rows) => this._tankerList.set(rows)); }
+  loadAvailableTankers(): void { this.clearTankerEligibility(); this.run(this.api.getEligibleTankers(), 'errors.generic', (rows) => this._tankerList.set(rows)); }
   loadTankerById(id: number): void { this.run(this.api.getTankerById(id), 'errors.generic', (row) => this._selectedTanker.set(row)); }
 
   registerTanker(request: TankerRequest, onSuccess?: () => void): void {
@@ -102,13 +102,14 @@ export class FulfillmentStore {
     this._successMsg.set('');
     this.run(this.api.updateTankerStatus(id, request), 'errors.generic', (row) => {
       this._tankerList.update((list) => list.map((t) => (t.id === id ? row : t)));
+      this.clearTankerEligibility(id);
       this._successMsg.set('tanker-form.saved');
     });
   }
 
   // ── Drivers ──────────────────────────────────────────────────────────────
-  loadDrivers(): void { this.run(this.api.getDrivers(), 'errors.generic', (rows) => this._driverList.set(rows)); }
-  loadAvailableDrivers(): void { this.run(this.api.getEligibleDrivers(), 'errors.generic', (rows) => this._driverList.set(rows)); }
+  loadDrivers(): void { this.clearDriverEligibility(); this.run(this.api.getDrivers(), 'errors.generic', (rows) => this._driverList.set(rows)); }
+  loadAvailableDrivers(): void { this.clearDriverEligibility(); this.run(this.api.getEligibleDrivers(), 'errors.generic', (rows) => this._driverList.set(rows)); }
   loadDriverById(id: number): void { this.run(this.api.getDriverById(id), 'errors.generic', (row) => this._selectedDriver.set(row)); }
 
   registerDriver(request: DriverRequest, onSuccess?: () => void): void {
@@ -134,8 +135,20 @@ export class FulfillmentStore {
     this._successMsg.set('');
     this.run(this.api.updateDriverStatus(id, request), 'errors.generic', (row) => {
       this._driverList.update((list) => list.map((d) => (d.id === id ? row : d)));
+      this.clearDriverEligibility(id);
       this._successMsg.set('driver-form.saved');
     });
+  }
+
+  /** Un resultado de elegibilidad deja de ser válido al recargar la lista o cambiar el estado de la fila. */
+  private clearTankerEligibility(id?: number): void {
+    this._tankerEligibility.update((current) => dropEntry(current, id));
+    this._tankerEligibilityError.update((current) => dropEntry(current, id));
+  }
+
+  private clearDriverEligibility(id?: number): void {
+    this._driverEligibility.update((current) => dropEntry(current, id));
+    this._driverEligibilityError.update((current) => dropEntry(current, id));
   }
 
   clearMessages(): void { this._error.set(''); this._successMsg.set(''); }
@@ -148,4 +161,12 @@ export class FulfillmentStore {
       error: (err) => { this._error.set(err.message || fallback); this._isLoading.set(false); },
     });
   }
+}
+
+/** Sin id vacía el mapa; con id quita solo esa entrada. */
+function dropEntry<T>(current: Record<number, T>, id?: number): Record<number, T> {
+  if (id === undefined) return {};
+  const next = { ...current };
+  delete next[id];
+  return next;
 }
