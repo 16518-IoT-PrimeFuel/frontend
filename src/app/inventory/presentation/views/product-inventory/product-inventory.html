@@ -16,6 +16,7 @@
   <div class="table-container mat-elevation-z2">
     <table mat-table [dataSource]="store.productList()">
       <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.name' | translate }}</th><td mat-cell *matCellDef="let p" class="bold-text">{{ p.name }}</td></ng-container>
+      <ng-container matColumnDef="provider"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.provider' | translate }}</th><td mat-cell *matCellDef="let p">{{ providerNames()[p.providerId] || ('product-inventory.fields.provider' | translate) + ' #' + p.providerId }}</td></ng-container>
       <ng-container matColumnDef="fuelType"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.type' | translate }}</th><td mat-cell *matCellDef="let p">{{ ('fuel-type.' + p.fuelType.toLowerCase()) | translate }}</td></ng-container>
       <ng-container matColumnDef="pricePerUnit"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.price' | translate }}</th><td mat-cell *matCellDef="let p">S/ {{ p.pricePerUnit | number:'1.2-2' }} / {{ p.unit }}</td></ng-container>
       <ng-container matColumnDef="availableStock"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.available' | translate }}</th><td mat-cell *matCellDef="let p">

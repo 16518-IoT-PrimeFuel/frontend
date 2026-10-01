@@ -1,4 +1,5 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, TemplateRef, ViewChild, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +12,7 @@ import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { InventoryStore } from '../../../application/inventory.store';
 import { IamStore } from '../../../../iam/application/iam.store';
+import { InventoryApi } from '../../../infrastructure/inventory-api';
 
 /**
  * @summary Vista de catálogo de productos de combustible.
@@ -43,9 +45,13 @@ export class ProductInventory implements OnInit {
   protected readonly iam = inject(IamStore);
   protected readonly stockValues: Record<number, number> = {};
   protected readonly isProvider = this.iam.isProvider;
+  private readonly api = inject(InventoryApi);
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly providerNames = signal<Record<number, string>>({});
 
   protected readonly displayedColumns: string[] = [
     'name',
+    ...(this.iam.isBuyer() ? ['provider'] : []),
     'fuelType',
     'pricePerUnit',
     'availableStock',
@@ -55,6 +61,13 @@ export class ProductInventory implements OnInit {
   ];
 
   ngOnInit(): void {
+    if (this.iam.isBuyer()) {
+      this.api.getProviders().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: providers => this.providerNames.set(Object.fromEntries(providers.map(p => [p.id, p.name]))),
+        // Products remain visible with the provider ID if the directory is unavailable.
+        error: () => this.providerNames.set({}),
+      });
+    }
     this.loadProducts();
   }
 
@@ -67,11 +80,13 @@ export class ProductInventory implements OnInit {
   }
 
   protected saveStock(productId: number): void {
+    if (!this.isProvider()) return;
     const stock = this.stockValues[productId];
     if (Number.isFinite(stock) && stock >= 0) this.store.updateStock(productId, stock);
   }
 
   protected onDelete(productId: number): void {
+    if (!this.isProvider()) return;
     this.dialog.open(this.confirmDialog).afterClosed().subscribe((ok) => ok && this.store.deleteProduct(productId));
   }
 }
