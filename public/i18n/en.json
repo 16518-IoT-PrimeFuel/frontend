@@ -35,7 +35,7 @@
     "add-product": "Add Product",
     "inventory": "Inventory",
     "product-inventory": "My Fuel Products",
-    "catalog": "Fuel Product Catalog"
+    "catalog": "Products and prices"
   },
   "ordering": {
     "requests": "Requests",
@@ -143,8 +143,8 @@
   "product-inventory": {
     "title": "Product Inventory",
     "subtitle": "Manage your fuel products",
-    "catalog-title": "Fuel Product Catalog",
-    "catalog-subtitle": "Browse available fuel products",
+    "catalog-title": "Products and prices",
+    "catalog-subtitle": "Browse products and prices from all FullTank providers",
     "refresh": "Refresh products",
     "stock-input": "Available stock",
     "update-stock": "Update stock",
@@ -155,6 +155,7 @@
     "empty": "No products available",
     "fields": {
       "name": "Product Name",
+      "provider": "Provider",
       "type": "Fuel Type",
       "price": "Price per Unit",
       "available": "Available Stock",
@@ -293,7 +294,21 @@
     "saved": "Tanker updated successfully",
     "edit-title": "Edit Tanker",
     "edit-subtitle": "Update the tanker data",
-    "save": "Save changes"
+    "save": "Save changes",
+    "fleet": "Dispatch fleet",
+    "identity-title": "Tanker identification",
+    "identity-help": "Enter the vehicle license plate, brand and model.",
+    "plate-help": "Up to 20 characters, as shown on the vehicle registration.",
+    "capacity-title": "Capacity and operation",
+    "capacity-help": "Set the tanker's cargo volume and operational status.",
+    "unit-help": "Choose LITERS, GALLONS or enter your fleet's unit (up to 20 characters).",
+    "status-help": "Operational status is independent of record activation.",
+    "active-record": "Active record. Manage activation from the tanker list.",
+    "inactive-record": "Deactivated record. Activate it from the tanker list to enable it.",
+    "loading": "Loading tanker details…",
+    "saving": "Saving…",
+    "retry": "Retry",
+    "invalid-id": "The tanker identifier is invalid."
   },
   "driver-list": {
     "title": "Driver Registry",
@@ -435,7 +450,54 @@
     "no-match": "No requests match the filter.",
     "clear": "Clear filter",
     "filter-status": "Filter by status",
-    "all-statuses": "All"
+    "all-statuses": "All",
+    "inbox-title": "Incoming requests",
+    "inbox-subtitle": "Review requests from all your customers, check their information and follow their status.",
+    "buyer-subtitle": "Review your requests, delivery information and current status.",
+    "load-error": "The query or decision could not be completed. Retry; if the problem continues, contact your administrator.",
+    "no-match-hint": "Try another search or clear the filters to see every request.",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "search": "Search product, customer or address",
+    "incomplete-only": "Missing information",
+    "result-count": "{{count}} of {{total}} requests",
+    "empty-inbox-hint": "Requests sent to your company will appear here. Refresh to check for new requests.",
+    "empty-buyer-hint": "Create a fuel request and follow its status here.",
+    "table-label": "Requests and tracking",
+    "customer": "Customer",
+    "reference": "Request",
+    "information": "Information",
+    "complete": "Complete",
+    "incomplete": "Missing information",
+    "track": "View status and tracking",
+    "tracking-title": "Request tracking",
+    "details": "Open details",
+    "follow-order": "Track order",
+    "missing-title": "Information required to accept",
+    "missing-hint": "Ask the customer to complete these details before accepting. The tank is optional.",
+    "confirm-accept": "Accepting creates a fuel order with this request's information.",
+    "confirm-reject": "Enter a rejection reason. The customer can read it in the tracking view.",
+    "confirm-decision": "Confirm decision",
+    "manage-request": "Manage request",
+    "tracking": {
+      "unknown": "The status is unavailable. Refresh the inbox before making a decision.",
+      "pending": "The request was registered and awaits the provider's decision.",
+      "accepted": "The provider accepted this request. Open the linked order to continue tracking.",
+      "rejected": "The provider rejected this request. Review the reason before creating another request.",
+      "cancelled": "The customer cancelled this request. It no longer accepts decisions."
+    },
+    "missing": {
+      "organization": "Customer organization",
+      "status": "Valid request status",
+      "customer": "Requesting customer",
+      "product": "Fuel product",
+      "provider": "Receiving provider",
+      "quantity": "Valid quantity greater than zero",
+      "unit": "Measurement unit",
+      "price": "Valid unit price",
+      "address": "Delivery address",
+      "date": "Valid delivery date"
+    }
   },
   "request-form": {
     "create-title": "New Fuel Request",
@@ -506,6 +568,7 @@
     "paid-at": "Paid at"
   },
   "request-status": {
+    "unknown": "Unknown status",
     "pending_approval": "Pending Approval",
     "pending": "Pending",
     "accepted": "Accepted",
@@ -568,6 +631,9 @@
       "provider-link": "Register as a distributor",
       "buyer-title": "Buyer registration",
       "provider-title": "Distributor registration",
+      "email-hint": "Use a valid email without an existing account. If you already have an account, sign in.",
+      "password-hint": "Use between 8 and 120 characters. The eye icon shows or hides your password.",
+      "ruc-hint": "Enter exactly 11 digits, without spaces or hyphens. An already registered RUC is not allowed.",
       "submit": "Create account"
     },
     "username": "Email",
@@ -599,10 +665,31 @@
       "buyer-conflict": "A buyer company with this RUC already exists.",
       "provider-conflict": "A distributor company with this RUC already exists.",
       "connection": "The server could not be reached.",
-      "bad-request": "Check the submitted information.",
+      "bad-request": "The submitted data is invalid. Check the email, password and form fields.",
       "unauthorized": "The credentials were not accepted.",
-      "conflict": "This record conflicts with an existing account.",
-      "generic": "The request could not be completed."
+      "conflict": "The email or RUC is already registered. Use different details or sign in to your account.",
+      "generic": "The operation could not be completed. Try again; if the problem persists, contact the administrator.",
+      "credentials": "The email or password is incorrect. Check both or reset your password.",
+      "ruc-conflict": "This RUC already belongs to a registered organization. Use another RUC or sign in to your account.",
+      "registration-unavailable": "The server does not have the role required for registration. Contact the administrator.",
+      "forbidden": "You do not have permission to perform this operation. Sign in with an authorized account.",
+      "too-many-attempts": "You have made too many attempts. Wait a few minutes before trying again.",
+      "server": "The server could not complete the operation. Try again in a few minutes."
+    },
+    "validation": {
+      "form-invalid": "Correct the highlighted fields before continuing.",
+      "email-required": "Enter your email address.",
+      "email-invalid": "Enter a valid email, for example name@company.com.",
+      "email-length": "The email must not exceed 100 characters.",
+      "password-required": "Enter your password; it cannot be empty or contain only spaces.",
+      "password-length": "The password must contain between 8 and 120 characters.",
+      "company-required": "Enter the company name; spaces alone are not allowed.",
+      "ruc-required": "Enter the company's RUC.",
+      "ruc-invalid": "The RUC must contain exactly 11 digits, without letters, spaces or hyphens.",
+      "address-required": "Enter the company address; spaces alone are not allowed.",
+      "phone-required": "Enter a contact phone number.",
+      "phone-invalid": "Use digits, spaces, parentheses, periods or hyphens, with + only at the start. Letters are not allowed.",
+      "sector-required": "Enter the business sector; spaces alone are not allowed."
     }
   },
   "equipment": {

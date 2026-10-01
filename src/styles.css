@@ -10,6 +10,8 @@
 .iam-subtitle { margin: 4px 0 0; color: #4b5563; }
 .iam-note { margin: 0; padding: 10px 12px; border-radius: 6px; background: #eef2ff; color: #1e3a8a; }
 .iam-field { display: grid; gap: 8px; }
+.iam-hint { display: flex; align-items: flex-start; gap: 6px; color: #4b5563; font-size: 0.8rem; font-weight: 400; line-height: 1.5; }
+.iam-hint svg { flex-shrink: 0; margin-top: 2px; }
 .iam-forgot { justify-self: end; font-size: 0.9rem; }
 .iam-card input[aria-invalid="true"] { border-color: #a32121; }
 .iam-card button:disabled { opacity: 0.7; cursor: progress; }
@@ -21,6 +23,7 @@
 .iam-card .iam-password-toggle:hover { color: #1e3a8a; }
 .iam-card .iam-password-toggle:focus-visible { outline: 2px solid #1e3a8a; outline-offset: 2px; }
 .iam-error { margin: 0; color: #a32121; }
+.iam-error:empty { display: none; }
 
 /* Listados de órdenes y solicitudes */
 .dl-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 16px; margin: 16px 0; }

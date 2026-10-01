@@ -35,7 +35,7 @@
     "add-product": "Agregar Producto",
     "inventory": "Inventario",
     "product-inventory": "Mis productos de combustible",
-    "catalog": "Catálogo de combustibles"
+    "catalog": "Productos y precios"
   },
   "ordering": {
     "requests": "Solicitudes",
@@ -143,8 +143,8 @@
   "product-inventory": {
     "title": "Inventario de Productos",
     "subtitle": "Gestiona tus productos de combustible",
-    "catalog-title": "Catálogo de Combustibles",
-    "catalog-subtitle": "Consulta los productos de combustible disponibles",
+    "catalog-title": "Productos y precios",
+    "catalog-subtitle": "Consulta los productos y precios de todos los proveedores de FullTank",
     "refresh": "Actualizar productos",
     "stock-input": "Stock disponible",
     "update-stock": "Actualizar stock",
@@ -155,6 +155,7 @@
     "empty": "No hay productos disponibles",
     "fields": {
       "name": "Nombre del Producto",
+      "provider": "Proveedor",
       "type": "Tipo de Combustible",
       "price": "Precio por Unidad",
       "available": "Stock Disponible",
@@ -293,7 +294,21 @@
     "saved": "Cisterna actualizada correctamente",
     "edit-title": "Editar cisterna",
     "edit-subtitle": "Actualiza los datos de la cisterna",
-    "save": "Guardar cambios"
+    "save": "Guardar cambios",
+    "fleet": "Flota de despacho",
+    "identity-title": "Identificación de la cisterna",
+    "identity-help": "Completa la placa, marca y modelo del vehículo.",
+    "plate-help": "Hasta 20 caracteres, tal como figura en el registro del vehículo.",
+    "capacity-title": "Capacidad y operación",
+    "capacity-help": "Indica el volumen de carga y el estado operativo de la cisterna.",
+    "unit-help": "Selecciona LITERS, GALLONS o escribe la unidad de tu flota (hasta 20 caracteres).",
+    "status-help": "El estado operativo es independiente de la activación del registro.",
+    "active-record": "Registro activo. Su activación se gestiona desde la lista de cisternas.",
+    "inactive-record": "Registro desactivado. Para habilitarlo, actívalo desde la lista de cisternas.",
+    "loading": "Cargando datos de la cisterna…",
+    "saving": "Guardando…",
+    "retry": "Reintentar",
+    "invalid-id": "El identificador de la cisterna no es válido."
   },
   "driver-list": {
     "title": "Registro de Conductores",
@@ -435,7 +450,54 @@
     "no-match": "Ninguna solicitud coincide con el filtro.",
     "clear": "Quitar filtro",
     "filter-status": "Filtrar por estado",
-    "all-statuses": "Todas"
+    "all-statuses": "Todas",
+    "inbox-title": "Solicitudes recibidas",
+    "inbox-subtitle": "Revisa las solicitudes de todos tus clientes, comprueba sus datos y consulta su estado.",
+    "buyer-subtitle": "Consulta tus solicitudes, sus datos de entrega y el estado de cada una.",
+    "load-error": "No se pudo completar la consulta o la decisión. Reintenta; si el problema continúa, contacta al administrador.",
+    "no-match-hint": "Prueba otra búsqueda o quita los filtros para ver todas las solicitudes.",
+    "refresh": "Actualizar",
+    "retry": "Reintentar",
+    "search": "Buscar producto, cliente o dirección",
+    "incomplete-only": "Con información faltante",
+    "result-count": "{{count}} de {{total}} solicitudes",
+    "empty-inbox-hint": "Aquí aparecerán las solicitudes que los clientes envíen a tu empresa. Usa Actualizar para volver a consultar.",
+    "empty-buyer-hint": "Crea una solicitud para pedir combustible y seguir su estado desde aquí.",
+    "table-label": "Solicitudes y seguimiento",
+    "customer": "Cliente",
+    "reference": "Solicitud",
+    "information": "Información",
+    "complete": "Completa",
+    "incomplete": "Faltan datos",
+    "track": "Ver estado y seguimiento",
+    "tracking-title": "Seguimiento de solicitud",
+    "details": "Abrir detalle",
+    "follow-order": "Seguir orden",
+    "missing-title": "Información necesaria para aceptar",
+    "missing-hint": "Solicita al cliente que complete estos datos antes de aceptar. El tanque es opcional.",
+    "confirm-accept": "Al aceptar se generará la orden de combustible con los datos de esta solicitud.",
+    "confirm-reject": "Indica el motivo del rechazo. El cliente podrá consultarlo en el seguimiento.",
+    "confirm-decision": "Confirmar decisión",
+    "manage-request": "Gestionar solicitud",
+    "tracking": {
+      "unknown": "El estado no está disponible. Actualiza la bandeja antes de tomar una decisión.",
+      "pending": "La solicitud fue registrada y está pendiente de la decisión del proveedor.",
+      "accepted": "El proveedor aceptó la solicitud. Consulta la orden vinculada para continuar el seguimiento.",
+      "rejected": "El proveedor rechazó la solicitud. Revisa el motivo antes de crear otra.",
+      "cancelled": "El cliente canceló la solicitud. Esta solicitud ya no admite decisiones."
+    },
+    "missing": {
+      "organization": "Organización del cliente",
+      "status": "Estado de solicitud válido",
+      "customer": "Cliente solicitante",
+      "product": "Producto de combustible",
+      "provider": "Proveedor destinatario",
+      "quantity": "Cantidad válida mayor que cero",
+      "unit": "Unidad de medida",
+      "price": "Precio unitario válido",
+      "address": "Dirección de entrega",
+      "date": "Fecha de entrega válida"
+    }
   },
   "request-form": {
     "create-title": "Nueva Solicitud",
@@ -506,6 +568,7 @@
     "paid-at": "Pagado el"
   },
   "request-status": {
+    "unknown": "Sin estado",
     "pending_approval": "Pendiente de Aprobación",
     "pending": "Pendiente",
     "accepted": "Aceptada",
@@ -568,6 +631,9 @@
       "provider-link": "Registrarse como distribuidor",
       "buyer-title": "Registro de solicitante",
       "provider-title": "Registro de distribuidor",
+      "email-hint": "Usa un correo válido que no tenga una cuenta registrada. Si ya tienes cuenta, inicia sesión.",
+      "password-hint": "Usa entre 8 y 120 caracteres. El icono del ojo permite mostrar u ocultar la contraseña.",
+      "ruc-hint": "Ingresa exactamente 11 dígitos, sin espacios ni guiones. No se permite un RUC ya registrado.",
       "submit": "Crear cuenta"
     },
     "username": "Correo electrónico",
@@ -599,10 +665,31 @@
       "buyer-conflict": "Ya existe una empresa solicitante con este RUC.",
       "provider-conflict": "Ya existe una empresa distribuidora con este RUC.",
       "connection": "No se pudo conectar con el servidor.",
-      "bad-request": "Revisa los datos enviados.",
+      "bad-request": "Los datos enviados no son válidos. Revisa el correo, la contraseña y los campos del formulario.",
       "unauthorized": "No se aceptaron las credenciales.",
-      "conflict": "El registro entra en conflicto con una cuenta existente.",
-      "generic": "No se pudo completar la solicitud."
+      "conflict": "El correo o el RUC ya están registrados. Usa otros datos o inicia sesión con tu cuenta.",
+      "generic": "No se pudo completar la operación. Intenta nuevamente; si el problema persiste, contacta al administrador.",
+      "credentials": "El correo o la contraseña son incorrectos. Revisa ambos o recupera tu contraseña.",
+      "ruc-conflict": "Este RUC ya pertenece a una organización registrada. Usa otro RUC o inicia sesión con tu cuenta.",
+      "registration-unavailable": "El servidor no tiene disponible el rol necesario para el registro. Contacta al administrador.",
+      "forbidden": "No tienes permiso para realizar esta operación. Inicia sesión con una cuenta autorizada.",
+      "too-many-attempts": "Has realizado demasiados intentos. Espera unos minutos antes de volver a intentar.",
+      "server": "El servidor no pudo completar la operación. Intenta nuevamente en unos minutos."
+    },
+    "validation": {
+      "form-invalid": "Corrige los campos marcados antes de continuar.",
+      "email-required": "Ingresa tu correo electrónico.",
+      "email-invalid": "Ingresa un correo válido, por ejemplo nombre@empresa.com.",
+      "email-length": "El correo no puede superar los 100 caracteres.",
+      "password-required": "Ingresa tu contraseña; no puede estar vacía ni contener solo espacios.",
+      "password-length": "La contraseña debe tener entre 8 y 120 caracteres.",
+      "company-required": "Ingresa el nombre de la empresa; no se permiten solo espacios.",
+      "ruc-required": "Ingresa el RUC de la empresa.",
+      "ruc-invalid": "El RUC debe contener exactamente 11 dígitos, sin letras, espacios ni guiones.",
+      "address-required": "Ingresa la dirección de la empresa; no se permiten solo espacios.",
+      "phone-required": "Ingresa un teléfono de contacto.",
+      "phone-invalid": "Usa números, espacios, paréntesis, puntos o guiones, y + solo al inicio. No se permiten letras.",
+      "sector-required": "Ingresa el sector comercial; no se permiten solo espacios."
     }
   },
   "equipment": {

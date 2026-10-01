@@ -50,17 +50,17 @@ export class Layout implements OnInit {
   ngOnInit(): void { this.notifications.refreshUnreadCount(); }
 
   options = [
+    { label: 'inventory.catalog', icon: 'local_gas_station', link: '/fuel-products', roles: ['BUYER'] },
     { label: 'nav.equipment', icon: 'oil_barrel', link: '/tanks', roles: ['BUYER'] },
     { label: 'nav.dashboard', icon: 'dashboard', link: '/dashboard', roles: ['BUYER', 'PROVIDER'] },
     {
       label: 'nav.inventory',
       icon: 'inventory_2',
       link: '/fuel-products',
-      roles: ['BUYER', 'PROVIDER'],
+      roles: ['PROVIDER'],
       children: [
         { label: 'inventory.product-inventory', link: '/fuel-products', roles: ['PROVIDER'] },
         { label: 'inventory.add-product', link: '/fuel-products/product-form', roles: ['PROVIDER'] },
-        { label: 'inventory.catalog', link: '/fuel-products', roles: ['BUYER'] },
       ]
     },
     {
