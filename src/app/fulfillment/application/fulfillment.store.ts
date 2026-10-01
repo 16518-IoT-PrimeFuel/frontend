@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
-import { Observable } from 'rxjs';
+import { DestroyRef, Injectable, signal } from '@angular/core';
+import { Observable, finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FulfillmentApi } from '../infrastructure/fulfillment-api';
 import { Tanker } from '../domain/model/tanker.entity';
 import { Driver } from '../domain/model/driver.entity';
@@ -23,6 +24,17 @@ export class FulfillmentStore {
   private readonly _successMsg = signal<string>('');
   private readonly _driverEligibility = signal<Record<number, { outcome: string; reason: string }>>({});
 
+  private readonly _tankerEligibility = signal<Record<number, { outcome: string; reason: string }>>({});
+  private readonly _tankerEligibilityLoading = signal<Record<number, boolean>>({});
+  private readonly _tankerEligibilityError = signal<Record<number, string>>({});
+  private readonly _driverEligibilityLoading = signal<Record<number, boolean>>({});
+  private readonly _driverEligibilityError = signal<Record<number, string>>({});
+
+  public readonly tankerEligibility = this._tankerEligibility.asReadonly();
+  public readonly tankerEligibilityLoading = this._tankerEligibilityLoading.asReadonly();
+  public readonly tankerEligibilityError = this._tankerEligibilityError.asReadonly();
+  public readonly driverEligibilityLoading = this._driverEligibilityLoading.asReadonly();
+  public readonly driverEligibilityError = this._driverEligibilityError.asReadonly();
   public readonly tankerList = this._tankerList.asReadonly();
   public readonly selectedTanker = this._selectedTanker.asReadonly();
   public readonly driverList = this._driverList.asReadonly();
@@ -34,10 +46,31 @@ export class FulfillmentStore {
 
   constructor(private api: FulfillmentApi) {}
 
-  checkDriverEligibility(id: number): void {
-    this.api.checkDriverEligibility(id).subscribe({
+  checkDriverEligibility(id: number, destroyRef: DestroyRef): void {
+    if (this._driverEligibilityLoading()[id]) return;
+    this._driverEligibilityLoading.update((current) => ({ ...current, [id]: true }));
+    this._driverEligibilityError.update((current) => ({ ...current, [id]: '' }));
+    this._driverEligibility.update((current) => { const next = { ...current }; delete next[id]; return next; });
+    this.api.checkDriverEligibility(id).pipe(
+      takeUntilDestroyed(destroyRef),
+      finalize(() => this._driverEligibilityLoading.update((current) => ({ ...current, [id]: false }))),
+    ).subscribe({
       next: (result) => this._driverEligibility.update((current) => ({ ...current, [id]: result })),
-      error: (err) => this._error.set(err.message || 'errors.generic'),
+      error: (err) => this._driverEligibilityError.update((current) => ({ ...current, [id]: err.message || 'errors.generic' })),
+    });
+  }
+
+  checkTankerEligibility(id: number, destroyRef: DestroyRef): void {
+    if (this._tankerEligibilityLoading()[id]) return;
+    this._tankerEligibilityLoading.update((current) => ({ ...current, [id]: true }));
+    this._tankerEligibilityError.update((current) => ({ ...current, [id]: '' }));
+    this._tankerEligibility.update((current) => { const next = { ...current }; delete next[id]; return next; });
+    this.api.checkTankerEligibility(id).pipe(
+      takeUntilDestroyed(destroyRef),
+      finalize(() => this._tankerEligibilityLoading.update((current) => ({ ...current, [id]: false }))),
+    ).subscribe({
+      next: (result) => this._tankerEligibility.update((current) => ({ ...current, [id]: result })),
+      error: (err) => this._tankerEligibilityError.update((current) => ({ ...current, [id]: err.message || 'errors.generic' })),
     });
   }
 

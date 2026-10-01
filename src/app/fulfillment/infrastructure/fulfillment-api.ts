@@ -35,6 +35,8 @@ export class FulfillmentApi {
   updateTanker(id: number, request: Partial<Omit<Tanker, 'id' | 'providerId' | 'createdAt'>>): Observable<Tanker> { return this._tankerEndpoint.save(request, id); }
   updateTankerStatus(id: number, request: Pick<Tanker, 'status'>): Observable<Tanker> { return this._tankerEndpoint.setActive(id, request.status !== 'INACTIVE'); }
 
+  checkTankerEligibility(id: number) { return this._tankerEndpoint.eligibility(id); }
+
   // ── Drivers ──────────────────────────────────────────────────────────────
   getDrivers(): Observable<Driver[]> { return this._driverEndpoint.list(); }
   getEligibleDrivers(): Observable<Driver[]> { return this._driverEndpoint.list(true); }
