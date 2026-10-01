@@ -15,6 +15,21 @@ function isExpired(token: string | undefined): boolean {
   }
 }
 
+/** Punto único de log de errores HTTP. Nunca registra cabeceras, cuerpo de la petición ni tokens de la URL. */
+function logHttpError(method: string, url: string, error: HttpErrorResponse): void {
+  const invitationToken = /\/invitations\/[^/]+\/accept/.test(url);
+  const safeUrl = url.split(/[?#]/)[0].replace(/\/invitations\/[^/]+\/accept/, '/invitations/:token/accept');
+  const body = typeof error.error === 'object' && error.error !== null ? error.error : null;
+  console.error(`[FullTank HTTP ${error.status || 'network'}] ${method} ${safeUrl}`, {
+    status: error.status,
+    statusText: error.statusText,
+    // El 404 de una invitación puede repetir el token en el cuerpo: se omite.
+    code: invitationToken ? undefined : body?.code,
+    message: invitationToken ? undefined : body?.message ?? (typeof error.error === 'string' ? error.error.slice(0, 300) : error.message),
+    details: invitationToken ? undefined : body?.details,
+  });
+}
+
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const iam = inject(IamStore);
   const token = iam.session()?.token;
@@ -33,6 +48,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     : withLanguage;
 
   return next(authenticatedRequest).pipe(catchError((error: unknown) => {
+    if (error instanceof HttpErrorResponse && !request.url.includes('/i18n/')) logHttpError(request.method, request.url, error);
     if (error instanceof HttpErrorResponse && error.status === 401 && iam.session()?.token === token && isExpired(token)) {
       iam.logout();
     }
