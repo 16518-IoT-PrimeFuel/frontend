@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -35,6 +35,7 @@ import { FulfillmentStore } from '../../../application/fulfillment.store';
   styleUrl: './tanker-list.css',
 })
 export class TankerList implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialog = inject(MatDialog);
   @ViewChild('confirmDialog') private confirmDialog!: TemplateRef<unknown>;
   protected readonly store = inject(FulfillmentStore);
@@ -69,6 +70,18 @@ export class TankerList implements OnInit {
     const apply = () => this.store.updateTankerStatus(tankerId, { status: active ? 'INACTIVE' : 'AVAILABLE' });
     if (active) this.dialog.open(this.confirmDialog).afterClosed().subscribe((ok) => ok && apply());
     else apply();
+  }
+
+  protected onEligibility(id: number): void {
+    this.store.checkTankerEligibility(id, this.destroyRef);
+  }
+
+  protected eligibilityKey(outcome: string): string {
+    return ['ELIGIBLE', 'BUSY', 'INELIGIBLE'].includes(outcome) ? `eligibility.outcomes.${outcome}` : '';
+  }
+
+  protected eligibilityClass(outcome: string): string {
+    return ['ELIGIBLE', 'BUSY', 'INELIGIBLE'].includes(outcome) ? outcome.toLowerCase() : 'unknown';
   }
 
   protected getStatusClass(status: string): string {

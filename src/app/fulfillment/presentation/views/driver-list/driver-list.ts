@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,7 +10,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { FulfillmentStore } from '../../../application/fulfillment.store';
-import { IamStore } from '../../../../iam/application/iam.store';
 
 /**
  * @summary Vista de lista de conductores.
@@ -36,6 +35,7 @@ import { IamStore } from '../../../../iam/application/iam.store';
   styleUrl: './driver-list.css',
 })
 export class DriverList implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dialog = inject(MatDialog);
   @ViewChild('confirmDialog') private confirmDialog!: TemplateRef<unknown>;
   protected readonly store = inject(FulfillmentStore);
@@ -71,6 +71,18 @@ export class DriverList implements OnInit {
     const apply = () => this.store.updateDriverStatus(driverId, { status: active ? 'INACTIVE' : 'AVAILABLE' });
     if (active) this.dialog.open(this.confirmDialog).afterClosed().subscribe((ok) => ok && apply());
     else apply();
+  }
+
+  protected onEligibility(id: number): void {
+    this.store.checkDriverEligibility(id, this.destroyRef);
+  }
+
+  protected eligibilityKey(outcome: string): string {
+    return ['ELIGIBLE', 'BUSY', 'INELIGIBLE'].includes(outcome) ? `eligibility.outcomes.${outcome}` : '';
+  }
+
+  protected eligibilityClass(outcome: string): string {
+    return ['ELIGIBLE', 'BUSY', 'INELIGIBLE'].includes(outcome) ? outcome.toLowerCase() : 'unknown';
   }
 
   protected getStatusClass(status: string): string {

@@ -34,6 +34,11 @@ export class TankerApiEndpoint extends BaseApiEndpoint<Tanker, TankerResource, T
       catchError(this.handleError('Failed to save tanker')));
   }
 
+  eligibility(id: number): Observable<{ outcome: string; reason: string }> {
+    return this.http.get<{ outcome: string; reason: string }>(`${this.endpointUrl}/${id}/eligibility`)
+      .pipe(catchError(this.handleError(`Failed to check tanker eligibility ${id}`, true)));
+  }
+
   setActive(id: number, active: boolean): Observable<Tanker> {
     return this.http.post<TankerResource>(`${this.endpointUrl}/${id}/${active ? 'activate' : 'deactivate'}`, {}).pipe(
       map((row) => this.assembler.toEntityFromResource(row)),
