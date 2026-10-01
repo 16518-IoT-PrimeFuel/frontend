@@ -1,49 +1,59 @@
 <main class="dashboard">
   <header class="heading">
     <div>
-      <h1>{{ (isBuyer ? 'analytics.buyer-title' : (isReport ? 'analytics.report-title' : 'analytics.provider-title')) | translate }}</h1>
+      <h1>{{ (isBuyer ? 'analytics.buyer-title' : 'analytics.provider-title') | translate }}</h1>
       <p>{{ (isBuyer ? 'analytics.buyer-subtitle' : 'analytics.provider-subtitle') | translate }}</p>
     </div>
-    @if (isReport) { <button type="button" (click)="print()">{{ 'analytics.print' | translate }}</button> }
+    <nav class="actions" [attr.aria-label]="'analytics.quick-links' | translate">
+      @if (isBuyer) { <a class="primary" routerLink="/ordering/request-form">{{ 'analytics.new-request' | translate }}</a> }
+      <a routerLink="/analytics">{{ 'analytics.open-analytics' | translate }}</a>
+    </nav>
   </header>
 
   @if (loading()) { <p role="status">{{ 'analytics.loading' | translate }}</p> }
-  @if (error()) { <p role="alert">{{ 'analytics.error' | translate }}</p> }
+  @if (error()) {
+    <div class="state" role="alert">
+      <p>{{ 'analytics.error' | translate }}</p>
+      <button type="button" (click)="load()">{{ 'analytics.retry' | translate }}</button>
+    </div>
+  }
 
-  @if (analytics(); as data) {
-    @if (isBuyer) {
-      <section class="cards" aria-label="Buyer analytics">
-        <article><h2>{{ 'analytics.total-orders' | translate }}</h2><p>{{ buyerData()?.totalOrders | number }}</p></article>
-        <article><h2>{{ 'analytics.total-spent' | translate }}</h2><p>{{ buyerData()?.totalSpent | currency:'PEN':'symbol':'1.2-2' }}</p></article>
-        <article><h2>{{ 'analytics.completed-payments' | translate }}</h2><p>{{ buyerData()?.completedPayments | number }}</p></article>
-        <article><h2>{{ 'analytics.pending-payments' | translate }}</h2><p>{{ buyerData()?.pendingPayments | number }}</p></article>
-      </section>
-      <section class="panel">
-        <h2>{{ 'analytics.orders-by-status' | translate }}</h2>
-        <ul class="status-list">
-          @for (item of statusCounts(); track item.status) {
-            <li><span>{{ ('order-status.' + item.status.toLowerCase()) | translate }}</span><strong>{{ item.count }}</strong></li>
+  @if (analytics()) {
+    <div class="layout">
+      <div class="main">
+        <section class="kpis" [attr.aria-label]="'analytics.indicators' | translate">
+          @for (kpi of kpis(); track kpi.label; let first = $first) {
+            <article [class.lead]="first">
+              <h2>{{ kpi.label | translate }}</h2>
+              <p class="value">{{ kpi.money ? (kpi.value | currency:'PEN':'S/ ':'1.2-2') : (kpi.value | number) }}</p>
+              @if (kpi.hint) { <small>{{ kpi.hint | translate }}</small> }
+            </article>
           }
-        </ul>
-      </section>
-      <ng-container *ngTemplateOutlet="monthly; context: { title: 'analytics.monthly-spending' }"></ng-container>
-    } @else {
-      <section class="cards" aria-label="Provider analytics">
-        <article><h2>{{ 'analytics.total-orders' | translate }}</h2><p>{{ providerData()?.totalOrders | number }}</p></article>
-        <article><h2>{{ 'analytics.confirmed-orders' | translate }}</h2><p>{{ providerData()?.confirmedOrders | number }}</p></article>
-        <article><h2>{{ 'analytics.cancelled-orders' | translate }}</h2><p>{{ providerData()?.cancelledOrders | number }}</p></article>
-        <article><h2>{{ 'analytics.total-revenue' | translate }}</h2><p>{{ providerData()?.totalRevenue | currency:'PEN':'symbol':'1.2-2' }}</p></article>
-      </section>
-      <ng-container *ngTemplateOutlet="monthly; context: { title: 'analytics.monthly-revenue' }"></ng-container>
-    }
+        </section>
+        <section class="panel">
+          <h2>{{ 'analytics.orders-by-status' | translate }}</h2>
+          <ul class="status-list">
+            @for (item of statusCounts(); track item.status) {
+              <li [class.zero]="!item.count"><span>{{ ('order-status.' + item.status.toLowerCase()) | translate }}</span><strong>{{ item.count }}</strong></li>
+            }
+          </ul>
+        </section>
+      </div>
+      <aside class="panel recent" [attr.aria-label]="'analytics.recent-orders' | translate">
+        <h2>{{ 'analytics.recent-orders' | translate }}</h2>
+        @if (recent().length) {
+          <ul>
+            @for (order of recent(); track order.id) {
+              <li><a [routerLink]="['/ordering/order-detail', order.id]">
+                <span class="id">#{{ order.id }}</span>
+                <span class="status">{{ ('order-status.' + order.status.toLowerCase()) | translate }}</span>
+                <span class="meta">{{ order.totalPrice | currency:'PEN':'S/ ':'1.2-2' }}@if (order.scheduledDate) { · {{ order.scheduledDate | date:'mediumDate' }} }</span>
+              </a></li>
+            }
+          </ul>
+          <a class="all" routerLink="/ordering/order-list">{{ 'analytics.all-orders' | translate }}</a>
+        } @else { <p class="muted">{{ 'analytics.no-orders' | translate }}</p> }
+      </aside>
+    </div>
   }
 </main>
-
-<ng-template #monthly let-title="title">
-  <section class="panel monthly">
-    <h2>{{ title | translate }}</h2>
-    @if (months().length) {
-      <div class="chart"><canvas baseChart [data]="chartData()" [options]="chartOptions" [type]="'bar'"></canvas></div>
-    } @else { <p>{{ 'analytics.no-monthly-data' | translate }}</p> }
-  </section>
-</ng-template>
