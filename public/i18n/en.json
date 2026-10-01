@@ -267,7 +267,8 @@
       "capacity": "Capacity",
       "status": "Status"
     },
-    "eligibility": "Eligibility"
+    "eligibility": "Eligibility",
+    "eligibility-for": "Check eligibility of tanker {{plate}}"
   },
   "tanker-form": {
     "title": "Register Tanker",
@@ -311,7 +312,8 @@
       "status": "Status",
       "eligibility": "Check eligibility"
     },
-    "eligibility": "Check eligibility"
+    "eligibility": "Check eligibility",
+    "eligibility-for": "Check eligibility of {{name}}"
   },
   "driver-form": {
     "title": "Register Driver",
@@ -830,7 +832,8 @@
       "ELIGIBLE": "Eligible",
       "BUSY": "Busy",
       "INELIGIBLE": "Ineligible"
-    }
+    },
+    "driver-busy": "Busy"
   },
   "request-detail": {
     "title": "Request details",

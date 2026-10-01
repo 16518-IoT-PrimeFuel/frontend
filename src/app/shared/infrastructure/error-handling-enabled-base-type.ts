@@ -18,7 +18,8 @@ export abstract class ErrorHandlingEnabledBaseType {
   protected handleError(operation: string, localized = false) {
     return (error: HttpErrorResponse): Observable<never> => {
       const body = typeof error.error === 'object' ? error.error : null;
-      const fallback = error.status === 0 ? 'errors.network' : error.status >= 500 ? 'errors.server' : `errors.http-${error.status}`;
+      const fallback = error.status === 0 ? 'errors.network' : error.status >= 500 ? 'errors.server'
+        : [400, 401, 403, 404, 409, 422].includes(error.status) ? `errors.http-${error.status}` : 'errors.generic';
       const message = localized || error.status === 0 || error.status >= 500 ? fallback : (body?.message ?? fallback);
       const details = !localized && error.status < 500 && typeof body?.details === 'string' && body.details !== message ? body.details : '';
       const errorMessage = details ? `${message}: ${details}` : message;

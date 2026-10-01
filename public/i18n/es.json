@@ -267,7 +267,8 @@
       "capacity": "Capacidad",
       "status": "Estado"
     },
-    "eligibility": "Elegibilidad"
+    "eligibility": "Elegibilidad",
+    "eligibility-for": "Consultar elegibilidad de la cisterna {{plate}}"
   },
   "tanker-form": {
     "title": "Registrar Cisterna",
@@ -311,7 +312,8 @@
       "status": "Estado",
       "eligibility": "Consultar elegibilidad"
     },
-    "eligibility": "Ver elegibilidad"
+    "eligibility": "Ver elegibilidad",
+    "eligibility-for": "Consultar elegibilidad de {{name}}"
   },
   "driver-form": {
     "title": "Registrar Conductor",
@@ -830,7 +832,8 @@
       "ELIGIBLE": "Elegible",
       "BUSY": "Ocupada",
       "INELIGIBLE": "No elegible"
-    }
+    },
+    "driver-busy": "Ocupado"
   },
   "request-detail": {
     "title": "Detalle de solicitud",
