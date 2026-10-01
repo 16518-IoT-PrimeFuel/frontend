@@ -31,3 +31,10 @@ mat-form-field {
   gap: 12px;
   margin-top: 8px;
 }
+
+.error {
+  color: #b3261e;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px;
+}

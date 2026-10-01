@@ -88,8 +88,8 @@ export class Layout implements OnInit {
     {
       label: 'nav.reports',
       icon: 'analytics',
-      link: '/reporting/report-main',
-      roles: ['BUYER', 'PROVIDER'],
+      link: '/analytics',
+      roles: ['BUYER', 'PROVIDER', 'ADMIN'],
     },
     { label: 'nav.admin', icon: 'admin_panel_settings', link: '/admin', roles: [], admin: true },
   ];

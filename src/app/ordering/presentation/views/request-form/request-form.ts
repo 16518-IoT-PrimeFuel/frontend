@@ -7,37 +7,54 @@ import { MatError, MatFormField, MatInput, MatLabel } from '@angular/material/in
 import { MatOption, MatSelect } from '@angular/material/select';
 import { OrderingApi } from '../../../infrastructure/ordering-api';
 import { OrderingStore } from '../../../application/ordering.store';
-import { Customer, Tank } from '../../../../equipment/domain/model/equipment.entity';
+import { EquipmentApi, apiError } from '../../../../equipment/infrastructure/equipment.api';
+import { EquipmentStore } from '../../../../equipment/application/equipment.store';
+import { Site, Tank } from '../../../../equipment/domain/model/equipment.entity';
 import { FuelProduct } from '../../../../inventory/domain/model/fuel-product.entity';
 
 @Component({ selector: 'app-request-form', imports: [TranslatePipe, ReactiveFormsModule, MatFormField, MatLabel, MatError, MatInput, MatButton, MatSelect, MatOption], templateUrl: './request-form.html', styleUrl: './request-form.css' })
 export class RequestForm {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(OrderingApi);
+  private readonly equipmentApi = inject(EquipmentApi);
+  private readonly equipment = inject(EquipmentStore);
   private readonly router = inject(Router);
   readonly store = inject(OrderingStore);
-  readonly customers = signal<Customer[]>([]);
+  /** Cuenta interna de la organización activa, resuelta desde la identidad; el comprador no la elige. */
+  readonly customerAccountId = signal<number | null>(null);
+  readonly loadError = signal('');
   readonly tanks = signal<Tank[]>([]);
+  readonly sites = signal<Site[]>([]);
   readonly providers = signal<{id: number; name: string}[]>([]);
   readonly products = signal<FuelProduct[]>([]);
   readonly minDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-  readonly form = this.fb.nonNullable.group({ customerAccountId: [0, Validators.min(1)], tankId: [0], providerId: [0, Validators.min(1)], fuelProductId: [0, Validators.min(1)], quantity: [1, [Validators.required, Validators.min(1)]], unit: ['LITERS', Validators.required], deliveryDate: [this.minDate, Validators.required], deliveryAddress: ['', [Validators.required, Validators.maxLength(255)]] });
+  readonly form = this.fb.nonNullable.group({ siteId: [0], tankId: [0], providerId: [0, Validators.min(1)], fuelProductId: [0, Validators.min(1)], quantity: [1, [Validators.required, Validators.min(1)]], unit: ['LITERS', Validators.required], deliveryDate: [this.minDate, Validators.required], deliveryAddress: ['', [Validators.required, Validators.maxLength(255)]] });
 
   constructor() {
-    this.api.customers().subscribe(values => this.customers.set(values));
-    this.api.tanks().subscribe(values => this.tanks.set(values));
+    this.equipment.resolveCustomer().subscribe({
+      next: customer => {
+        this.customerAccountId.set(customer.id);
+        this.api.tanks().subscribe(values => this.tanks.set(values.filter(t => t.customerAccountId === customer.id)));
+        this.equipmentApi.sites(customer.id).subscribe(values => this.sites.set(values));
+      },
+      error: e => this.loadError.set(apiError(e)),
+    });
     this.api.providers().subscribe(values => this.providers.set(values));
   }
-  tanksForCustomer(): Tank[] { return this.tanks().filter(t => t.customerAccountId === this.form.controls.customerAccountId.value); }
-  onCustomerChange(): void { this.form.controls.tankId.setValue(0); }
+  /** La solicitud no lleva sede: elegirla solo rellena la dirección, que sigue siendo editable. */
+  onSiteChange(): void {
+    const address = this.sites().find(s => s.id === this.form.controls.siteId.value)?.address;
+    if (address) this.form.controls.deliveryAddress.setValue(address.slice(0, 255));
+  }
   onProviderChange(): void {
     const id = this.form.controls.providerId.value;
     this.form.controls.fuelProductId.setValue(0); this.products.set([]);
     if (id) this.api.products(id).subscribe(values => this.products.set(values));
   }
   submit(): void {
-    if (this.form.invalid) return;
-    const { customerAccountId, tankId, providerId, fuelProductId, ...details } = this.form.getRawValue();
+    const customerAccountId = this.customerAccountId();
+    if (this.form.invalid || customerAccountId === null) return;
+    const { siteId, tankId, providerId, fuelProductId, ...details } = this.form.getRawValue();
     this.store.createRequest({ ...details, customerAccountId, tankId: tankId || null, providerId, fuelProductId }, () => this.router.navigate(['/ordering/request-list']).then());
   }
   cancel(): void { this.router.navigate(['/ordering/request-list']).then(); }
