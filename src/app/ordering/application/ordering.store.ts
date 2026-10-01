@@ -42,8 +42,7 @@ export class OrderingStore {
     this.api.allProducts().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: rows => this.productNames.set(Object.fromEntries(rows.map(row => [row.id, row.name]))), error: () => undefined });
   }
   loadRequests(): void {
-    if (this.isProvider()) { this.requestsState.set([]); return; } // ponytail: backend has no provider inbox; show the gap instead of fabricating one.
-    this.run(this.api.requests(), value => this.requestsState.set(value));
+    this.run(this.isProvider() ? this.api.requestInbox() : this.api.requests(), value => this.requestsState.set(value));
   }
   loadOrders(): void {
     const id = this.isProvider() ? this.iam.providerId() : this.iam.companyId();

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { Tanker } from '../domain/model/tanker.entity';
+import { Tanker, TankerInput } from '../domain/model/tanker.entity';
 import { Driver } from '../domain/model/driver.entity';
 
 import { TankerApiEndpoint } from './tanker-api-endpoint';
@@ -31,8 +31,8 @@ export class FulfillmentApi {
   getTankers(): Observable<Tanker[]> { return this._tankerEndpoint.list(); }
   getEligibleTankers(): Observable<Tanker[]> { return this._tankerEndpoint.list(true); }
   getTankerById(id: number): Observable<Tanker> { return this._tankerEndpoint.get(id); }
-  registerTanker(request: Omit<Tanker, 'id' | 'providerId' | 'createdAt'>): Observable<Tanker> { return this._tankerEndpoint.save(request); }
-  updateTanker(id: number, request: Partial<Omit<Tanker, 'id' | 'providerId' | 'createdAt'>>): Observable<Tanker> { return this._tankerEndpoint.save(request, id); }
+  registerTanker(request: TankerInput): Observable<Tanker> { return this._tankerEndpoint.save(request); }
+  updateTanker(id: number, request: Partial<TankerInput>): Observable<Tanker> { return this._tankerEndpoint.save(request, id); }
   updateTankerStatus(id: number, request: Pick<Tanker, 'status'>): Observable<Tanker> { return this._tankerEndpoint.setActive(id, request.status !== 'INACTIVE'); }
 
   checkTankerEligibility(id: number) { return this._tankerEndpoint.eligibility(id); }

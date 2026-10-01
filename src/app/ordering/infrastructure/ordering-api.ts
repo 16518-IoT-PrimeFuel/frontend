@@ -17,6 +17,7 @@ export class OrderingApi extends ErrorHandlingEnabledBaseType {
   private readonly base = environment.serverBasePath;
 
   requests(): Observable<Request[]> { return this.http.get<Request[]>(`${this.base}/replenishment-requests`); }
+  requestInbox(): Observable<Request[]> { return this.http.get<Request[]>(`${this.base}/replenishment-requests/inbox`); }
   request(id: number): Observable<Request> { return this.http.get<Request>(`${this.base}/replenishment-requests/${id}`); }
   createRequest(payload: CreateRequest): Observable<Request> { return this.http.post<Request>(`${this.base}/replenishment-requests`, { ...payload, source: 'MANUAL' }); }
   acceptRequest(id: number): Observable<Request> { return this.http.post<Request>(`${this.base}/replenishment-requests/${id}/accept`, {}); }
