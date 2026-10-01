@@ -1,4 +1,5 @@
 export type TankerStatus = 'AVAILABLE' | 'IN_ROUTE' | 'MAINTENANCE' | 'SUSPENDED' | 'INACTIVE';
+export type TankerInput = Pick<Tanker, 'licensePlate' | 'brand' | 'model' | 'capacity' | 'unit' | 'status'>;
 
 import { BaseEntity } from '../../../shared/domain/model/base-entity';
 
