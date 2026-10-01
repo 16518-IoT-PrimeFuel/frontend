@@ -29,8 +29,8 @@ export class DriverApiEndpoint extends BaseApiEndpoint<Driver, DriverResource, D
     return this.http.post<DriverResource>(`${this.endpointUrl}/${id}/${active ? 'activate' : 'deactivate'}`, {}).pipe(
       map((row) => this.assembler.toEntityFromResource(row)), catchError(this.handleError(`Failed to update driver ${id}`)));
   }
-  eligibility(id: number): Observable<{ outcome: 'ELIGIBLE' | 'BUSY' | 'INELIGIBLE'; reason: string }> {
-    return this.http.get<{ outcome: 'ELIGIBLE' | 'BUSY' | 'INELIGIBLE'; reason: string }>(`${this.endpointUrl}/${id}/eligibility`)
-      .pipe(catchError(this.handleError(`Failed to check driver eligibility ${id}`)));
+  eligibility(id: number): Observable<{ outcome: string; reason: string }> {
+    return this.http.get<{ outcome: string; reason: string }>(`${this.endpointUrl}/${id}/eligibility`)
+      .pipe(catchError(this.handleError(`Failed to check driver eligibility ${id}`, true)));
   }
 }

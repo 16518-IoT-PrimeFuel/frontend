@@ -98,7 +98,22 @@
           >
             <mat-icon>edit</mat-icon>
           </button>
-          <button mat-icon-button (click)="onToggleActive(element.id, element.active)" [matTooltip]="element.active ? ('tanker-list.deactivate' | translate) : ('tanker-list.activate' | translate)"><mat-icon>{{ element.active ? 'block' : 'check_circle' }}</mat-icon></button><button mat-button (click)="store.checkDriverEligibility(element.id)">{{ 'driver-list.eligibility' | translate }}</button>@if (store.driverEligibility()[element.id]; as eligibility) { <span>{{ eligibility.outcome }}: {{ eligibility.reason }}</span> }
+          <button mat-icon-button (click)="onToggleActive(element.id, element.active)" [matTooltip]="element.active ? ('tanker-list.deactivate' | translate) : ('tanker-list.activate' | translate)"><mat-icon>{{ element.active ? 'block' : 'check_circle' }}</mat-icon></button>
+          <button mat-button (click)="onEligibility(element.id)" [disabled]="store.driverEligibilityLoading()[element.id]">
+            {{ 'driver-list.eligibility' | translate }}
+            @if (store.driverEligibilityLoading()[element.id]) { <mat-spinner diameter="16"></mat-spinner> }
+          </button>
+          @if (store.driverEligibility()[element.id]; as eligibility) {
+            <div class="eligibility-result" role="status">
+              <span class="eligibility-label" [ngClass]="eligibilityClass(eligibility.outcome)">
+                @if (eligibilityKey(eligibility.outcome); as key) { {{ key | translate }} } @else { {{ eligibility.outcome }} }
+              </span>
+              <span>{{ eligibility.reason }}</span>
+            </div>
+          }
+          @if (store.driverEligibilityError()[element.id]; as error) {
+            <p class="eligibility-error" role="alert">{{ error | translate }}</p>
+          }
         </td>
       </ng-container>
 
