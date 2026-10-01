@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { Home } from './shared/presentation/views/home/home';
-import { authGuard, adminGuard, buyerGuard, providerGuard, supportedRoleGuard } from './iam/infrastructure/auth.guard';
+import { analyticsGuard, authGuard, adminGuard, buyerGuard, providerGuard, supportedRoleGuard } from './iam/infrastructure/auth.guard';
 import { Login } from './iam/presentation/views/login/login';
 import { Register } from './iam/presentation/views/register/register';
 import { PasswordReset } from './iam/presentation/views/password-reset/password-reset';
@@ -51,7 +51,9 @@ export const routes: Routes = [
   { path: 'fulfillment', canActivate: [authGuard, providerGuard], loadChildren: fulfillmentRoutes },
   { path: 'dashboard', canActivate: [authGuard, supportedRoleGuard], loadChildren: dashboardRoutes },
   { path: 'ordering', canActivate: [authGuard, supportedRoleGuard], loadChildren: orderingRoutes },
-  { path: 'reporting', canActivate: [authGuard, supportedRoleGuard], loadChildren: analyticsRoutes },
+  { path: 'analytics', canActivate: [authGuard, analyticsGuard], loadChildren: analyticsRoutes, title: `Analytics - ${baseTitle}` },
+  { path: 'reporting', redirectTo: 'analytics', pathMatch: 'full' },
+  { path: 'reporting/report-main', redirectTo: 'analytics', pathMatch: 'full' },
   { path: 'notification', canActivate: [authGuard, supportedRoleGuard], loadChildren: notificationRoutes },
   { path: 'admin', canActivate: [authGuard, adminGuard], loadChildren: adminRoutes, title: `Admin - ${baseTitle}` },
   { path: 'tanks', canActivate: [authGuard, buyerGuard], loadChildren: equipmentRoutes },

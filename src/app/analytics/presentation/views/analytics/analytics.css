@@ -1,0 +1,27 @@
+:host { display: block; }
+.analytics { display: grid; gap: 1.5rem; max-width: 1180px; margin: 0 auto; color: #172b4d; }
+.heading h1 { margin: 0; font-size: 1.75rem; }
+.heading p, .muted, small { color: #4a5a70; }
+.heading p { margin: .4rem 0 0; max-width: 65ch; }
+h2 { margin: 0 0 .75rem; font-size: 1.1rem; }
+.state { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.state button { border: 0; border-radius: 999px; background: #3972c6; color: white; padding: .55rem 1.1rem; font: inherit; cursor: pointer; }
+.state button:focus-visible, select:focus-visible, .table-wrap:focus-visible { outline: 3px solid #172b4d; outline-offset: 2px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin: 0; }
+.kpis div { background: white; border: 1px solid #e3e8ef; border-radius: 12px; padding: 1.1rem; display: grid; gap: .35rem; align-content: start; }
+.kpis dt { font-weight: 600; color: #4a5a70; font-size: .95rem; }
+.kpis dd { margin: 0; font-size: 1.9rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.panel { background: white; border: 1px solid #e3e8ef; border-radius: 12px; padding: 1.15rem; }
+.panel > .muted:first-of-type { margin: 0 0 1rem; }
+.filter { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem 1rem; margin-bottom: 1rem; }
+.filter label { display: grid; gap: .25rem; font-size: .9rem; }
+select { min-width: 9rem; padding: .45rem .6rem; border: 1px solid #b8c2d0; border-radius: 8px; background: white; font: inherit; color: inherit; }
+.chart { position: relative; height: 260px; }
+.table-wrap { margin-top: 1rem; max-height: 320px; overflow: auto; border: 1px solid #e3e8ef; border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: .6rem .8rem; text-align: left; border-bottom: 1px solid #e3e8ef; }
+thead th { position: sticky; top: 0; background: #f5f7fa; }
+tbody th { font-weight: 500; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpis dd { font-size: 1.4rem; } .chart { height: 220px; } }
+@media print { .state button, .filter { display: none; } }

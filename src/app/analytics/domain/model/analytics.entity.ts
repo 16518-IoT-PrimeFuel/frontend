@@ -12,6 +12,15 @@ export interface ProviderAnalytics {
   monthlyRevenue: MonthlyAmount[];
 }
 
+export interface PlatformSummary {
+  totalOrders: number;
+  totalDeliveries: number;
+  totalPayments: number;
+  totalRevenue: number;
+  pendingOrders: number;
+  completedDeliveries: number;
+}
+
 export interface BuyerAnalytics {
   totalOrders: number;
   totalSpent: number;
