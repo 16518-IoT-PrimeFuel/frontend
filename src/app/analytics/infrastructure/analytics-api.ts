@@ -2,31 +2,10 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-
-export interface MonthlyAmount {
-  month: string;
-  monthIndex: number;
-  amount: number;
-}
-
-export interface ProviderAnalytics {
-  totalOrders: number;
-  confirmedOrders: number;
-  cancelledOrders: number;
-  totalRevenue: number;
-  monthlyRevenue: MonthlyAmount[];
-}
-
-export interface BuyerAnalytics {
-  totalOrders: number;
-  totalSpent: number;
-  completedPayments: number;
-  pendingPayments: number;
-  monthlySpending: MonthlyAmount[];
-}
+import { BuyerAnalytics, ProviderAnalytics } from '../domain/model/analytics.entity';
 
 @Injectable({ providedIn: 'root' })
-export class ReportingApi {
+export class AnalyticsApi {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.serverBasePath}/analytics`;
 

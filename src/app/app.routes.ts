@@ -17,8 +17,8 @@ const fuelProductRoutes = () =>
 const fulfillmentRoutes = () =>
   import('./fulfillment/presentation/fulfillment-routes').then((m) => m.fulfillmentRoutes);
 
-const reportingRoutes = () =>
-  import('./reporting/presentation/reporting-routes').then((m) => m.reportingRoutes);
+const analyticsRoutes = () =>
+  import('./analytics/presentation/analytics-routes').then((m) => m.analyticsRoutes);
 
 const orderingRoutes = () =>
   import('./ordering/presentation/ordering-routes').then((m) => m.orderingRoutes);
@@ -51,7 +51,7 @@ export const routes: Routes = [
   { path: 'fulfillment', canActivate: [authGuard, providerGuard], loadChildren: fulfillmentRoutes },
   { path: 'dashboard', canActivate: [authGuard, supportedRoleGuard], loadChildren: dashboardRoutes },
   { path: 'ordering', canActivate: [authGuard, supportedRoleGuard], loadChildren: orderingRoutes },
-  { path: 'reporting', canActivate: [authGuard, supportedRoleGuard], loadChildren: reportingRoutes },
+  { path: 'reporting', canActivate: [authGuard, supportedRoleGuard], loadChildren: analyticsRoutes },
   { path: 'notification', canActivate: [authGuard, supportedRoleGuard], loadChildren: notificationRoutes },
   { path: 'admin', canActivate: [authGuard, adminGuard], loadChildren: adminRoutes, title: `Admin - ${baseTitle}` },
   { path: 'tanks', canActivate: [authGuard, buyerGuard], loadChildren: equipmentRoutes },

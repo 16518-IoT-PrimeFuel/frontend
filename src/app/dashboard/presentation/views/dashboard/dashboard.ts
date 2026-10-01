@@ -7,7 +7,8 @@ import { BaseChartDirective } from 'ng2-charts';
 import { IamStore } from '../../../../iam/application/iam.store';
 import { Order, OrderStatus } from '../../../../ordering/domain/model/order.entity';
 import { OrderingApi } from '../../../../ordering/infrastructure/ordering-api';
-import { BuyerAnalytics, MonthlyAmount, ProviderAnalytics, ReportingApi } from '../../../../reporting/infrastructure/reporting-api';
+import { BuyerAnalytics, MonthlyAmount, ProviderAnalytics } from '../../../../analytics/domain/model/analytics.entity';
+import { AnalyticsApi } from '../../../../analytics/infrastructure/analytics-api';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,7 +19,7 @@ import { BuyerAnalytics, MonthlyAmount, ProviderAnalytics, ReportingApi } from '
 })
 export class Dashboard {
   private readonly iam = inject(IamStore);
-  private readonly reporting = inject(ReportingApi);
+  private readonly analyticsApi = inject(AnalyticsApi);
   private readonly ordering = inject(OrderingApi);
   readonly isBuyer = this.iam.isBuyer();
   readonly isReport = location.pathname.startsWith('/reporting');
@@ -52,10 +53,10 @@ export class Dashboard {
     if (id === null) { this.loading.set(false); this.error.set(true); return; }
 
     if (this.isBuyer) {
-      forkJoin({ analytics: this.reporting.getBuyerAnalytics(id), orders: this.ordering.orders('company', id) })
+      forkJoin({ analytics: this.analyticsApi.getBuyerAnalytics(id), orders: this.ordering.orders('company', id) })
         .subscribe({ next: data => { this.analytics.set(data.analytics); this.orders.set(data.orders); this.loading.set(false); }, error: () => this.fail() });
     } else {
-      this.reporting.getProviderAnalytics(id)
+      this.analyticsApi.getProviderAnalytics(id)
         .subscribe({ next: data => { this.analytics.set(data); this.loading.set(false); }, error: () => this.fail() });
     }
   }

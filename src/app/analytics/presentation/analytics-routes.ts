@@ -4,7 +4,7 @@ import { Layout } from '../../shared/presentation/component/layout/layout';
 const dashboard = () =>
   import('../../dashboard/presentation/views/dashboard/dashboard').then((m) => m.Dashboard);
 
-const reportingRoutes: Routes = [
+const analyticsRoutes: Routes = [
   {
     path: '',
     component: Layout,
@@ -15,4 +15,4 @@ const reportingRoutes: Routes = [
   },
 ];
 
-export { reportingRoutes };
+export { analyticsRoutes };
