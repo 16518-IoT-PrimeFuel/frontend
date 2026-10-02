@@ -1,91 +1,56 @@
-# ROADMAP — Integración Frontend ↔ Backend (FullTank)
+# ROADMAP — FullTank frontend
 
-Fuentes: `chapter3.md` (historias de usuario), `chapter5.md` §5.4 (wireframes/mock-ups) y `chapter1.md` §1.3 (segmentos objetivos), rama `develop` del repo Report. Landing page excluida (US-01..04, 36..39).
-Fecha: 2026-10-02 · Rama: `feat/w1-backend-integration`
+Estado revisado: 2026-10-02. Rama: `feat/w1-backend-integration`.
+Backend contrastado, sin modificar: `feat/w2-debug`, `2f5622e`.
+Fuentes: [chapter3](https://github.com/16518-IoT-PrimeFuel/Report/blob/develop/docs/chapter3.md) y [chapter5](https://github.com/16518-IoT-PrimeFuel/Report/blob/develop/docs/chapter5.md).
 
-## Veredicto
+## Estado de implementación por módulo
 
-La integración HTTP es **real**: no hay mocks ni datos hardcodeados, todo `infrastructure/` llama a `/api/...`. De 44 historias web: **26 integradas, 12 parciales, 6 sin implementar**. De ~15 pantallas del cap. 5: 10 completas, 4 parciales y 1 faltante (lista de entregas).
-El flujo núcleo (registro → solicitud → aceptación → asignación → entrega → pago) funciona de punta a punta.
+Los checks acreditan código y pruebas frontend; no acreditan historias completas ni operación integrada.
 
-**Ajuste por segmento objetivo (§1.3):** tras el refactor, el único segmento es *Distribuidores Logísticos de Combustible*: el distribuidor es el cliente principal y contratante; los compradores son usuarios secundarios (su nivel de tanque inicia el flujo). El distribuidor instala el dispositivo IoT, asocia tanques, recibe pedidos automáticos, asigna conductor/cisterna y supervisa la entrega. La app hoy está orientada al comprador; la brecha real es la **capa de operación del distribuidor** y el **IoT visible en pantalla**. Las prioridades de abajo reflejan eso.
-
-Cumplimiento de las 5 necesidades del segmento:
-
-| Necesidad | Estado |
+| Módulo | Estado actual |
 |---|---|
-| Asociar tanques de compradores + detectar umbral | **Desalineada**: el comprador crea sus tanques (`buyerGuard`), sin campo de dispositivo IoT |
-| Pedidos automáticos sin transcripción | Parcial: generación en backend OK; el form manual (contingencia, US-05) es hoy la pantalla principal del comprador |
-| Aceptar/rechazar y notificar | Cumple |
-| Selección automática de conductor y cisterna (capacidad ≥ volumen) | **No cumple**: solo filtra elegibles, el usuario elige (US-49) |
-| Telemetría continua, válvula/geocerca, trazabilidad completa | Parcial: tracking y geocerca; falta nivel, válvula y expediente |
+| Dashboard | Inbox, KPIs mensuales, tendencia diaria/semanal/mensual, top 5 tanques críticos y entregas del día. Cargas y errores independientes. |
+| Equipment / clientes | `/clients`: listado/búsqueda por nombre y RUC, sector, sitios, tanques/dispositivos y pedidos por comprador. Lookup exacto, vínculo/alta, cooldown 429 y aviso legacy sin organización activa. |
+| Equipment / tanques | Alta/edición con producto activo al seleccionarlo, sitio del comprador, números finitos y deviceId/channel juntos. Detalle por ID, nivel/umbral, gráfico y tabla 48 h, episodios y antigüedad reactiva. |
+| Fulfillment | Lista de entregas con fecha de Lima y filtros. Detalle, tracking, transiciones, timeline, observaciones de válvula y nivel del tanque. Errores por sección, validación de geocerca/volumen y bloqueo de doble envío. |
+| Ordering / despacho | Recomendación explícita con «Usar recomendación», selección manual, capacidad normalizada, cisternas deshabilitadas con motivo, ventana válida y resumen previo. Reintento de asignación conserva commandId ante fallo de red. |
+| Ordering / solicitudes y órdenes | Store por pantalla; guardas de rol/propietario/estado para decisiones y confirmación/cancelación. Cambio de ID recarga el detalle, limpia pago/asignación y cancela respuestas anteriores. |
+| Ordering / pagos | `/payments` proveedor: filtros con límites de Lima, paginación de 20, confirmar/reembolsar con diálogo y manejo de conflicto. Pago comprador valida orden, propietario, importe y método; reconsulta tras creación incierta. |
+| Traducciones y pruebas | Mensajes ES/EN, regresiones de concurrencia, validación y ciclo de vida; Vitest/JSDOM declarados para instalación reproducible. |
 
-Salvedad: los subagentes leyeron títulos/resúmenes de las historias, no todos los escenarios Dado/Cuando/Entonces. "Integrado" = el flujo llama al backend, no que cumpla cada criterio. US-48 no se pudo confirmar (probablemente falta).
+## Decisiones vigentes
 
-## Decisiones tomadas
+- Distribuidor como segmento principal; `/clients`, `/payments` y `/fulfillment` requieren authGuard/providerGuard.
+- `/tanks` y `/ordering/payment-history` conservan las vistas del comprador acordadas posteriormente. No crear un comprador duplicado ni permitir elegir customerAccountId arbitrariamente.
+- Formularios de comprador y tanque separados; RUC exacto antes de vincular o crear.
+- Lecturas 48 h y dato antiguo después de 1 h. Ausencia de observaciones no implica válvula cerrada.
+- Sin umbral inventado para «en observación», moneda histórica ni compatibilidad de producto/ruta inexistente.
+- El servidor revalida disponibilidad, propiedad y transiciones; las guardas UI no sustituyen esa autorización.
 
-- **Guards:** `/tanks` pasa a ser del **distribuidor** (asocia tanques y dispositivos de sus compradores). El comprador solo ve sus tanques en lectura. `/ordering/payment-history`: confirmar/reembolsar pertenece al distribuidor; el comprador consulta. (Resuelve la duda previa de guards.)
-- **Endpoints de proveedor** bajo `/api/provider/...`, sin relajar los de comprador ni admin.
+## Validación actual
 
-## Bloqueantes
+- [x] `npm test -- --watch=false`: 82 pruebas, 21 archivos.
+- [x] `npm run build`: correcto; inicial 808.41 kB.
+- [x] Claves ES/EN coincidentes: 1.057.
+- [x] `git diff --check`: sin errores.
+- [x] `npm ci --dry-run --ignore-scripts`: lockfile consistente; no sustituye instalación limpia en Linux.
+- Avisos existentes: presupuesto inicial 500 kB y request-list.css 4.87 kB frente a 4 kB. JSDOM avisa de canvas no implementado: no hay prueba visual del gráfico.
+- Backend sin escuchar en 8080 durante la revisión; MySQL escucha en 3306, pero V38 no se consultó ni verificó. No se ejecutó Maven ni migraciones.
+- Vitest 4.1.11 y JSDOM 29.1.1 se declararon usando las versiones locales verificadas. La instalación limpia en Linux sigue pendiente.
 
-- [ ] `environment.prod.serverBasePath` = `'TODO: deployed backend URL'`. Bloqueado: aún no hay deploy en Render.
-- [ ] Backend: faltan endpoints de proveedor (en implementación por Codex): `GET /api/deliveries`, analytics con período, `/api/provider/buyer-companies`, `/api/provider/tanks` (lectura **y escritura**), `/api/provider/tanks/{id}/refill-episodes`. Ver prompt de Codex.
+## Pendientes priorizados
 
-## P1 — Núcleo del segmento (distribuidor)
+1. **Integración real:** levantar backend en entorno autorizado, verificar MySQL/V38, contratos de `/api-docs`, permisos/aislamiento y flujo RUC → tanque → solicitud → orden → asignación → entrega → pago. Verificar visualmente desktop/mobile, gráfico y errores reales.
+2. **Contrato y despliegue:** regenerar snapshot OpenAPI desde servidor; configurar URL real en `src/environments/environment.ts`. Actualmente contiene un placeholder y no permite declarar producción lista.
+3. **Backend pendiente:** pago de orden cancelada puede devolver 500; límite lookup por instancia y organizaciones legacy requieren resolución del servidor.
+4. **US-49 completa:** faltan compatibilidad de combustible/ruta y detalle por recurso de reservas en conflicto.
+5. **US-51/52/53 completas:** provisión de token/hardware, vínculo duplicado completo, sincronización de eventos y autorización física/geocerca/conductor no validadas.
+6. **US-54/55 y US-07/13:** contratos de alertas/acuse, expediente completo y recepción con evidencia ausentes. Notificaciones/impresión no completan esos requisitos.
+7. **US-35/14 y US-48:** PDF de ventas/pedidos y agregado por sector pendientes. Sector visible en clientes no equivale a reporting por sector.
+8. **Decisiones de producto:** aclarar comprador solo lectura frente a preservación posterior de controles; definir «en observación» antes de agregar filtro. No alterar permisos por interpretación.
+9. **Pulido opcional:** contingencia manual/perfil/logout requieren contraste específico antes de declarar US-24/17 completas. No sumar importes de pagos como divisa confirmada sin moneda histórica.
 
-- [ ] **US-51 Asociar tanque y dispositivo IoT desde el distribuidor** (dispositivo, producto, umbral). Backend: POST/PUT en `/api/provider/tanks`, campo de dispositivo (migración Flyway). Frontend: mover `/tanks` a rol distribuidor + formulario de asociación.
-- [ ] **US-31 / US-32** listado y detalle de empresas, tanques y dispositivos para el distribuidor (backend `/api/provider/...` pendiente).
-- [ ] **US-49 Selección automática** de conductor y cisterna (capacidad ≥ volumen). Backend: endpoint de recomendación; frontend: preselección en asignación.
-- [ ] **US-52 / US-53 Telemetría y válvula**: nivel de tanque/lecturas IoT y estado de válvula en pantalla; hoy solo tracking y geocerca.
-- [ ] **Lista de entregas / "Entregas de hoy"** (wireflow 3). Backend `GET /api/deliveries` (proveedor + fecha); frontend vista y ruta en `fulfillment`.
-- [ ] **Dashboard del distribuidor (US-47)**: ya muestra solicitudes PENDING (commit `6c8892c`). Faltan tanques críticos, entregas del día, KPIs del mes, combustible total vendido y gráfico de tendencia.
-- [ ] **US-54 Alertas de operación** (nivel, desvío, pérdida de comunicación): sin backend ni frontend.
-- [ ] **US-55 Expediente de entrega** completo para el distribuidor (pedido, asignación, telemetría, descarga, recepción); hoy solo export admin.
-- [ ] **Guards**: aplicar la decisión de arriba (`/tanks`, pagos).
+## Continuidad
 
-## P2 — Reportes y cierre de flujo
-
-- [ ] **US-35 / US-14 / US-48**: PDF de ventas/pedidos (hoy `window.print`) y distribución por sector industrial. Backend + frontend.
-- [ ] **US-07 / US-13**: recepción con evidencia y "cerrar pedido" explícitos.
-- [ ] Verificar que el backend emite las notificaciones de US-29/US-30.
-
-## P3 — Pulido y comprador (secundario)
-
-- [ ] Asignar recursos (mock 5.7b): resumen previo y cisternas deshabilitadas con motivo.
-- [ ] Tanque (mock 5.7a): barra vertical con línea de umbral.
-- [ ] Pagos: "Confirmar pago" desde la pantalla Pagos del distribuidor.
-- [ ] US-24 editar datos de usuario; US-17 invalidar token en logout.
-- [ ] US-25 / US-26 (FAQ, contacto): decidir si aplican al alcance web-app.
-- [ ] Revisar el `request-form` manual: dejarlo como contingencia (US-05), no flujo principal del comprador.
-
-## Fuera de las historias (existe, no prometido)
-
-`/accept-invitation`, `/admin` (AdminPanel), geofence policies, muestras de tracking, impresión de dossier.
-
-## Matriz de pantallas (cap. 5)
-
-| Pantalla | Estado |
-|---|---|
-| Login / registro / recuperar contraseña | Completa |
-| Panel del distribuidor | Parcial |
-| Solicitudes (lista + detalle aceptar/rechazar) | Completa |
-| Asignar recursos | Parcial |
-| Entregas (lista) | **Falta** |
-| Detalle de entrega | Completa |
-| Clientes y tanques | Desalineada (solo comprador; debe ser distribuidor) |
-| Flota (conductores/cisternas) | Completa |
-| Productos | Completa |
-| Pagos | Parcial (solo comprador) |
-| Reportes | Parcial |
-| Notificaciones | Completa |
-| Mis pedidos (comprador) | Completa |
-| Perfil | Completa |
-
-## Estado tanda 1 (frontend-implementer-pt2)
-
-Commit `6c8892c`: dashboard muestra solicitudes pendientes. Resto bloqueado por backend. `ng build` OK; `ng test` no corre (faltan vitest/jsdom).
-
-## Orden sugerido
-
-1. Endpoints de proveedor en backend (Codex) → 2. Entregas + dashboard completo → 3. Vistas distribuidor: `/tanks` con asociación de dispositivo, empresas, guards (US-51/31/32) → 4. US-49 automático → 5. Telemetría, válvula, alertas, expediente (US-52/53/54/55) → 6. Reportes PDF/sector → 7. P3 y `environment.prod` cuando haya deploy.
+[CONTINUAR-REMOTO.md](CONTINUAR-REMOTO.md) contiene el procedimiento de recuperación, verificación y próximas tareas. La documentación histórica se retiró de `plan`; permanece en el historial Git cuando estaba versionada.
