@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -27,6 +28,10 @@ export class RequestForm {
   readonly sites = signal<Site[]>([]);
   readonly providers = signal<{id: number; name: string}[]>([]);
   readonly products = signal<FuelProduct[]>([]);
+  readonly productsLoading = signal(false);
+  readonly productError = signal('');
+  readonly catalogAlert = signal('');
+  private productsRequest?: Subscription;
   readonly minDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
   readonly form = this.fb.nonNullable.group({ siteId: [0], tankId: [0], providerId: [0, Validators.min(1)], fuelProductId: [0, Validators.min(1)], quantity: [1, [Validators.required, Validators.min(1)]], unit: ['LITERS', Validators.required], deliveryDate: [this.minDate, Validators.required], deliveryAddress: ['', [Validators.required, Validators.maxLength(255)]] });
 
@@ -39,7 +44,7 @@ export class RequestForm {
       },
       error: e => this.loadError.set(apiError(e)),
     });
-    this.api.providers().subscribe(values => this.providers.set(values));
+    this.api.providers().subscribe({ next: values => this.providers.set(values), error: () => this.loadError.set('request-form.providers-error') });
   }
   /** La solicitud no lleva sede: elegirla solo rellena la dirección, que sigue siendo editable. */
   onSiteChange(): void {
@@ -47,13 +52,31 @@ export class RequestForm {
     if (address) this.form.controls.deliveryAddress.setValue(address.slice(0, 255));
   }
   onProviderChange(): void {
+    this.productsRequest?.unsubscribe();
     const id = this.form.controls.providerId.value;
     this.form.controls.fuelProductId.setValue(0); this.products.set([]);
-    if (id) this.api.products(id).subscribe(values => this.products.set(values));
+    this.productError.set(''); this.catalogAlert.set(''); this.productsLoading.set(!!id);
+    if (id) this.productsRequest = this.api.products(id).subscribe({
+      next: values => {
+        this.productsLoading.set(false);
+        this.products.set(values.filter(product => product.active !== false));
+        if (!this.products().length) {
+          this.productError.set('request-form.no-products');
+          this.api.alertEmptyCatalog(id).subscribe({
+            next: () => { if (this.form.controls.providerId.value === id) this.catalogAlert.set('request-form.provider-notified'); },
+            error: () => { if (this.form.controls.providerId.value === id) this.catalogAlert.set('request-form.notification-error'); },
+          });
+        }
+      },
+      error: () => { this.productsLoading.set(false); this.productError.set('request-form.products-error'); },
+    });
   }
+  ngOnDestroy(): void { this.productsRequest?.unsubscribe(); }
   submit(): void {
+    this.form.markAllAsTouched();
     const customerAccountId = this.customerAccountId();
-    if (this.form.invalid || customerAccountId === null) return;
+    if (this.form.invalid || customerAccountId === null || this.productsLoading() || this.productError()
+      || !this.products().some(product => product.id === this.form.controls.fuelProductId.value)) return;
     const { siteId, tankId, providerId, fuelProductId, ...details } = this.form.getRawValue();
     this.store.createRequest({ ...details, customerAccountId, tankId: tankId || null, providerId, fuelProductId }, () => this.router.navigate(['/ordering/request-list']).then());
   }

@@ -538,6 +538,13 @@
     }
   },
   "request-form": {
+    "products-loading": "Cargando productos…",
+    "no-products": "Este distribuidor no tiene productos visibles. No puedes solicitar una entrega hasta que agregue o active productos. Selecciona otro distribuidor.",
+    "products-error": "No se pudieron cargar los productos. Reintenta antes de continuar.",
+    "providers-error": "No se pudieron cargar los distribuidores. Recarga la página para reintentar.",
+    "provider-notified": "La organización recibió una alerta para agregar o activar productos (máximo una al día).",
+    "notification-error": "No se pudo confirmar el aviso a la organización. Vuelve a seleccionar el distribuidor para reintentar.",
+    "retry": "Reintentar",
     "create-title": "Nueva Solicitud",
     "edit-title": "Editar Solicitud",
     "client-id": "ID del Cliente",

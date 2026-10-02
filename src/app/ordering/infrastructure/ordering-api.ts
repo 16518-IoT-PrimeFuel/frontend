@@ -45,4 +45,5 @@ export class OrderingApi extends ErrorHandlingEnabledBaseType {
   buyerCompany(id: number): Observable<{ id: number; name: string }> { return this.http.get<{ id: number; name: string }>(`${this.base}/buyer-companies/${id}`); }
   allProducts(): Observable<FuelProduct[]> { return this.http.get<FuelProduct[]>(`${this.base}/fuel-products`); }
   products(providerId: number): Observable<FuelProduct[]> { return this.http.get<FuelProduct[]>(`${this.base}/fuel-products/provider/${providerId}`); }
+  alertEmptyCatalog(providerId: number): Observable<void> { return this.http.post<void>(`${this.base}/fuel-products/provider/${providerId}/empty-catalog-alert`, {}); }
 }

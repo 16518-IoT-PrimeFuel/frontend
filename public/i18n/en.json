@@ -538,6 +538,13 @@
     }
   },
   "request-form": {
+    "products-loading": "Loading products…",
+    "no-products": "This distributor has no visible products. You cannot request a delivery until they add or activate products. Select another distributor.",
+    "products-error": "Products could not be loaded. Retry before continuing.",
+    "providers-error": "Distributors could not be loaded. Reload the page to retry.",
+    "provider-notified": "The organization received an alert to add or activate products (at most once a day).",
+    "notification-error": "The organization alert could not be confirmed. Select the distributor again to retry.",
+    "retry": "Retry",
     "create-title": "New Fuel Request",
     "edit-title": "Edit Fuel Request",
     "client-id": "Client ID",
