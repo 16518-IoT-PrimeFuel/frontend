@@ -14,3 +14,4 @@ dd { margin:0 }
 @media (max-width:560px) { dl { grid-template-columns:1fr; gap:0 } dd { margin-bottom:8px } }
 .field-error { color:#a32121 }
 input[aria-invalid="true"] { border-color:#a32121 }
+.valve-alert { color: #c0392b; font-weight: 600; }

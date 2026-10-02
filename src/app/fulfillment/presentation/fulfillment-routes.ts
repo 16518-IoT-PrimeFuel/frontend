@@ -29,6 +29,7 @@ const fulfillmentRoutes: Routes = [
       { path: 'driver-list', loadComponent: driverList },
       { path: 'driver-form', loadComponent: driverForm },
       { path: 'driver-form/:id', loadComponent: driverForm },
+      { path: 'delivery-list', loadComponent: () => import('./views/delivery-list/delivery-list').then(m => m.DeliveryList) },
       { path: 'delivery-detail/:id', loadComponent: deliveryDetail },
       { path: '', redirectTo: 'tanker-list', pathMatch: 'full' },
     ],

@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FulfillmentApi } from '../infrastructure/fulfillment-api';
 import { Tanker } from '../domain/model/tanker.entity';
 import { Driver } from '../domain/model/driver.entity';
+import { ProviderDelivery } from '../domain/model/provider-delivery.entity';
 
 type TankerRequest = Omit<Tanker, 'id' | 'providerId' | 'createdAt'>;
 type DriverRequest = Omit<Driver, 'id' | 'providerId' | 'createdAt'>;
@@ -19,6 +20,7 @@ export class FulfillmentStore {
   private readonly _selectedTanker = signal<Tanker | null>(null);
   private readonly _driverList = signal<Driver[]>([]);
   private readonly _selectedDriver = signal<Driver | null>(null);
+  private readonly _deliveries = signal<ProviderDelivery[]>([]);
   private readonly _isLoading = signal<boolean>(false);
   private readonly _error = signal<string>('');
   private readonly _successMsg = signal<string>('');
@@ -39,6 +41,7 @@ export class FulfillmentStore {
   public readonly selectedTanker = this._selectedTanker.asReadonly();
   public readonly driverList = this._driverList.asReadonly();
   public readonly selectedDriver = this._selectedDriver.asReadonly();
+  public readonly deliveries = this._deliveries.asReadonly();
   public readonly isLoading = this._isLoading.asReadonly();
   public readonly error = this._error.asReadonly();
   public readonly successMsg = this._successMsg.asReadonly();
@@ -73,6 +76,9 @@ export class FulfillmentStore {
       error: (err) => this._tankerEligibilityError.update((current) => ({ ...current, [id]: err.message || 'errors.generic' })),
     });
   }
+
+  // ── Deliveries ───────────────────────────────────────────────────────────
+  loadDeliveries(date?: string): void { this.run(this.api.deliveries(date), 'errors.generic', (rows) => this._deliveries.set(rows)); }
 
   // ── Tankers ──────────────────────────────────────────────────────────────
   loadTankers(): void { this.clearTankerEligibility(); this.run(this.api.getTankers(), 'errors.generic', (rows) => this._tankerList.set(rows)); }

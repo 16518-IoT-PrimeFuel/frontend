@@ -47,6 +47,9 @@ export class FulfillmentApi {
   checkDriverEligibility(id: number) { return this._driverEndpoint.eligibility(id); }
 
   // ── Deliveries ───────────────────────────────────────────────────────────
+  deliveries(date?: string) { return this._deliveryEndpoint.list(date); }
+  recommendation(orderId: number, windowStart?: string, windowEnd?: string) { return this._deliveryEndpoint.recommendation(orderId, windowStart, windowEnd); }
+  valveObservations(id: number) { return this._deliveryEndpoint.valveObservations(id); }
   delivery(id: number) { return this._deliveryEndpoint.detail(id); }
   tracking(id: number) { return this._deliveryEndpoint.tracking(id); }
   trackingSamples(id: number) { return this._deliveryEndpoint.samples(id); }

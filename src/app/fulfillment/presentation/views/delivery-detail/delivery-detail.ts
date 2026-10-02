@@ -1,19 +1,31 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { FulfillmentApi } from '../../../infrastructure/fulfillment-api';
 import { TranslatePipe } from '@ngx-translate/core';
+import { OrderingApi } from '../../../../ordering/infrastructure/ordering-api';
+import { ProviderEquipmentApi, unitKey } from '../../../../equipment/infrastructure/provider-equipment.api';
+import { ProviderTankReading } from '../../../../equipment/domain/model/provider-equipment.entity';
+import { ValveObservation } from '../../../domain/model/provider-delivery.entity';
 
-@Component({ selector: 'app-delivery-detail', standalone: true, imports: [FormsModule, DatePipe, TranslatePipe], templateUrl: './delivery-detail.html', styleUrl: './delivery-detail.css' })
+@Component({ selector: 'app-delivery-detail', standalone: true, imports: [FormsModule, DatePipe, DecimalPipe, TranslatePipe], templateUrl: './delivery-detail.html', styleUrl: './delivery-detail.css' })
 export class DeliveryDetail {
   private readonly api = inject(FulfillmentApi);
+  private readonly ordering = inject(OrderingApi);
+  private readonly equipment = inject(ProviderEquipmentApi);
+  protected readonly unitKey = unitKey;
   readonly id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
   readonly delivery = signal<any>(null);
   readonly tracking = signal<any>(null);
   readonly samples = signal<any[]>([]);
   readonly transitions = signal<any[]>([]);
   readonly timeline = signal<any[]>([]);
+  /** null = sin cargar; [] = sin observaciones (no equivale a válvula cerrada). */
+  readonly valve = signal<ValveObservation[] | null>(null);
+  readonly valveError = signal(false);
+  /** Última lectura del tanque asociado; null oculta la sección (eslabón faltante de la cadena orden->solicitud->tanque). */
+  readonly tankReading = signal<ProviderTankReading | null>(null);
   readonly message = signal('');
   readonly loadError = signal(false);
   readonly driverName = signal('');
@@ -25,12 +37,29 @@ export class DeliveryDetail {
   radiusMeters: number | null = null;
   constructor() { this.reload(); }
   reload(): void {
-    this.api.delivery(this.id).subscribe({ next: x => { this.loadError.set(false); this.delivery.set(x); this.loadParties(x); }, error: () => this.loadError.set(true) });
+    this.api.delivery(this.id).subscribe({ next: x => { this.loadError.set(false); this.delivery.set(x); this.loadParties(x); this.loadTankLevel(x.orderId); }, error: () => this.loadError.set(true) });
     this.api.tracking(this.id).subscribe({ next: x => this.tracking.set(x), error: () => this.tracking.set(null) });
     this.api.trackingSamples(this.id).subscribe(x => this.samples.set(x));
     this.api.deliveryTransitions(this.id).subscribe(x => this.transitions.set(x));
     this.api.deliveryTimeline(this.id).subscribe(x => this.timeline.set(x));
+    this.loadValve();
   }
+  loadValve(): void {
+    this.valveError.set(false);
+    this.api.valveObservations(this.id).subscribe({ next: x => this.valve.set(x), error: () => { this.valve.set(null); this.valveError.set(true); } });
+  }
+  /** US-52: orden -> solicitud -> tanque -> última lectura. Si falta un eslabón la sección no se muestra. */
+  private loadTankLevel(orderId: number): void {
+    const from = new Date(Date.now() - 48 * 3_600_000).toISOString();
+    this.ordering.order(orderId).subscribe({ next: o => {
+      if (!o.requestId) return;
+      this.ordering.request(o.requestId).subscribe({ next: r => {
+        if (!r.tankId) return;
+        this.equipment.readings(r.tankId, from).subscribe({ next: rows => this.tankReading.set(rows.at(-1) ?? null), error: () => undefined });
+      }, error: () => undefined });
+    }, error: () => undefined });
+  }
+  tankAgeMinutes(r: ProviderTankReading): number { return Math.max(0, Math.round((Date.now() - new Date(r.capturedAt).getTime()) / 60_000)); }
   private loadParties(d: any): void {
     this.api.getDriverById(d.driverId).subscribe({ next: x => this.driverName.set(`${x.firstName} ${x.lastName}`), error: () => this.driverName.set('') });
     this.api.getTankerById(d.vehicleId).subscribe({ next: x => this.tankerName.set(`${x.brand} ${x.model} · ${x.licensePlate}`), error: () => this.tankerName.set('') });

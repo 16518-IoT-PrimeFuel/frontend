@@ -37,6 +37,22 @@
     }
     @else { <p>{{ 'fulfillment.no-tracking' | translate }}</p> }
   </section>
+  @if (tankReading(); as r) {
+    <section><h2>{{ 'fulfillment.tank-level.title' | translate }}</h2>
+      <p>{{ r.level | number }} {{ unitKey(r.unit) | translate }} · {{ 'fulfillment.tank-level.age' | translate: { minutes: tankAgeMinutes(r) } }}</p>
+    </section>
+  }
+  <section><h2>{{ 'fulfillment.valve.title' | translate }}</h2>
+    @if (valveError()) {
+      <p role="alert">{{ 'fulfillment.valve.error' | translate }} <button type="button" (click)="loadValve()">{{ 'fulfillment.valve.retry' | translate }}</button></p>
+    } @else if (valve(); as obs) {
+      @if (!obs.length) { <p>{{ 'fulfillment.valve.none' | translate }}</p> }
+      @for (v of obs; track v.id) {
+        <p [class.valve-alert]="v.unauthorized">{{ v.recordedAt | date:'medium' }} · {{ 'fulfillment.valve.' + v.state.toLowerCase() | translate }}@if (v.commandId) { · {{ v.commandId }} }@if (v.unauthorized) { · <strong role="alert">{{ 'fulfillment.valve.unauthorized' | translate }}</strong> }</p>
+      }
+      <p class="hint">{{ 'fulfillment.valve.hint' | translate }}</p>
+    }
+  </section>
   <section><h2>{{ 'fulfillment.geofence' | translate }}</h2>
     <label>{{ 'fulfillment.latitude' | translate }} <input type="number" min="-90" max="90" step="any" [(ngModel)]="centerLatitude" [attr.aria-invalid]="latitudeInvalid">@if (latitudeInvalid) { <small class="field-error" role="alert">{{ 'fulfillment.latitude-range' | translate }}</small> }</label>
     <label>{{ 'fulfillment.longitude' | translate }} <input type="number" min="-180" max="180" step="any" [(ngModel)]="centerLongitude" [attr.aria-invalid]="longitudeInvalid">@if (longitudeInvalid) { <small class="field-error" role="alert">{{ 'fulfillment.longitude-range' | translate }}</small> }</label>
