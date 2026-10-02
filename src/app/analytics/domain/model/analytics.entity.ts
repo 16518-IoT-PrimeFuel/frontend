@@ -4,12 +4,21 @@ export interface MonthlyAmount {
   amount: number;
 }
 
+export interface SalesTrendPoint {
+  date: string;
+  litres: number;
+}
+
 export interface ProviderAnalytics {
+  providerId: number;
   totalOrders: number;
   confirmedOrders: number;
   cancelledOrders: number;
   totalRevenue: number;
   monthlyRevenue: MonthlyAmount[];
+  pendingOrders: number;
+  totalFuelSoldLitres: number;
+  salesTrend: SalesTrendPoint[];
 }
 
 export interface PlatformSummary {

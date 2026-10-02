@@ -6,6 +6,7 @@
     </div>
     <nav class="actions" [attr.aria-label]="'analytics.quick-links' | translate">
       @if (isBuyer) { <a class="primary" routerLink="/ordering/request-form">{{ 'analytics.new-request' | translate }}</a> }
+      @if (!isBuyer) { <a routerLink="/ordering/order-list">{{ 'analytics.all-orders' | translate }}</a> }
       <a routerLink="/analytics">{{ 'analytics.open-analytics' | translate }}</a>
     </nav>
   </header>
@@ -30,6 +31,59 @@
             </article>
           }
         </section>
+        @if (!isBuyer) {
+          <section class="panel">
+            <h2>{{ 'analytics.sales-trend' | translate }}</h2>
+            <div class="view-switch" role="group">
+              @for (g of granularities; track g) {
+                <button type="button" [class.active]="granularity() === g" [attr.aria-pressed]="granularity() === g" (click)="granularity.set(g)">{{ 'analytics.view-' + g | translate }}</button>
+              }
+            </div>
+            @if (hasSales()) {
+              <div class="chart"><canvas baseChart [data]="chartData()" [options]="chartOptions" type="bar"></canvas></div>
+            } @else { <p class="muted">{{ 'analytics.no-sales' | translate }}</p> }
+          </section>
+          <section class="panel">
+            <h2>{{ 'analytics.pending-requests' | translate }} ({{ pendingRequests().length }})</h2>
+            @if (pendingRequests().length) {
+              <ul class="status-list">
+                @for (req of pendingRequests().slice(0, 5); track req.id) {
+                  <li><a [routerLink]="['/ordering/request-detail', req.id]">#{{ req.id }} · {{ req.quantity | number }} {{ req.unit }}</a><span>{{ req.deliveryDate | date:'mediumDate' }}</span></li>
+                }
+              </ul>
+              <a class="all" routerLink="/ordering/request-list">{{ 'analytics.all-requests' | translate }}</a>
+            } @else { <p class="muted">{{ 'analytics.no-pending-requests' | translate }}</p> }
+          </section>
+          <section class="panel">
+            <h2>{{ 'analytics.critical-tanks' | translate }}</h2>
+            @if (criticalTanks().loading) {
+              <p class="muted" role="status">{{ 'analytics.card-loading' | translate }}</p>
+            } @else if (criticalTanks().error) {
+              <p class="muted" role="alert">{{ 'analytics.critical-tanks-error' | translate }} <button type="button" (click)="loadCriticalTanks()">{{ 'analytics.card-retry' | translate }}</button></p>
+            } @else if (criticalTanks().data.length) {
+              <ul class="status-list">
+                @for (t of criticalTanks().data; track t.id) {
+                  <li><a [routerLink]="['/clients', 'tank', t.id]">{{ t.name }}</a><strong>{{ t.levelPercent | number:'1.0-0' }}%</strong></li>
+                }
+              </ul>
+            } @else { <p class="muted">{{ 'analytics.no-critical-tanks' | translate }}</p> }
+          </section>
+          <section class="panel">
+            <h2>{{ 'analytics.today-deliveries' | translate }} ({{ todayDeliveries().data.length }})</h2>
+            @if (todayDeliveries().loading) {
+              <p class="muted" role="status">{{ 'analytics.card-loading' | translate }}</p>
+            } @else if (todayDeliveries().error) {
+              <p class="muted" role="alert">{{ 'analytics.today-deliveries-error' | translate }} <button type="button" (click)="loadTodayDeliveries()">{{ 'analytics.card-retry' | translate }}</button></p>
+            } @else if (todayDeliveries().data.length) {
+              <ul class="status-list">
+                @for (d of todayDeliveries().data.slice(0, 5); track d.id) {
+                  <li><a [routerLink]="['/fulfillment/delivery-detail', d.id]">#{{ d.id }} · {{ d.buyerCompanyName ?? '-' }}</a><span>{{ 'delivery-status.' + d.physicalState.toLowerCase() | translate }}</span></li>
+                }
+              </ul>
+            } @else { <p class="muted">{{ 'analytics.no-today-deliveries' | translate }}</p> }
+            <a class="all" routerLink="/fulfillment/delivery-list">{{ 'analytics.all-deliveries' | translate }}</a>
+          </section>
+        }
         <section class="panel">
           <h2>{{ 'analytics.orders-by-status' | translate }}</h2>
           <ul class="status-list">
