@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { provideRouter } from '@angular/router';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [App],
+      imports: [App, TranslateModule.forRoot()],
+      providers: [provideRouter([])],
     }).compileComponents();
   });
 
@@ -14,10 +17,11 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('renders the route outlet and supports both interface languages', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, Fronted-FullTank');
+    expect(compiled.querySelector('router-outlet')).not.toBeNull();
+    expect(TestBed.inject(TranslateService).getLangs()).toEqual(['en', 'es']);
   });
 });
