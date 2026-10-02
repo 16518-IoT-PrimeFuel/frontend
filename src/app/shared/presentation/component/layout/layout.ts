@@ -52,6 +52,8 @@ export class Layout implements OnInit {
   options = [
     { label: 'inventory.catalog', icon: 'local_gas_station', link: '/fuel-products', roles: ['BUYER'] },
     { label: 'nav.equipment', icon: 'oil_barrel', link: '/tanks', roles: ['BUYER'] },
+    { label: 'nav.clients', icon: 'groups', link: '/clients', roles: ['PROVIDER'] },
+    { label: 'nav.payments', icon: 'payments', link: '/payments', roles: ['PROVIDER'] },
     { label: 'nav.dashboard', icon: 'dashboard', link: '/dashboard', roles: ['BUYER', 'PROVIDER'] },
     {
       label: 'nav.inventory',
@@ -81,6 +83,7 @@ export class Layout implements OnInit {
       link: '/fulfillment',
       roles: ['PROVIDER'],
       children: [
+        { label: 'fulfillment.deliveries', link: '/fulfillment/delivery-list' },
         { label: 'fulfillment.vehicles', link: '/fulfillment/tanker-list' },
         { label: 'fulfillment.drivers', link: '/fulfillment/driver-list' },
       ],

@@ -31,7 +31,12 @@ const notificationRoutes = () =>
 
 const equipmentRoutes = () => import('./equipment/presentation/equipment-routes').then((m) => m.equipmentRoutes);
 
+const providerClientRoutes = () => import('./equipment/presentation/provider-routes').then((m) => m.providerClientRoutes);
+
 const adminRoutes = () => import('./admin/presentation/admin-routes').then((m) => m.adminRoutes);
+
+const providerPaymentRoutes = () =>
+  import('./ordering/presentation/provider-payments-routes').then((m) => m.providerPaymentRoutes);
 
 const baseTitle = 'FullTank';
 
@@ -57,6 +62,8 @@ export const routes: Routes = [
   { path: 'notification', canActivate: [authGuard, supportedRoleGuard], loadChildren: notificationRoutes },
   { path: 'admin', canActivate: [authGuard, adminGuard], loadChildren: adminRoutes, title: `Admin - ${baseTitle}` },
   { path: 'tanks', canActivate: [authGuard, buyerGuard], loadChildren: equipmentRoutes },
+  { path: 'payments', canActivate: [authGuard, providerGuard], loadChildren: providerPaymentRoutes },
+  { path: 'clients', canActivate: [authGuard, providerGuard], loadChildren: providerClientRoutes },
   { path: '', redirectTo: '/home', pathMatch: 'full' },
   { path: '**', loadComponent: pageNotFound, title: `Page Not Found - ${baseTitle}` },
 ];

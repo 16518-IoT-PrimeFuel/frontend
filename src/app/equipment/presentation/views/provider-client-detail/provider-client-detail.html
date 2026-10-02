@@ -1,0 +1,97 @@
+<div class="pv-container">
+  <a mat-button routerLink="/clients">{{ 'provider-equipment.detail.back' | translate }}</a>
+
+  @if (buyer().loading) {
+    <div class="pv-state" role="status"><mat-spinner diameter="32" /></div>
+  } @else if (buyer().error) {
+    <div class="pv-state error" role="alert">
+      <p>{{ 'provider-equipment.clients.error' | translate }}</p>
+      <button mat-stroked-button type="button" (click)="load()">{{ 'provider-equipment.detail.retry' | translate }}</button>
+    </div>
+  } @else if (!buyer().data) {
+    <div class="pv-state">{{ 'provider-equipment.detail.not-found' | translate }}</div>
+  } @else {
+    <header class="pv-header">
+      <div>
+        <h1>{{ buyer()!.data!.name }}</h1>
+        <p class="pv-note">{{ 'provider-equipment.clients.ruc' | translate }}: {{ buyer()!.data!.ruc ?? '-' }} · {{ 'provider-equipment.clients.sector' | translate }}: {{ buyer()!.data!.sector ?? '-' }}</p>
+      </div>
+      <a mat-flat-button [routerLink]="['/clients', buyerId, 'tanks', 'new']">{{ 'provider-equipment.detail.add-tank' | translate }}</a>
+    </header>
+
+    <section>
+      <h2>{{ 'provider-equipment.detail.sites' | translate }}</h2>
+      @if (!buyer().data!.sites.length) {
+        <p class="pv-note">{{ 'provider-equipment.detail.no-sites' | translate }}</p>
+      } @else {
+        <ul>
+          @for (s of buyer().data!.sites; track s.id) { <li>{{ s.name }}@if (s.address) { · {{ s.address }} }</li> }
+        </ul>
+      }
+    </section>
+
+    <section>
+      <h2>{{ 'provider-equipment.detail.tanks' | translate }}</h2>
+      @if (tanks().loading) {
+        <div class="pv-state" role="status"><mat-spinner diameter="24" /></div>
+      } @else if (tanks().error) {
+        <div class="pv-state error" role="alert">
+          <p>{{ 'provider-equipment.detail.tanks-error' | translate }}</p>
+          <button mat-stroked-button type="button" (click)="loadTanks()">{{ 'provider-equipment.detail.retry' | translate }}</button>
+        </div>
+      } @else if (!tanks().data.length) {
+        <p class="pv-note">{{ 'provider-equipment.detail.no-tanks' | translate }}</p>
+      } @else {
+        <div class="pv-grid">
+          @for (t of tanks().data; track t.id) {
+            <article class="pv-card" [class.critical]="t.critical">
+              <a [routerLink]="['/clients', 'tank', t.id]"><strong>{{ t.name }}</strong></a>
+              <span class="pv-hint">{{ t.siteName ?? '-' }} · {{ t.fuelType }}</span>
+              <div class="pv-bar" role="img" [attr.aria-label]="t.levelPercent + '%'"><span [style.width.%]="t.levelPercent"></span></div>
+              <span>{{ 'provider-equipment.detail.level' | translate }}: {{ t.currentLevel | number }} / {{ t.capacity | number }} {{ unitKey(t.unit) | translate }} ({{ t.levelPercent | number: '1.0-1' }}%)</span>
+              <span>{{ 'provider-equipment.detail.threshold' | translate }}: {{ t.lowLevelPercent }}%</span>
+              @if (t.critical) { <span class="pv-badge">{{ 'provider-equipment.detail.critical' | translate }}</span> }
+              <span>{{ 'provider-equipment.detail.device' | translate }}: {{ t.devices.length ? device(t) : ('provider-equipment.detail.no-device' | translate) }}</span>
+              <a mat-button [routerLink]="['/clients', buyerId, 'tanks', t.id, 'edit']">{{ 'provider-equipment.detail.edit' | translate }}</a>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section>
+      <h2>{{ 'provider-equipment.detail.orders' | translate }}</h2>
+      @if (orders().loading) {
+        <div class="pv-state" role="status"><mat-spinner diameter="24" /></div>
+      } @else if (orders().error) {
+        <div class="pv-state error" role="alert">
+          <p>{{ 'provider-equipment.detail.orders-error' | translate }}</p>
+          <button mat-stroked-button type="button" (click)="loadOrders()">{{ 'provider-equipment.detail.retry' | translate }}</button>
+        </div>
+      } @else if (!orders().data.length) {
+        <p class="pv-note">{{ 'provider-equipment.detail.no-orders' | translate }}</p>
+      } @else {
+        <table class="pv-table">
+          <thead>
+            <tr>
+              <th>{{ 'provider-equipment.detail.order' | translate }}</th>
+              <th>{{ 'provider-equipment.detail.quantity' | translate }}</th>
+              <th>{{ 'provider-equipment.detail.date' | translate }}</th>
+              <th>{{ 'provider-equipment.detail.status' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (o of orders().data; track o.id) {
+              <tr>
+                <td><a [routerLink]="['/ordering/order-detail', o.id]">#{{ o.id }}</a></td>
+                <td>{{ o.requestedQuantity | number }}</td>
+                <td>{{ o.scheduledDate ? (o.scheduledDate | date: 'mediumDate') : '-' }}</td>
+                <td>{{ 'order-status.' + o.status.toLowerCase() | translate }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+</div>

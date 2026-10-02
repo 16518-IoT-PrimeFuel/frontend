@@ -1,0 +1,88 @@
+<div class="pv-container">
+  <header class="pv-header">
+    <div>
+      <h1>{{ (editing ? 'provider-equipment.tank-form.edit-title' : 'provider-equipment.tank-form.create-title') | translate }}@if (buyer()) { · {{ buyer()!.name }} }</h1>
+      <p class="pv-note">{{ (editing ? 'provider-equipment.tank-form.edit-note' : 'provider-equipment.tank-form.hardware-note') | translate }}</p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="pv-state" role="status"><mat-spinner diameter="32" /></div>
+  } @else if (loadError()) {
+    <div class="pv-state error" role="alert">
+      <p>{{ 'provider-equipment.tank-form.loading-error' | translate }}</p>
+      <button mat-stroked-button type="button" (click)="load()">{{ 'provider-equipment.detail.retry' | translate }}</button>
+      <a mat-button [routerLink]="['/clients', buyerId]">{{ 'provider-equipment.tank-form.cancel' | translate }}</a>
+    </div>
+  } @else {
+    <form class="pv-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label>{{ 'provider-equipment.tank-form.name' | translate }}
+        <input formControlName="name" maxlength="150" autocomplete="off" />
+        @if (form.controls.name.touched && form.controls.name.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.tank-form.required' | translate }}</span> }
+      </label>
+
+      <label>{{ 'provider-equipment.tank-form.site' | translate }}
+        <select formControlName="siteId">
+          <option [ngValue]="0" disabled>-</option>
+          @for (s of buyer()!.sites; track s.id) { <option [ngValue]="s.id">{{ s.name }}</option> }
+        </select>
+        @if (form.controls.siteId.touched && form.controls.siteId.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.tank-form.required' | translate }}</span> }
+      </label>
+
+      <label>{{ 'provider-equipment.tank-form.product' | translate }}
+        <select formControlName="fuelProductId">
+          <option [ngValue]="0" disabled>-</option>
+          @for (p of products(); track p.id) { <option [ngValue]="p.id">{{ p.name }}</option> }
+        </select>
+        @if (!products().length) { <span class="pv-err" role="alert">{{ 'provider-equipment.tank-form.no-products' | translate }}</span> }
+        @else if (form.controls.fuelProductId.touched && form.controls.fuelProductId.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.tank-form.required' | translate }}</span> }
+      </label>
+
+      <label>{{ 'provider-equipment.tank-form.capacity' | translate }}
+        <input type="number" min="0" step="any" formControlName="capacity" />
+        @if (form.controls.capacity.touched && form.controls.capacity.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.tank-form.range' | translate }}</span> }
+      </label>
+
+      <label>{{ 'provider-equipment.tank-form.unit' | translate }}
+        <select formControlName="unit">
+          <option value="LITRE">{{ unitKey('LITRE') | translate }}</option>
+          <option value="GALLON">{{ unitKey('GALLON') | translate }}</option>
+        </select>
+      </label>
+
+      <label>{{ 'provider-equipment.tank-form.initial-level' | translate }}
+        <input type="number" min="0" step="any" formControlName="initialLevel" />
+        @if (form.errors?.['levelAboveCapacity'] || (form.controls.initialLevel.touched && form.controls.initialLevel.invalid)) { <span class="pv-err" role="alert">{{ 'provider-equipment.tank-form.range' | translate }}</span> }
+      </label>
+
+      <label>{{ 'provider-equipment.tank-form.low-level' | translate }}
+        <input type="number" min="1" max="90" step="any" formControlName="lowLevelPercent" />
+        <span class="pv-hint">{{ 'provider-equipment.tank-form.low-level-hint' | translate }}</span>
+        @if (form.controls.lowLevelPercent.touched && form.controls.lowLevelPercent.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.tank-form.range' | translate }}</span> }
+      </label>
+
+      <label>{{ 'provider-equipment.tank-form.device-id' | translate }}
+        <input formControlName="deviceId" maxlength="120" autocomplete="off" />
+        @if (form.controls.deviceId.touched && form.controls.deviceId.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.tank-form.required' | translate }}</span> }
+      </label>
+
+      <label>{{ 'provider-equipment.tank-form.channel' | translate }}
+        <input formControlName="channel" maxlength="60" autocomplete="off" />
+        @if (form.controls.channel.touched && form.controls.channel.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.tank-form.required' | translate }}</span> }
+      </label>
+
+      @if (!editing) {
+        <label>
+          <span><input type="checkbox" formControlName="autoGenerateEnabled" /> {{ 'provider-equipment.tank-form.auto-generate' | translate }}</span>
+        </label>
+      }
+
+      @if (error()) { <p class="pv-err" role="alert">{{ error() | translate }}</p> }
+
+      <div class="pv-actions">
+        <button mat-flat-button type="submit" [disabled]="saving()">{{ 'provider-equipment.tank-form.submit' | translate }}</button>
+        <a mat-button [routerLink]="['/clients', buyerId]">{{ 'provider-equipment.tank-form.cancel' | translate }}</a>
+      </div>
+    </form>
+  }
+</div>
