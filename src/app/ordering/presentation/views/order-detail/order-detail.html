@@ -92,10 +92,26 @@
       @if (assigning()) {
         <section class="assignment">
           <h3>{{ 'fulfillment.assign' | translate }}</h3>
+          @if (recommendationLoading()) {
+            <p role="status">{{ 'fulfillment.recommendation.loading' | translate }}</p>
+          } @else if (recommendationError()) {
+            <p class="error" role="alert">{{ recommendationError()! | translate }}</p>
+          } @else if (recommendation(); as rec) {
+            @if (rec.recommended) {
+              <div class="recommendation">
+                <strong>{{ 'fulfillment.recommendation.title' | translate }}</strong>
+                <p>{{ rec.driverName }} · {{ rec.licensePlate }} ({{ rec.tankerCapacityLitres | number }} L / {{ rec.requestedVolumeLitres | number }} L)</p>
+                <p class="hint">{{ 'fulfillment.recommendation.criterion' | translate }}</p>
+                <button mat-stroked-button type="button" (click)="useRecommendation()">{{ 'fulfillment.recommendation.use' | translate }}</button>
+              </div>
+            } @else {
+              <p class="error" role="status">{{ 'fulfillment.recommendation.reason.' + rec.reason | translate }}</p>
+            }
+          }
           <label>{{ 'fulfillment.driver' | translate }} <select [(ngModel)]="driverId"><option [ngValue]="null">—</option>@for (driver of drivers(); track driver.id) { <option [ngValue]="driver.id">{{ driver.firstName }} {{ driver.lastName }}</option> }</select></label>
           <label>{{ 'fulfillment.tanker' | translate }} <select [(ngModel)]="tankerId"><option [ngValue]="null">—</option>@for (tanker of tankers(); track tanker.id) { <option [ngValue]="tanker.id">{{ tanker.licensePlate }} · {{ tanker.capacity }}</option> }</select></label>
-          <label>{{ 'fulfillment.window-start' | translate }} <input type="datetime-local" required [(ngModel)]="windowStart"></label>
-          <label>{{ 'fulfillment.window-end' | translate }} <input type="datetime-local" required [(ngModel)]="windowEnd"></label>
+          <label>{{ 'fulfillment.window-start' | translate }} <input type="datetime-local" required [(ngModel)]="windowStart" (ngModelChange)="onWindowChange()"></label>
+          <label>{{ 'fulfillment.window-end' | translate }} <input type="datetime-local" required [(ngModel)]="windowEnd" (ngModelChange)="onWindowChange()"></label>
           @if (assignmentError) { <p class="error">{{ assignmentError | translate }}</p> }
           <button mat-raised-button color="primary" [disabled]="!driverId || !tankerId || !windowStart || !windowEnd" (click)="assign(o.id)">{{ 'fulfillment.submit-assignment' | translate }}</button>
         </section>

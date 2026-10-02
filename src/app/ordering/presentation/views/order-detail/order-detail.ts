@@ -16,6 +16,7 @@ import { FormsModule } from '@angular/forms';
 import { FulfillmentApi } from '../../../../fulfillment/infrastructure/fulfillment-api';
 import { Driver } from '../../../../fulfillment/domain/model/driver.entity';
 import { Tanker } from '../../../../fulfillment/domain/model/tanker.entity';
+import { DeliveryRecommendation } from '../../../../fulfillment/domain/model/provider-delivery.entity';
 import { HttpErrorResponse } from '@angular/common/http';
 import { OrderingApi, Payment, PaymentMethod } from '../../../infrastructure/ordering-api';
 
@@ -37,6 +38,10 @@ export class OrderDetail {
   windowStart = '';
   windowEnd = '';
   assignmentError = '';
+  readonly recommendation = signal<DeliveryRecommendation | null>(null);
+  readonly recommendationLoading = signal(false);
+  /** Clave i18n del aviso cuando no hay recomendación utilizable (409 u otro error). */
+  readonly recommendationError = signal<string | null>(null);
   readonly payment = signal<Payment | null>(null);
   readonly paymentLoading = signal(false);
   readonly paying = signal(false);
@@ -91,6 +96,7 @@ export class OrderDetail {
   statusClass(status: string): string { return status.toLowerCase(); }
   openAssignment(): void {
     this.assigning.set(true);
+    this.loadRecommendation();
     this.fulfillment.getEligibleDrivers().subscribe(rows => {
       this.drivers.set(rows);
       this.driverId = rows.length === 1 ? rows[0].id : null;
@@ -99,6 +105,32 @@ export class OrderDetail {
       this.tankers.set(rows);
       this.tankerId = rows.length === 1 ? rows[0].id : null;
     });
+  }
+  /** Pide la sugerencia al backend; con ventana completa la usa, si no el backend toma el día programado. */
+  loadRecommendation(): void {
+    const orderId = this.order()?.id;
+    if (!orderId) return;
+    const withWindow = this.windowStart && this.windowEnd;
+    this.recommendation.set(null);
+    this.recommendationError.set(null);
+    this.recommendationLoading.set(true);
+    this.fulfillment.recommendation(orderId, withWindow ? new Date(this.windowStart).toISOString() : undefined, withWindow ? new Date(this.windowEnd).toISOString() : undefined).subscribe({
+      next: rec => { this.recommendation.set(rec); this.recommendationLoading.set(false); },
+      error: (error: Error) => { this.recommendationError.set(error.message === 'errors.http-409' ? 'fulfillment.recommendation.conflict' : error.message); this.recommendationLoading.set(false); },
+    });
+  }
+  onWindowChange(): void { if (this.windowStart && this.windowEnd) this.loadRecommendation(); }
+  useRecommendation(): void {
+    const rec = this.recommendation();
+    if (!rec?.recommended) return;
+    this.driverId = rec.driverId;
+    this.tankerId = rec.tankerId;
+    this.windowStart = this.toLocalInput(rec.windowStart);
+    this.windowEnd = this.toLocalInput(rec.windowEnd);
+  }
+  private toLocalInput(iso: string): string {
+    const d = new Date(iso);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
   }
   assign(orderId: number): void {
     if (!this.driverId || !this.tankerId || !this.windowStart || !this.windowEnd) return;
