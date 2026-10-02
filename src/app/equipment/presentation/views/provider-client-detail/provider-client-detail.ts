@@ -1,4 +1,6 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,6 +23,10 @@ type Section<T> = { loading: boolean; error: boolean; data: T };
   styleUrl: '../provider-views.css',
 })
 export class ProviderClientDetail implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private buyerRequest?: Subscription;
+  private tanksRequest?: Subscription;
+  private ordersRequest?: Subscription;
   readonly buyerId = inject(ActivatedRoute).snapshot.paramMap.get('buyerId')!;
   private readonly api = inject(ProviderEquipmentApi);
   private readonly ordering = inject(OrderingApi);
@@ -34,9 +40,10 @@ export class ProviderClientDetail implements OnInit {
   ngOnInit(): void { this.load(); }
 
   protected load(): void {
+    this.buyerRequest?.unsubscribe();
     const id = Number(this.buyerId);
     this.buyer.set({ loading: true, error: false, data: null });
-    this.api.buyerCompanies().subscribe({
+    this.buyerRequest = this.api.buyerCompanies().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (rows) => this.buyer.set({ loading: false, error: false, data: rows.find((b) => b.id === id) ?? null }),
       error: () => this.buyer.set({ loading: false, error: true, data: null }),
     });
@@ -45,18 +52,20 @@ export class ProviderClientDetail implements OnInit {
   }
 
   protected loadTanks(id = Number(this.buyerId)): void {
+    this.tanksRequest?.unsubscribe();
     this.tanks.set({ loading: true, error: false, data: [] });
-    this.api.tanks(id).subscribe({
+    this.tanksRequest = this.api.tanks(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.tanks.set({ loading: false, error: false, data }),
       error: () => this.tanks.set({ loading: false, error: true, data: [] }),
     });
   }
 
   protected loadOrders(id = Number(this.buyerId)): void {
+    this.ordersRequest?.unsubscribe();
     const providerId = this.iam.providerId();
-    if (!providerId) { this.orders.set({ loading: false, error: false, data: [] }); return; }
+    if (!providerId) { this.orders.set({ loading: false, error: true, data: [] }); return; }
     this.orders.set({ loading: true, error: false, data: [] });
-    this.ordering.orders('provider', providerId).subscribe({
+    this.ordersRequest = this.ordering.orders('provider', providerId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (rows) => this.orders.set({ loading: false, error: false, data: rows.filter((o) => o.companyId === id) }),
       error: () => this.orders.set({ loading: false, error: true, data: [] }),
     });

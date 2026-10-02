@@ -9,7 +9,7 @@
   @if (step() === 'lookup') {
     <form class="pv-form" [formGroup]="lookupForm" (ngSubmit)="search()" novalidate>
       <label>{{ 'provider-equipment.buyer-form.ruc' | translate }}
-        <input formControlName="ruc" inputmode="numeric" maxlength="11" autocomplete="off" />
+        <input formControlName="ruc" inputmode="numeric" maxlength="11" autocomplete="off" [readOnly]="saving()" />
         @if (lookupForm.controls.ruc.touched && lookupForm.controls.ruc.errors?.['required']) { <span class="pv-err" role="alert">{{ 'provider-equipment.buyer-form.ruc-required' | translate }}</span> }
         @else if (lookupForm.controls.ruc.touched && lookupForm.controls.ruc.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.buyer-form.ruc-invalid' | translate }}</span> }
       </label>
@@ -28,7 +28,7 @@
       }
 
       <div class="pv-actions">
-        <button mat-flat-button type="submit" [disabled]="searching() || waitSeconds() > 0">{{ 'provider-equipment.buyer-form.search' | translate }}</button>
+        <button mat-flat-button type="submit" [disabled]="searching() || saving() || waitSeconds() > 0">{{ 'provider-equipment.buyer-form.search' | translate }}</button>
         <a mat-button routerLink="/clients">{{ 'provider-equipment.buyer-form.cancel' | translate }}</a>
       </div>
     </form>

@@ -1,6 +1,8 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, Validators, NonNullableFormBuilder } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { TranslatePipe } from '@ngx-translate/core';
 import { BuyerLookup, NewBuyerCompany } from '../../../domain/model/provider-equipment.entity';
@@ -23,6 +25,8 @@ export class ProviderBuyerForm {
   private readonly api = inject(ProviderEquipmentApi);
   private readonly router = inject(Router);
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
+  private lookupRequest?: Subscription;
   private timer?: ReturnType<typeof setInterval>;
 
   protected readonly step = signal<'lookup' | 'create'>('lookup');
@@ -44,16 +48,24 @@ export class ProviderBuyerForm {
     siteName: [''],
   });
 
-  constructor() { inject(DestroyRef).onDestroy(() => clearInterval(this.timer)); }
+  constructor() {
+    this.destroyRef.onDestroy(() => clearInterval(this.timer));
+    this.lookupForm.controls.ruc.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.lookupRequest?.unsubscribe();
+      this.found.set(null);
+      this.searching.set(false);
+      this.error.set(null);
+    });
+  }
 
   protected search(): void {
-    if (this.waitSeconds() > 0 || this.searching()) return;
+    if (this.waitSeconds() > 0 || this.searching() || this.saving()) return;
     if (this.lookupForm.invalid) { this.lookupForm.markAllAsTouched(); return; }
     const ruc = this.lookupForm.controls.ruc.value;
     this.searching.set(true);
     this.error.set(null);
     this.found.set(null);
-    this.api.lookupBuyer(ruc).subscribe({
+    this.lookupRequest = this.api.lookupBuyer(ruc).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (buyer) => { this.found.set(buyer); this.searching.set(false); },
       error: (e) => {
         this.searching.set(false);
@@ -70,10 +82,10 @@ export class ProviderBuyerForm {
 
   protected link(): void {
     const buyer = this.found();
-    if (!buyer || this.saving()) return;
+    if (!buyer || this.saving() || buyer.ruc !== this.lookupForm.controls.ruc.value) return;
     this.saving.set(true);
     this.error.set(null);
-    this.api.registerBuyerCompany({ buyerCompanyId: buyer.buyerCompanyId }).subscribe({
+    this.api.registerBuyerCompany({ buyerCompanyId: buyer.buyerCompanyId }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (linked) => this.router.navigate(['/clients', linked.id]),
       error: (e) => {
         // Caso legacy: lookup 200 pero la empresa no tiene organización activa => POST 404.
@@ -86,13 +98,14 @@ export class ProviderBuyerForm {
   protected backToLookup(): void { this.step.set('lookup'); this.error.set(null); }
 
   protected submit(): void {
+    if (this.saving()) return;
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const body: Record<string, string> = {};
     // Solo se envían los campos con valor; el backend aplica los por defecto (siteName = name).
     for (const [k, v] of Object.entries(this.form.getRawValue())) if (v.trim()) body[k] = v.trim();
     this.saving.set(true);
     this.error.set(null);
-    this.api.registerBuyerCompany(body as unknown as NewBuyerCompany).subscribe({
+    this.api.registerBuyerCompany(body as unknown as NewBuyerCompany).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (buyer) => this.router.navigate(['/clients', buyer.id]),
       error: (e) => { this.error.set(providerErrorKey(e)); this.saving.set(false); },
     });

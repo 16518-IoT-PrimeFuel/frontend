@@ -1,4 +1,6 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,8 +27,13 @@ const STALE_AFTER_HOURS = 1;
   styleUrl: './provider-tank-detail.css',
 })
 export class ProviderTankDetail implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private tankRequest?: Subscription;
+  private readingsRequest?: Subscription;
+  private episodesRequest?: Subscription;
   readonly tankId = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
   private readonly api = inject(ProviderEquipmentApi);
+  private readonly now = signal(Date.now());
   protected readonly unitKey = unitKey;
 
   protected readonly tank = signal<Section<ProviderTank | null>>({ loading: true, error: false, data: null });
@@ -37,7 +44,7 @@ export class ProviderTankDetail implements OnInit {
   /** Minutos desde la última lectura; null si no hay. */
   protected readonly ageMinutes = computed(() => {
     const l = this.last();
-    return l ? Math.max(0, Math.round((Date.now() - new Date(l.capturedAt).getTime()) / 60_000)) : null;
+    return l ? Math.max(0, Math.floor((this.now() - new Date(l.capturedAt).getTime()) / 60_000)) : null;
   });
   protected readonly stale = computed(() => (this.ageMinutes() ?? 0) > STALE_AFTER_HOURS * 60);
 
@@ -48,11 +55,17 @@ export class ProviderTankDetail implements OnInit {
   protected readonly chartOptions: ChartOptions<'line'> = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
   protected readonly reversed = computed(() => this.readings().data.slice().reverse());
 
+  constructor() {
+    const timer = setInterval(() => this.now.set(Date.now()), 60_000);
+    this.destroyRef.onDestroy(() => clearInterval(timer));
+  }
+
   ngOnInit(): void { this.loadTank(); this.loadReadings(); this.loadEpisodes(); }
 
   protected loadTank(): void {
+    this.tankRequest?.unsubscribe();
     this.tank.set({ loading: true, error: false, data: null });
-    this.api.tank(this.tankId).subscribe({
+    this.tankRequest = this.api.tank(this.tankId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.tank.set({ loading: false, error: false, data }),
       // 404 TANK_NOT_FOUND (inexistente, inactivo o ajeno) => "no encontrado"; el resto => reintento.
       error: (e) => this.tank.set({ loading: false, error: e?.error?.code !== 'TANK_NOT_FOUND', data: null }),
@@ -60,17 +73,19 @@ export class ProviderTankDetail implements OnInit {
   }
 
   protected loadReadings(): void {
+    this.readingsRequest?.unsubscribe();
     this.readings.set({ loading: true, error: false, data: [] });
     const from = new Date(Date.now() - READINGS_WINDOW_HOURS * HOUR).toISOString();
-    this.api.readings(this.tankId, from).subscribe({
+    this.readingsRequest = this.api.readings(this.tankId, from).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.readings.set({ loading: false, error: false, data }),
       error: () => this.readings.set({ loading: false, error: true, data: [] }),
     });
   }
 
   protected loadEpisodes(): void {
+    this.episodesRequest?.unsubscribe();
     this.episodes.set({ loading: true, error: false, data: [] });
-    this.api.episodes(this.tankId).subscribe({
+    this.episodesRequest = this.api.episodes(this.tankId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => this.episodes.set({ loading: false, error: false, data }),
       error: () => this.episodes.set({ loading: false, error: true, data: [] }),
     });
