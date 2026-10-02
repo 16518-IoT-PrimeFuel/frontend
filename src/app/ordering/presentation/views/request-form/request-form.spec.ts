@@ -9,7 +9,6 @@ import { TranslateModule } from '@ngx-translate/core';
 import { RequestForm } from './request-form';
 import { EquipmentStore } from '../../../../equipment/application/equipment.store';
 import { OrderingApi } from '../../../infrastructure/ordering-api';
-import { OrderingStore } from '../../../application/ordering.store';
 import { FuelProduct } from '../../../../inventory/domain/model/fuel-product.entity';
 
 describe('RequestForm', () => {
@@ -34,7 +33,7 @@ describe('RequestForm', () => {
     const api = TestBed.inject(OrderingApi);
     const products = vi.spyOn(api, 'products').mockReturnValue(of([{ id: 8, active: false } as FuelProduct]));
     const alert = vi.spyOn(api, 'alertEmptyCatalog').mockReturnValue(of(undefined));
-    const create = vi.spyOn(TestBed.inject(OrderingStore), 'createRequest');
+    const create = vi.spyOn(fixture.componentInstance.store, 'createRequest');
     const component = fixture.componentInstance;
     component.form.patchValue({ providerId: 2, fuelProductId: 8, deliveryAddress: 'Av. Lima' });
     component.onProviderChange();

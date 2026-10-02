@@ -37,6 +37,7 @@ export class OrderingApi extends ErrorHandlingEnabledBaseType {
 
   paymentsForCompany(companyId: number): Observable<Payment[]> { return this.http.get<Payment[]>(`${this.base}/payments/company/${companyId}`).pipe(catchError(this.handleError('paymentsForCompany', true))); }
   refundPayment(id: number): Observable<Payment> { return this.http.post<Payment>(`${this.base}/payments/${id}/refund`, null).pipe(catchError(this.handleError('refundPayment', true))); }
+  refundProviderPayment(id: number): Observable<Payment> { return this.http.post<Payment>(`${this.base}/payments/${id}/refund`, null); }
   providerPayments(providerId: number, filters: { status?: string; from?: string; to?: string } = {}): Observable<ProviderPayment[]> {
     let params = new HttpParams();
     for (const [k, v] of Object.entries(filters)) if (v) params = params.set(k, v);

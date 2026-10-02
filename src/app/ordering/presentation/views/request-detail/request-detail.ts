@@ -20,6 +20,7 @@ type RequestAction = 'cancel' | 'accept' | 'reject';
 
 @Component({
   selector: 'app-request-detail',
+  providers: [OrderingStore],
   imports: [CurrencyPipe, DatePipe, DecimalPipe, FormsModule, RouterLink, TranslatePipe, MatButton, MatDialogModule],
   templateUrl: './request-detail.html',
   styleUrl: './request-detail.css',

@@ -1,5 +1,5 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { finalize } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Request, CreateRequest } from '../domain/model/request.entity';
 import { Order } from '../domain/model/order.entity';
@@ -11,6 +11,7 @@ export class OrderingStore {
   private readonly api = inject(OrderingApi);
   private readonly destroyRef = inject(DestroyRef);
   private activeRequests = 0;
+  private orderRequest?: Subscription;
   private readonly iam = inject(IamStore);
   private readonly requestsState = signal<Request[]>([]);
   private readonly paymentsState = signal<Payment[]>([]);
@@ -74,9 +75,15 @@ export class OrderingStore {
       error: error => this.refundError.set(error?.message ?? 'errors.generic'),
     });
   }
-  loadOrder(id: number): void { this.run(this.api.order(id), order => this.ordersState.update(items => [order, ...items.filter(x => x.id !== id)])); }
+  loadOrder(id: number): void {
+    this.orderRequest?.unsubscribe();
+    this.ordersState.set([]);
+    if (!Number.isSafeInteger(id) || id < 1) { this.errorState.set('errors.http-404'); return; }
+    this.orderRequest = this.run(this.api.order(id), order => this.ordersState.set([order]));
+  }
   createRequest(value: CreateRequest, done: () => void): void { this.mutate(this.api.createRequest(value), () => { this.loadRequests(); done(); }); }
   acceptRequest(id: number): void {
+    if (!this.canDecideRequest(id)) return;
     this.mutate(this.api.acceptRequest(id), request => {
       this.loadRequests();
       if (request.orderId != null) this.loadOrder(request.orderId);
@@ -84,16 +91,35 @@ export class OrderingStore {
       this.notice.set('request-list.accepted'); // al final: run() limpia el aviso
     });
   }
-  rejectRequest(id: number, reason: string): void { this.mutate(this.api.rejectRequest(id, reason), () => { this.loadRequests(); this.notice.set('request-list.rejected'); }); }
-  cancelRequest(id: number): void { this.mutate(this.api.cancelRequest(id), () => this.loadRequests()); }
-  confirmOrder(id: number): void { this.mutate(this.api.confirmOrder(id), order => this.replaceOrder(order)); }
-  cancelOrder(id: number): void { this.mutate(this.api.cancelOrder(id), order => this.replaceOrder(order)); }
+  rejectRequest(id: number, reason: string): void {
+    if (!this.canDecideRequest(id) || !reason.trim() || reason.trim().length > 240) return;
+    this.mutate(this.api.rejectRequest(id, reason.trim()), () => { this.loadRequests(); this.notice.set('request-list.rejected'); });
+  }
+  cancelRequest(id: number): void {
+    if (!this.iam.isBuyer() || this.loading() || !this.requests().some(row => row.id === id && row.status === 'PENDING')) return;
+    this.mutate(this.api.cancelRequest(id), () => this.loadRequests());
+  }
+  confirmOrder(id: number): void {
+    const order = this.orders().find(row => row.id === id);
+    if (this.loading() || !this.iam.isBuyer() || order?.companyId !== this.iam.companyId() || order?.status !== 'PENDING') return;
+    this.mutate(this.api.confirmOrder(id), order => this.replaceOrder(order));
+  }
+  cancelOrder(id: number): void {
+    const order = this.orders().find(row => row.id === id);
+    const owns = this.iam.isBuyer() ? order?.companyId === this.iam.companyId() : this.iam.isProvider() && order?.providerId === this.iam.providerId();
+    if (this.loading() || !order || !owns || !['PENDING', 'CONFIRMED'].includes(order.status)) return;
+    this.mutate(this.api.cancelOrder(id), order => this.replaceOrder(order));
+  }
+
+  private canDecideRequest(id: number): boolean {
+    return this.isProvider() && !this.loading() && this.requests().some(row => row.id === id && row.status === 'PENDING' && row.providerId === this.iam.providerId());
+  }
 
   private replaceOrder(order: Order): void { this.ordersState.update(items => [order, ...items.filter(x => x.id !== order.id)]); }
-  private run<T>(request: import('rxjs').Observable<T>, save: (value: T) => void): void {
+  private run<T>(request: import('rxjs').Observable<T>, save: (value: T) => void): Subscription {
     this.activeRequests++;
     this.loadingState.set(true); this.errorState.set(null); this.notice.set('');
-    request.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
+    return request.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
       this.activeRequests--;
       this.loadingState.set(this.activeRequests > 0);
     })).subscribe({ next: save, error: error => this.errorState.set(error?.error?.message ?? error?.error?.code ?? (error?.status == null ? error?.message : null) ?? 'ordering.request-failed') });

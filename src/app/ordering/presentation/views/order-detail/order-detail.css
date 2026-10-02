@@ -116,4 +116,6 @@ mat-chip.cancelled {
 .assignment label { display:flex; flex-direction:column; gap:4px }
 .assignment input,.assignment select { padding:8px }
 .assignment .error { grid-column:1/-1; color:#b42318 }
+.assignment-summary { grid-column:1/-1; padding:16px; border:1px solid #d1d5db; border-radius:8px; overflow-wrap:anywhere }
+.assignment-summary h4 { margin-top:0 }
 @media(max-width:600px){.assignment{grid-template-columns:1fr}}

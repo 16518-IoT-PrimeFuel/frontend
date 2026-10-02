@@ -30,7 +30,7 @@ export function missingRequestFields(request: Request): string[] {
   return fields;
 }
 
-@Component({ selector: 'app-request-list', imports: [CurrencyPipe, RouterLink, DatePipe, FormsModule, TranslatePipe, MatButtonModule, MatIconModule], templateUrl: './request-list.html', styleUrl: './request-list.css' })
+@Component({ selector: 'app-request-list', providers: [OrderingStore], imports: [CurrencyPipe, RouterLink, DatePipe, FormsModule, TranslatePipe, MatButtonModule, MatIconModule], templateUrl: './request-list.html', styleUrl: './request-list.css' })
 export class RequestList {
   readonly store = inject(OrderingStore);
   readonly iam = inject(IamStore);

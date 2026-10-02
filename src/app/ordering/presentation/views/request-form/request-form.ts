@@ -13,7 +13,7 @@ import { EquipmentStore } from '../../../../equipment/application/equipment.stor
 import { Site, Tank } from '../../../../equipment/domain/model/equipment.entity';
 import { FuelProduct } from '../../../../inventory/domain/model/fuel-product.entity';
 
-@Component({ selector: 'app-request-form', imports: [TranslatePipe, ReactiveFormsModule, MatFormField, MatLabel, MatError, MatInput, MatButton, MatSelect, MatOption], templateUrl: './request-form.html', styleUrl: './request-form.css' })
+@Component({ selector: 'app-request-form', providers: [OrderingStore], imports: [TranslatePipe, ReactiveFormsModule, MatFormField, MatLabel, MatError, MatInput, MatButton, MatSelect, MatOption], templateUrl: './request-form.html', styleUrl: './request-form.css' })
 export class RequestForm {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(OrderingApi);

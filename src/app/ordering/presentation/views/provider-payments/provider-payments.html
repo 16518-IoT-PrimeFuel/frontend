@@ -43,7 +43,7 @@
         <th scope="col">{{ 'provider-payments.paid' | translate }}</th>
         <th scope="col">{{ 'provider-payments.actions' | translate }}</th>
       </tr></thead>
-      <tbody>@for (p of payments(); track p.id) {
+      <tbody>@for (p of pageRows(); track p.id) {
         <tr>
           <td><a [routerLink]="['/ordering/order-detail', p.orderId]">#{{ p.orderId }}</a></td>
           <td>{{ p.buyerName ?? '—' }}</td>
@@ -67,6 +67,11 @@
       }</tbody>
     </table>
   </div>
+  <nav class="dl-toolbar" [attr.aria-label]="'provider-payments.pagination' | translate">
+    <span role="status">{{ 'provider-payments.page-range' | translate: { first: firstRow(), last: lastRow(), total: payments().length } }}</span>
+    <button mat-stroked-button type="button" [disabled]="page() === 0" (click)="changePage(-1)">{{ 'provider-payments.previous' | translate }}</button>
+    <button mat-stroked-button type="button" [disabled]="page() + 1 >= pageCount()" (click)="changePage(1)">{{ 'provider-payments.next' | translate }}</button>
+  </nav>
 }
 
 <ng-template #completeDialog>
