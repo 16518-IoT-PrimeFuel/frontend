@@ -1,7 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { ChartData, ChartOptions } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -40,12 +41,20 @@ export class Dashboard {
   private readonly ordering = inject(OrderingApi);
   private readonly equipment = inject(ProviderEquipmentApi);
   private readonly fulfillment = inject(FulfillmentApi);
+  private readonly destroyRef = inject(DestroyRef);
+  private analyticsRequest?: Subscription;
+  private ordersRequest?: Subscription;
+  private inboxRequest?: Subscription;
   readonly isBuyer = this.iam.isBuyer();
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly analytics = signal<BuyerAnalytics | ProviderAnalytics | null>(null);
   readonly orders = signal<Order[]>([]);
   readonly pendingRequests = signal<Request[]>([]);
+  readonly inboxLoading = signal(false);
+  readonly inboxError = signal(false);
+  readonly ordersLoading = signal(false);
+  readonly ordersError = signal(false);
   readonly criticalTanks = signal<Card<ProviderTank[]>>({ loading: true, error: false, data: [] });
   readonly todayDeliveries = signal<Card<ProviderDelivery[]>>({ loading: true, error: false, data: [] });
   readonly granularity = signal<TrendGranularity>('day');
@@ -113,13 +122,37 @@ export class Dashboard {
     this.error.set(false);
     if (id === null) { this.loading.set(false); this.error.set(true); return; }
     this.loading.set(true);
-    forkJoin({
-      analytics: this.isBuyer ? this.analyticsApi.getBuyerAnalytics(id) : this.analyticsApi.getProviderAnalytics(id, this.monthStart, this.today),
-      orders: this.ordering.orders(this.isBuyer ? 'company' : 'provider', id),
-      requests: this.isBuyer ? of([] as Request[]) : this.ordering.requestInbox(),
-    }).subscribe({
-      next: data => { this.analytics.set(data.analytics); this.orders.set(data.orders); this.pendingRequests.set(data.requests.filter(r => r.status === 'PENDING')); this.loading.set(false); },
+    this.analyticsRequest?.unsubscribe();
+    this.analytics.set(null);
+    const analytics: Observable<BuyerAnalytics | ProviderAnalytics> = this.isBuyer ? this.analyticsApi.getBuyerAnalytics(id) : this.analyticsApi.getProviderAnalytics(id, this.monthStart, this.today);
+    this.analyticsRequest = analytics.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: data => { this.analytics.set(data); this.loading.set(false); },
       error: () => { this.error.set(true); this.loading.set(false); },
+    });
+    this.loadOrders();
+    if (!this.isBuyer) this.loadInbox();
+  }
+  loadOrders(): void {
+    this.ordersRequest?.unsubscribe();
+    const id = this.isBuyer ? this.iam.companyId() : this.iam.providerId();
+    this.ordersLoading.set(true);
+    this.ordersError.set(false);
+    this.orders.set([]);
+    if (!id) { this.ordersLoading.set(false); this.ordersError.set(true); return; }
+    this.ordersRequest = this.ordering.orders(this.isBuyer ? 'company' : 'provider', id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: rows => { this.orders.set(rows); this.ordersLoading.set(false); },
+      error: () => { this.ordersError.set(true); this.ordersLoading.set(false); },
+    });
+  }
+  loadInbox(): void {
+    if (this.isBuyer) return;
+    this.inboxRequest?.unsubscribe();
+    this.pendingRequests.set([]);
+    this.inboxLoading.set(true);
+    this.inboxError.set(false);
+    this.inboxRequest = this.ordering.requestInbox().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: rows => { this.pendingRequests.set(rows.filter(r => r.status === 'PENDING')); this.inboxLoading.set(false); },
+      error: () => { this.inboxError.set(true); this.inboxLoading.set(false); },
     });
   }
 }
