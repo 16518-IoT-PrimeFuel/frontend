@@ -1,5 +1,5 @@
 import { DestroyRef, Injectable, signal } from '@angular/core';
-import { Observable, finalize } from 'rxjs';
+import { Observable, Subscription, finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FulfillmentApi } from '../infrastructure/fulfillment-api';
 import { Tanker } from '../domain/model/tanker.entity';
@@ -16,6 +16,7 @@ type DriverRequest = Omit<Driver, 'id' | 'providerId' | 'createdAt'>;
  */
 @Injectable({ providedIn: 'root' })
 export class FulfillmentStore {
+  private deliveryRequest?: Subscription;
   private readonly _tankerList = signal<Tanker[]>([]);
   private readonly _selectedTanker = signal<Tanker | null>(null);
   private readonly _driverList = signal<Driver[]>([]);
@@ -78,7 +79,19 @@ export class FulfillmentStore {
   }
 
   // ── Deliveries ───────────────────────────────────────────────────────────
-  loadDeliveries(date?: string): void { this.run(this.api.deliveries(date), 'errors.generic', (rows) => this._deliveries.set(rows)); }
+  loadDeliveries(date: string | undefined, destroyRef: DestroyRef): void {
+    this.deliveryRequest?.unsubscribe();
+    this._deliveries.set([]);
+    this._error.set('');
+    this._isLoading.set(true);
+    this.deliveryRequest = this.api.deliveries(date).pipe(
+      takeUntilDestroyed(destroyRef),
+      finalize(() => this._isLoading.set(false)),
+    ).subscribe({
+      next: rows => this._deliveries.set(rows),
+      error: err => this._error.set(err.message || 'errors.generic'),
+    });
+  }
 
   // ── Tankers ──────────────────────────────────────────────────────────────
   loadTankers(): void { this.clearTankerEligibility(); this.run(this.api.getTankers(), 'errors.generic', (rows) => this._tankerList.set(rows)); }

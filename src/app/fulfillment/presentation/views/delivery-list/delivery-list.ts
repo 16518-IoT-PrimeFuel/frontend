@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,6 +23,7 @@ const todayLima = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Amer
   styleUrl: './delivery-list.css',
 })
 export class DeliveryList implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly store = inject(FulfillmentStore);
   protected readonly date = signal<string>(todayLima());
   protected readonly state = signal('');
@@ -43,7 +44,7 @@ export class DeliveryList implements OnInit {
 
   ngOnInit(): void { this.load(); }
 
-  protected load(): void { this.store.loadDeliveries(this.date() || undefined); }
+  protected load(): void { this.store.loadDeliveries(this.date() || undefined, this.destroyRef); }
 
   protected setDate(value: string): void { this.date.set(value); this.clearFilters(); this.load(); }
 
