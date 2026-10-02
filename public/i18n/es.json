@@ -149,8 +149,26 @@
     },
     "tank-level": {
       "title": "Nivel del tanque",
-      "age": "hace {{minutes}} min"
-    }
+      "age": "hace {{minutes}} min",
+      "error": "No se pudo consultar el nivel del tanque."
+    },
+    "assignment": {
+      "loading": "Cargando recursos…",
+      "required-volume": "Volumen requerido",
+      "summary": "Revisar antes de crear la entrega",
+      "ineligible": "No elegible para despacho",
+      "resources-error": "No se pudieron cargar los recursos. Reintenta antes de asignar.",
+      "conflict": "La asignación entra en conflicto con la disponibilidad actual. Revisa los recursos y la ventana.",
+      "insufficient-capacity": "Capacidad insuficiente",
+      "review": "Revisar asignación",
+      "edit": "Editar selección",
+      "revalidate": "Al confirmar se verificará nuevamente la disponibilidad para esta ventana.",
+      "no-drivers": "No hay conductores elegibles disponibles.",
+      "submitting": "Creando entrega…",
+      "unknown-capacity": "Capacidad o volumen sin unidad válida",
+      "invalid-window": "El fin de la ventana debe ser posterior al inicio."
+    },
+    "section-error": "No se pudo cargar esta sección. Reintenta la consulta."
   },
   "analytics": {
     "buyer-title": "Panel de compras",
@@ -228,7 +246,9 @@
     "no-today-deliveries": "No hay entregas programadas para hoy.",
     "all-deliveries": "Ver todas las entregas",
     "card-loading": "Cargando…",
-    "card-retry": "Reintentar"
+    "card-retry": "Reintentar",
+    "inbox-error": "No se pudieron cargar las solicitudes pendientes.",
+    "orders-error": "No se pudieron cargar los pedidos."
   },
   "home": {
     "title": "Plataforma FullTank",
@@ -552,7 +572,11 @@
     "complete-success": "El pago se confirmó.",
     "refund-success": "El pago se marcó como reembolsado.",
     "refund-conflict": "Solo se puede reembolsar un pago completado.",
-    "action-error": "No se pudo completar la acción."
+    "action-error": "No se pudo completar la acción.",
+    "page-range": "{{first}}–{{last}} de {{total}} pagos",
+    "pagination": "Páginas de pagos",
+    "previous": "Anterior",
+    "next": "Siguiente"
   },
   "payment-status": {
     "pending": "Pendiente",

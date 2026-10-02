@@ -149,8 +149,26 @@
     },
     "tank-level": {
       "title": "Tank level",
-      "age": "{{minutes}} min ago"
-    }
+      "age": "{{minutes}} min ago",
+      "error": "The tank level could not be loaded."
+    },
+    "assignment": {
+      "loading": "Loading resources…",
+      "required-volume": "Required volume",
+      "summary": "Review before creating the delivery",
+      "ineligible": "Not eligible for dispatch",
+      "resources-error": "Resources could not be loaded. Retry before assigning.",
+      "conflict": "The assignment conflicts with current availability. Review the resources and window.",
+      "insufficient-capacity": "Insufficient capacity",
+      "review": "Review assignment",
+      "edit": "Edit selection",
+      "revalidate": "Availability for this window will be checked again when you confirm.",
+      "no-drivers": "No eligible drivers are available.",
+      "submitting": "Creating delivery…",
+      "unknown-capacity": "Capacity or volume has no valid unit",
+      "invalid-window": "The end of the window must be after its start."
+    },
+    "section-error": "This section could not be loaded. Retry the request."
   },
   "analytics": {
     "buyer-title": "Purchasing dashboard",
@@ -228,7 +246,9 @@
     "no-today-deliveries": "No deliveries scheduled for today.",
     "all-deliveries": "View all deliveries",
     "card-loading": "Loading…",
-    "card-retry": "Retry"
+    "card-retry": "Retry",
+    "inbox-error": "Pending requests could not be loaded.",
+    "orders-error": "Orders could not be loaded."
   },
   "home": {
     "title": "FullTank Platform",
@@ -552,7 +572,11 @@
     "complete-success": "The payment was confirmed.",
     "refund-success": "The payment was marked as refunded.",
     "refund-conflict": "Only a completed payment can be refunded.",
-    "action-error": "The action could not be completed."
+    "action-error": "The action could not be completed.",
+    "page-range": "{{first}}–{{last}} of {{total}} payments",
+    "pagination": "Payment pages",
+    "previous": "Previous",
+    "next": "Next"
   },
   "payment-status": {
     "pending": "Pending",
