@@ -1,0 +1,89 @@
+<div class="delivery-list-container">
+  <header class="page-header">
+    <div>
+      <h1>{{ 'fulfillment.delivery-list.title' | translate }}</h1>
+      <p>{{ (date() ? 'fulfillment.delivery-list.subtitle-date' : 'fulfillment.delivery-list.subtitle-all') | translate: { date: date() } }}</p>
+    </div>
+    <button mat-icon-button (click)="load()" [disabled]="store.isLoading()" [attr.aria-label]="'fulfillment.delivery-list.refresh' | translate">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </header>
+
+  <div class="filters">
+    <label>{{ 'fulfillment.delivery-list.date' | translate }}
+      <input type="date" [value]="date()" (change)="setDate($any($event.target).value)" />
+    </label>
+    <button mat-button (click)="toggleAll()">
+      {{ (date() ? 'fulfillment.delivery-list.all' : 'fulfillment.delivery-list.today') | translate }}
+    </button>
+    <label>{{ 'fulfillment.delivery-list.state' | translate }}
+      <select [value]="state()" (change)="state.set($any($event.target).value)">
+        <option value="">{{ 'fulfillment.delivery-list.any' | translate }}</option>
+        @for (s of states(); track s) { <option [value]="s">{{ 'delivery-status.' + s.toLowerCase() | translate }}</option> }
+      </select>
+    </label>
+    <label>{{ 'fulfillment.driver' | translate }}
+      <select [value]="driverId()" (change)="driverId.set($any($event.target).value)">
+        <option value="">{{ 'fulfillment.delivery-list.any' | translate }}</option>
+        @for (d of drivers(); track d.id) { <option [value]="d.id">{{ d.label }}</option> }
+      </select>
+    </label>
+    <label>{{ 'fulfillment.tanker' | translate }}
+      <select [value]="tankerId()" (change)="tankerId.set($any($event.target).value)">
+        <option value="">{{ 'fulfillment.delivery-list.any' | translate }}</option>
+        @for (t of tankers(); track t.id) { <option [value]="t.id">{{ t.label }}</option> }
+      </select>
+    </label>
+    @if (hasFilters()) {
+      <button mat-button (click)="clearFilters()">{{ 'fulfillment.delivery-list.clear-filters' | translate }}</button>
+    }
+  </div>
+
+  @if (store.isLoading()) {
+    <div class="state" role="status"><mat-spinner diameter="32" /></div>
+  } @else if (store.error()) {
+    <div class="state error" role="alert">
+      <p>{{ store.error() | translate }}</p>
+      <button mat-stroked-button (click)="load()">{{ 'fulfillment.delivery-list.retry' | translate }}</button>
+    </div>
+  } @else if (!store.deliveries().length) {
+    <div class="state">{{ 'fulfillment.delivery-list.empty' | translate }}</div>
+  } @else if (!rows().length) {
+    <div class="state">{{ 'fulfillment.delivery-list.filtered-empty' | translate }}</div>
+  } @else {
+    <table class="deliveries">
+      <thead>
+        <tr>
+          <th>{{ 'fulfillment.delivery' | translate }}</th>
+          <th>{{ 'fulfillment.delivery-list.order' | translate }}</th>
+          <th>{{ 'fulfillment.delivery-list.buyer' | translate }}</th>
+          <th>{{ 'fulfillment.delivery-list.address' | translate }}</th>
+          <th>{{ 'fulfillment.driver' | translate }}</th>
+          <th>{{ 'fulfillment.tanker' | translate }}</th>
+          <th>{{ 'fulfillment.delivery-list.window' | translate }}</th>
+          <th>{{ 'fulfillment.delivery-list.volume' | translate }}</th>
+          <th>{{ 'fulfillment.physical-state' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (d of rows(); track d.id) {
+          <tr>
+            <td><a [routerLink]="['../delivery-detail', d.id]">#{{ d.id }}</a></td>
+            <td><a [routerLink]="['/ordering/order-detail', d.orderId]">#{{ d.orderId }}</a></td>
+            <td>{{ d.buyerCompanyName ?? '-' }}</td>
+            <td>{{ d.deliveryAddress ?? '-' }}</td>
+            <td>{{ driverName(d) }}</td>
+            <td>{{ d.tanker?.licensePlate ?? '-' }}</td>
+            <td>
+              @if (d.windowStart && d.windowEnd) { {{ d.windowStart | date: 'dd/MM HH:mm' }} – {{ d.windowEnd | date: 'HH:mm' }} } @else { - }
+            </td>
+            <td>
+              @if (d.requestedVolume != null) { {{ d.requestedVolume }} {{ unitKey(d.unit) | translate }} } @else { - }
+            </td>
+            <td><span class="chip" [class]="d.physicalState.toLowerCase()">{{ 'delivery-status.' + d.physicalState.toLowerCase() | translate }}</span></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

@@ -33,7 +33,14 @@
   @if (store.error()) {
     <div class="error-container">
       <mat-icon>error_outline</mat-icon>
-      <p>{{ store.error() }}</p>
+      <p>{{ store.error() | translate }}</p>
+    </div>
+  }
+
+  @if (store.successMsg()) {
+    <div class="success-container" role="status">
+      <mat-icon>check_circle</mat-icon>
+      <p>{{ store.successMsg() | translate }}</p>
     </div>
   }
 
@@ -91,14 +98,22 @@
           >
             <mat-icon>edit</mat-icon>
           </button>
-          <button
-            mat-icon-button
-            color="warn"
-            (click)="onDelete(element.id)"
-            [matTooltip]="'driver-list.delete-tooltip' | translate"
-          >
-            <mat-icon>close</mat-icon>
+          <button mat-icon-button (click)="onToggleActive(element.id, element.active)" [matTooltip]="element.active ? ('tanker-list.deactivate' | translate) : ('tanker-list.activate' | translate)"><mat-icon>{{ element.active ? 'block' : 'check_circle' }}</mat-icon></button>
+          <button mat-button (click)="onEligibility(element.id)" [disabled]="store.driverEligibilityLoading()[element.id]" [attr.aria-label]="'driver-list.eligibility-for' | translate:{ name: getFullName(element.firstName, element.lastName) }">
+            {{ 'driver-list.eligibility' | translate }}
+            @if (store.driverEligibilityLoading()[element.id]) { <mat-spinner diameter="16"></mat-spinner> }
           </button>
+          @if (store.driverEligibility()[element.id]; as eligibility) {
+            <div class="eligibility-result" role="status">
+              <span class="eligibility-label" [ngClass]="eligibilityClass(eligibility.outcome)">
+                @if (eligibilityKey(eligibility.outcome); as key) { {{ key | translate }} } @else { {{ eligibility.outcome }} }
+              </span>
+              <span>{{ eligibility.reason }}</span>
+            </div>
+          }
+          @if (store.driverEligibilityError()[element.id]; as error) {
+            <p class="eligibility-error" role="alert">{{ error | translate }}</p>
+          }
         </td>
       </ng-container>
 
@@ -114,3 +129,12 @@
     </table>
   </div>
 </div>
+
+<ng-template #confirmDialog>
+  <h2 mat-dialog-title>{{ 'confirm.title' | translate }}</h2>
+  <mat-dialog-content>{{ 'confirm.deactivate' | translate }}</mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [mat-dialog-close]="false">{{ 'confirm.cancel' | translate }}</button>
+    <button mat-flat-button color="warn" [mat-dialog-close]="true">{{ 'confirm.confirm' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>

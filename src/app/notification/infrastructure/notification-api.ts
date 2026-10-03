@@ -1,64 +1,23 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin, map, switchMap } from 'rxjs';
-import { BaseApi } from '../../shared/infrastructure/base-api';
+import { Observable, forkJoin, of, switchMap } from 'rxjs';
 import { Notification } from '../domain/model/notification.entity';
 import { NotificationApiEndpoint } from './notification-api-endpoint';
 
 @Injectable({ providedIn: 'root' })
-export class NotificationApi extends BaseApi {
-  private readonly _notificationEndpoint: NotificationApiEndpoint;
+export class NotificationApi {
+  private readonly endpoint: NotificationApiEndpoint;
 
-  constructor(http: HttpClient) {
-    super();
-    this._notificationEndpoint = new NotificationApiEndpoint(http);
-  }
+  constructor(http: HttpClient) { this.endpoint = new NotificationApiEndpoint(http); }
 
-  getNotificationsByUser(userId: string): Observable<Notification[]> {
-    return this._notificationEndpoint.getNotificationsByUser(userId);
-  }
+  getNotifications(): Observable<Notification[]> { return this.endpoint.getNotifications(); }
+  getUnreadNotifications(): Observable<Notification[]> { return this.endpoint.getUnreadNotifications(); }
+  markAsRead(id: number): Observable<Notification> { return this.endpoint.markAsRead(id); }
 
-  getUnreadNotificationsByUser(userId: string): Observable<Notification[]> {
-    return this._notificationEndpoint.getUnreadNotificationsByUser(userId);
-  }
-
-  getNotificationsByOrder(orderId: string): Observable<Notification[]> {
-    return this._notificationEndpoint.getNotificationsByOrder(orderId);
-  }
-
-  getNotificationById(notificationId: string): Observable<Notification> {
-    return this._notificationEndpoint.getById(notificationId);
-  }
-
-  createNotification(
-    request: Pick<Notification, 'userId' | 'orderId' | 'type' | 'message'>,
-  ): Observable<Notification> {
-    return this._notificationEndpoint.createNotification(request);
-  }
-
-  markAsRead(notificationId: string): Observable<Notification> {
-    return this._notificationEndpoint.updateReadState(notificationId, { isRead: true });
-  }
-
-  markAsUnread(notificationId: string): Observable<Notification> {
-    return this._notificationEndpoint.updateReadState(notificationId, { isRead: false });
-  }
-
-  markAllAsReadForUser(userId: string): Observable<Notification[]> {
-    return this._notificationEndpoint.getUnreadNotificationsByUser(userId).pipe(
-      switchMap((unread) => {
-        if (unread.length === 0) {
-          return forkJoin([] as Observable<Notification>[]).pipe(map(() => [] as Notification[]));
-        }
-        const updates = unread.map((n) =>
-          this._notificationEndpoint.updateReadState(n.id, { isRead: true }),
-        );
-        return forkJoin(updates);
-      }),
+  markAllAsRead(): Observable<Notification[]> {
+    return this.getUnreadNotifications().pipe(
+      // ponytail: N calls; add a bulk endpoint only if the volume warrants it.
+      switchMap((unread) => unread.length ? forkJoin(unread.map(({ id }) => this.markAsRead(id))) : of([])),
     );
-  }
-
-  deleteNotification(notificationId: string): Observable<void> {
-    return this._notificationEndpoint.delete(notificationId);
   }
 }

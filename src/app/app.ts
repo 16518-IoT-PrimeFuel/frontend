@@ -15,6 +15,8 @@ export class App {
 
   constructor() {
     this.translate.addLangs(['en', 'es']);
-    this.translate.use('en');
+    let saved: string | null = null;
+    try { saved = localStorage.getItem('fulltank.lang'); } catch { /* sin almacenamiento */ }
+    this.translate.use(saved === 'en' || saved === 'es' ? saved : navigator.language.startsWith('es') ? 'es' : 'en');
   }
 }

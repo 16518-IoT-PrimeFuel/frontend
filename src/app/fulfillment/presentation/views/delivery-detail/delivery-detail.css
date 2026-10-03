@@ -1,0 +1,17 @@
+:host { display:block; max-width:900px; margin:24px auto; padding:0 16px; color:#243447 }
+header, section { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:20px }
+header { justify-content:space-between }
+section { display:block; padding:16px; background:white; border:1px solid #ddd; border-radius:8px }
+section h2 { margin-top:0 }
+label { display:inline-flex; flex-direction:column; gap:4px; margin:8px }
+input { padding:8px; max-width:220px }
+button { margin:4px; padding:8px 12px; cursor:pointer }
+@media print { button, input, label { display:none !important } :host { max-width:none; margin:0; padding:0 } section { break-inside:avoid; border:0; padding:4px } header button { display:none } }
+
+dl { display:grid; grid-template-columns:max-content 1fr; gap:6px 16px; margin:0 0 12px }
+dt { color:#5b6b7c }
+dd { margin:0 }
+@media (max-width:560px) { dl { grid-template-columns:1fr; gap:0 } dd { margin-bottom:8px } }
+.field-error { color:#a32121 }
+input[aria-invalid="true"] { border-color:#a32121 }
+.valve-alert { color: #c0392b; font-weight: 600; }

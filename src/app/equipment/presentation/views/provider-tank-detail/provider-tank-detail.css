@@ -1,0 +1,20 @@
+.pv-container { padding: 24px; display: flex; flex-direction: column; gap: 20px; max-width: 1100px; }
+.pv-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.pv-header h1, .pv-container h2 { margin: 0; color: #2c3e50; }
+.pv-header h1 { font-size: 24px; font-weight: 600; }
+.pv-container h2 { font-size: 18px; }
+.pv-note { color: #7f8c8d; margin: 4px 0 0; }
+.pv-state { padding: 24px; text-align: center; color: #7f8c8d; }
+.pv-state.error { color: #c0392b; }
+.pv-table { width: 100%; border-collapse: collapse; }
+.pv-table th, .pv-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ecf0f1; }
+.pv-table th { font-size: 12px; text-transform: uppercase; color: #7f8c8d; }
+.pv-card { border: 1px solid #ecf0f1; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.pv-badge { padding: 2px 10px; border-radius: 12px; font-size: 12px; background: #fadbd8; color: #c0392b; width: fit-content; }
+.ptd-level { display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap; }
+.ptd-vbar { position: relative; width: 56px; height: 180px; border: 1px solid #bdc3c7; border-radius: 6px; background: #ecf0f1; overflow: hidden; }
+.ptd-vbar > .fill { position: absolute; bottom: 0; left: 0; right: 0; background: #27ae60; }
+.ptd-vbar.critical > .fill { background: #e74c3c; }
+.ptd-vbar > .threshold { position: absolute; left: 0; right: 0; border-top: 2px dashed #2c3e50; }
+.ptd-chart { height: 240px; }
+.ptd-stale { color: #d68910; font-weight: 600; }

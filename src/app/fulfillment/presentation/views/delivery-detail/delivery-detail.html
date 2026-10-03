@@ -1,0 +1,73 @@
+@if (delivery(); as d) {
+  @if (trackingError() || samplesError() || transitionsError() || timelineError() || tankLevelError()) { <button type="button" (click)="reload()">{{ 'analytics.retry' | translate }}</button> }
+  <header><h1>{{ 'fulfillment.delivery' | translate }} #{{ d.id }}</h1><button (click)="print()">{{ 'fulfillment.dossier' | translate }}</button></header>
+  @if (message()) { <p role="status">{{ message() | translate }}</p> }
+  <section><h2>{{ 'fulfillment.physical-state' | translate }}: {{ 'delivery-status.' + d.physicalState.toLowerCase() | translate }}</h2>
+    <dl>
+      <dt>{{ 'fulfillment.driver' | translate }}</dt><dd>{{ driverName() || ('#' + d.driverId) }}</dd>
+      <dt>{{ 'fulfillment.tanker' | translate }}</dt><dd>{{ tankerName() || ('#' + d.vehicleId) }}</dd>
+      <dt>{{ 'fulfillment.order' | translate }}</dt><dd>#{{ d.orderId }}</dd>
+      <dt>{{ 'fulfillment.requested-volume' | translate }}</dt><dd>{{ d.requestedVolume ?? '—' }}</dd>
+      <dt>{{ 'fulfillment.delivered-volume' | translate }}</dt><dd>{{ d.deliveredVolume ?? '—' }}</dd>
+      @if (d.notes) { <dt>{{ 'fulfillment.notes' | translate }}</dt><dd>{{ d.notes }}</dd> }
+    </dl>
+    <dl>
+      <dt>{{ 'fulfillment.dispatched-at' | translate }}</dt><dd>{{ (d.dispatchedAt | date:'medium') || '—' }}</dd>
+      <dt>{{ 'fulfillment.started-at' | translate }}</dt><dd>{{ (d.startedAt | date:'medium') || '—' }}</dd>
+      <dt>{{ 'fulfillment.arrived-at' | translate }}</dt><dd>{{ (d.arrivedAt | date:'medium') || '—' }}</dd>
+      <dt>{{ 'fulfillment.delivering-at' | translate }}</dt><dd>{{ (d.deliveringAt | date:'medium') || '—' }}</dd>
+      <dt>{{ 'fulfillment.delivered-at' | translate }}</dt><dd>{{ (d.deliveredAt | date:'medium') || '—' }}</dd>
+    </dl>
+    @if (can('start')) { <button [disabled]="commandBusy()" (click)="command('start')">{{ 'fulfillment.start' | translate }}</button> }
+    @if (can('arrive')) { <button [disabled]="commandBusy()" (click)="command('arrive')">{{ 'fulfillment.arrive' | translate }}</button> }
+    @if (can('complete')) { <label>{{ 'fulfillment.delivered-volume' | translate }} <input type="number" min="0.001" step="any" [(ngModel)]="deliveredVolume"></label><button [disabled]="commandBusy() || !deliveredVolume || deliveredVolume <= 0" (click)="command('complete')">{{ 'fulfillment.complete' | translate }}</button> }
+    @if (can('fail') || can('cancel')) { <label>{{ 'fulfillment.reason' | translate }} <input [(ngModel)]="reason"></label> }
+    @if (can('fail')) { <button [disabled]="commandBusy() || !reason.trim()" (click)="command('fail')">{{ 'fulfillment.fail' | translate }}</button> }
+    @if (can('cancel')) { <button [disabled]="commandBusy() || !reason.trim()" (click)="command('cancel')">{{ 'fulfillment.cancel-delivery' | translate }}</button> }
+  </section>
+  <section><h2>{{ 'fulfillment.tracking' | translate }}</h2>
+    @if (tracking(); as t) {
+      <dl>
+        <dt>{{ 'fulfillment.position' | translate }}</dt><dd>@if (t.lastLatitude != null) { {{ t.lastLatitude }}, {{ t.lastLongitude }} · <a [href]="mapUrl(t)" target="_blank" rel="noopener">{{ 'fulfillment.open-map' | translate }}</a> } @else { — }</dd>
+        <dt>{{ 'fulfillment.accuracy' | translate }}</dt><dd>{{ t.lastAccuracyMeters != null ? (t.lastAccuracyMeters + ' m') : '—' }}</dd>
+        <dt>{{ 'fulfillment.last-position-at' | translate }}</dt><dd>{{ (t.lastPositionAt | date:'medium') || '—' }}</dd>
+        <dt>{{ 'fulfillment.load-state' | translate }}</dt><dd>{{ t.loaded ? ('fulfillment.loaded' | translate) : ('fulfillment.not-loaded' | translate) }}</dd>
+        <dt>{{ 'fulfillment.load-milestone' | translate }}</dt><dd>{{ t.lastLoadMilestone ?? '—' }}</dd>
+        <dt>{{ 'fulfillment.load-volume' | translate }}</dt><dd>{{ t.lastLoadVolume != null ? (t.lastLoadVolume + ' ' + (t.lastLoadUnit ?? '')) : '—' }}</dd>
+      </dl>
+    }
+    @else if (trackingError()) { <p role="alert">{{ 'fulfillment.section-error' | translate }}</p> } @else { <p>{{ 'fulfillment.no-tracking' | translate }}</p> }
+  </section>
+  @if (tankLevelError()) { <p role="alert">{{ 'fulfillment.tank-level.error' | translate }}</p> }
+  @if (tankReading(); as r) {
+    <section><h2>{{ 'fulfillment.tank-level.title' | translate }}</h2>
+      <p>{{ r.level | number }} {{ unitKey(r.unit) | translate }} · {{ 'fulfillment.tank-level.age' | translate: { minutes: tankAgeMinutes(r) } }}</p>
+    </section>
+  }
+  <section><h2>{{ 'fulfillment.valve.title' | translate }}</h2>
+    @if (valveError()) {
+      <p role="alert">{{ 'fulfillment.valve.error' | translate }} <button type="button" (click)="loadValve()">{{ 'fulfillment.valve.retry' | translate }}</button></p>
+    } @else if (valve(); as obs) {
+      @if (!obs.length) { <p>{{ 'fulfillment.valve.none' | translate }}</p> }
+      @for (v of obs; track v.id) {
+        <p [class.valve-alert]="v.unauthorized">{{ v.recordedAt | date:'medium' }} · {{ 'fulfillment.valve.' + v.state.toLowerCase() | translate }}@if (v.commandId) { · {{ v.commandId }} }@if (v.unauthorized) { · <strong role="alert">{{ 'fulfillment.valve.unauthorized' | translate }}</strong> }</p>
+      }
+      <p class="hint">{{ 'fulfillment.valve.hint' | translate }}</p>
+    }
+  </section>
+  <section><h2>{{ 'fulfillment.geofence' | translate }}</h2>
+    <label>{{ 'fulfillment.latitude' | translate }} <input type="number" min="-90" max="90" step="any" [(ngModel)]="centerLatitude" [attr.aria-invalid]="latitudeInvalid">@if (latitudeInvalid) { <small class="field-error" role="alert">{{ 'fulfillment.latitude-range' | translate }}</small> }</label>
+    <label>{{ 'fulfillment.longitude' | translate }} <input type="number" min="-180" max="180" step="any" [(ngModel)]="centerLongitude" [attr.aria-invalid]="longitudeInvalid">@if (longitudeInvalid) { <small class="field-error" role="alert">{{ 'fulfillment.longitude-range' | translate }}</small> }</label>
+    <label>{{ 'fulfillment.radius' | translate }} <input type="number" min="1" step="any" [(ngModel)]="radiusMeters" [attr.aria-invalid]="radiusInvalid">@if (radiusInvalid) { <small class="field-error" role="alert">{{ 'fulfillment.radius-positive' | translate }}</small> }</label>
+    <button [disabled]="!geofenceValid || geofenceBusy()" (click)="saveGeofence()">{{ 'fulfillment.save-geofence' | translate }}</button>
+    <p><small>{{ 'fulfillment.geofence-once' | translate }}</small></p>
+  </section>
+  <section><h2>{{ 'fulfillment.transitions' | translate }}</h2>@if (transitionsError()) { <p role="alert">{{ 'fulfillment.section-error' | translate }}</p> }@for (item of transitions(); track item.id) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.fromState ? ('delivery-status.' + item.fromState.toLowerCase() | translate) : '—' }} → {{ 'delivery-status.' + item.toState.toLowerCase() | translate }} · v{{ item.aggregateVersion }}</p> }</section>
+  <section><h2>{{ 'fulfillment.timeline' | translate }}</h2>@if (timelineError()) { <p role="alert">{{ 'fulfillment.section-error' | translate }}</p> }@for (item of timeline(); track item.refId + item.type) { <p>{{ item.occurredAt | date:'medium' }} · {{ item.type }} · {{ item.summary }}</p> }</section>
+  <section><h2>{{ 'fulfillment.samples' | translate }}</h2>@if (samplesError()) { <p role="alert">{{ 'fulfillment.section-error' | translate }}</p> }@for (item of samples(); track item.evidenceId) { <p>{{ item.recordedAt | date:'medium' }} · {{ item.kind }} · {{ item.latitude }}, {{ item.longitude }} · {{ item.milestone }} {{ item.volume }} {{ item.unit }}</p> }</section>
+}
+@else if (loadError()) {
+  <p role="alert">{{ 'fulfillment.delivery-load-failed' | translate }}</p>
+} @else {
+  <p role="status">{{ 'fulfillment.delivery-loading' | translate }}</p>
+}

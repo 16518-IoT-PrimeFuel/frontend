@@ -1,21 +1,16 @@
-import { BaseResource, BaseResponse } from '../../shared/infrastructure/base-response';
+import { BaseResource } from '../../shared/infrastructure/base-response';
+import { FuelType } from '../domain/model/fuel-product.entity';
 
-/**
- * @summary Resource DTO para productos de combustible.
- * @remarks Define la estructura de respuesta del backend para productos.
- * @author FullTank Platform
- */
 export interface ProductResource extends BaseResource {
-  id: string;
+  id: number;
   name: string;
-  type: string;
-  description: string;
-  pricePerLiter: number;
+  fuelType: FuelType;
+  pricePerUnit: number;
   unit: string;
-  isActive: boolean;
-  createdAt: string;
+  availableStock: number;
+  capacity: number;
+  providerId: number;
+  active: boolean;
 }
 
-export interface ProductsResponse extends BaseResponse {
-  products: ProductResource[];
-}
+export type ProductsResponse = ProductResource[];

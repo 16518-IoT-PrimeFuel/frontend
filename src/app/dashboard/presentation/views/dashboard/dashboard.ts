@@ -1,243 +1,158 @@
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { MatTableModule } from '@angular/material/table';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { forkJoin, Subject, takeUntil } from 'rxjs';
-import { Chart, registerables } from 'chart.js';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { Observable, Subscription } from 'rxjs';
+import { ChartData, ChartOptions } from 'chart.js';
+import { BaseChartDirective } from 'ng2-charts';
+import { TranslatePipe } from '@ngx-translate/core';
+import { IamStore } from '../../../../iam/application/iam.store';
+import { Order, OrderStatus } from '../../../../ordering/domain/model/order.entity';
+import { Request } from '../../../../ordering/domain/model/request.entity';
+import { OrderingApi } from '../../../../ordering/infrastructure/ordering-api';
+import { BuyerAnalytics, ProviderAnalytics } from '../../../../analytics/domain/model/analytics.entity';
+import { AnalyticsApi } from '../../../../analytics/infrastructure/analytics-api';
+import { ProviderEquipmentApi } from '../../../../equipment/infrastructure/provider-equipment.api';
+import { ProviderTank } from '../../../../equipment/domain/model/provider-equipment.entity';
+import { FulfillmentApi } from '../../../../fulfillment/infrastructure/fulfillment-api';
+import { ProviderDelivery } from '../../../../fulfillment/domain/model/provider-delivery.entity';
+import { TrendGranularity, groupSalesTrend } from '../../../../analytics/domain/sales-trend';
 
-import { DashboardStore } from '../../../application/dashboard.store';
-import { DashboardApiService } from '../../../infrastructure/dashboard-api.service';
-import { OrderingStore } from '../../../../ordering/application/ordering.store';
-import { Order } from '../../../../ordering/domain/model/order.entity';
+/** Hoy (yyyy-MM-dd) en America/Lima, no en UTC. */
+const todayLima = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 
-Chart.register(...registerables);
+/** Estado independiente por tarjeta: una falla no oculta el resto del panel. */
+interface Card<T> { loading: boolean; error: boolean; data: T }
+const CRITICAL_LIMIT = 5;
 
-// ── Trend Bar Chart (inline component) ──────────────────────────────────────
-@Component({
-  selector: 'app-trend-chart',
-  standalone: true,
-  imports: [CommonModule, MatButtonToggleModule],
-  template: `
-    <div class="chart-header">
-      <div>
-        <div class="chart-title">Selling trend</div>
-        <div class="chart-subtitle">Graphics of the selling through time</div>
-      </div>
-      <mat-button-toggle-group [(value)]="selectedPeriod" (change)="onPeriodChange($event.value)" class="period-toggle">
-        <mat-button-toggle value="daily">Daily</mat-button-toggle>
-        <mat-button-toggle value="weekly">Weekly</mat-button-toggle>
-        <mat-button-toggle value="monthly">Monthly</mat-button-toggle>
-      </mat-button-toggle-group>
-    </div>
-    <div class="chart-area" (click)="onChartClick()">
-      <canvas #chartCanvas></canvas>
-    </div>
-  `,
-  styles: [`
-    .chart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 24px;
-    }
-    .chart-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1a2744;
-    }
-    .chart-subtitle {
-      font-size: 13px;
-      color: #8b9ab5;
-      margin-top: 2px;
-    }
-    .period-toggle {
-      --mdc-outlined-button-label-text-size: 13px;
-    }
-    .chart-area {
-      cursor: pointer;
-      height: 220px;
-    }
-    canvas {
-      height: 220px !important;
-    }
-  `]
-})
-export class TrendChartComponent implements OnInit, OnDestroy {
-  @ViewChild('chartCanvas', { static: true }) chartCanvas!: ElementRef<HTMLCanvasElement>;
+interface Kpi { label: string; value: number; money?: boolean; hint?: string }
 
-  selectedPeriod = 'weekly';
-  private chart: Chart | null = null;
-  private destroy$ = new Subject<void>();
-  private router = inject(Router);
-
-  private readonly datasets: Record<string, { labels: string[]; week1: number[]; week2: number[] }> = {
-    daily: {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      week1: [3200, 4100, 5800, 6200, 4900, 2100, 1800],
-      week2: [2800, 3600, 4200, 7100, 5300, 2400, 1600],
-    },
-    weekly: {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-      week1: [12000, 15000, 22000, 18000, 25000, 9000, 7000, 14000, 11000, 19000, 21000, 13000],
-      week2: [9000, 11000, 16000, 28000, 13000, 6000, 5000, 17000, 8000, 23000, 30000, 10000],
-    },
-    monthly: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      week1: [68000, 72000, 89000, 95000, 115000, 43940],
-      week2: [55000, 80000, 76000, 102000, 98000, 61000],
-    }
-  };
-
-  ngOnInit(): void {
-    this.render('weekly');
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-    this.chart?.destroy();
-  }
-
-  onPeriodChange(period: string): void {
-    this.render(period);
-  }
-
-  onChartClick(): void {
-    this.router.navigate(['/reporting']);
-  }
-
-  private render(period: string): void {
-    const data = this.datasets[period];
-    this.chart?.destroy();
-
-    this.chart = new Chart(this.chartCanvas.nativeElement, {
-      type: 'bar',
-      data: {
-        labels: data.labels,
-        datasets: [
-          {
-            data: data.week1,
-            backgroundColor: data.week1.map((_, i) =>
-              i % 5 === 3 ? '#1a2e6b' : '#adc4e8'
-            ),
-            borderRadius: 6,
-            borderSkipped: false,
-            barPercentage: 0.45,
-          },
-          {
-            data: data.week2,
-            backgroundColor: data.week2.map((_, i) =>
-              i % 5 === 0 ? '#2563eb' : '#d4e4f7'
-            ),
-            borderRadius: 6,
-            borderSkipped: false,
-            barPercentage: 0.45,
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: '#8b9ab5', font: { size: 11 } }
-          },
-          y: { display: false, beginAtZero: true }
-        }
-      }
-    });
-  }
-}
-
-// ── Dashboard Component ──────────────────────────────────────────────────────
+/** Resumen operativo de comprador y proveedor. El análisis mensual vive en /analytics. */
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    MatCardModule,
-    MatIconModule,
-    MatButtonModule,
-    MatTableModule,
-    MatProgressSpinnerModule,
-    TrendChartComponent,
-  ],
+  imports: [BaseChartDirective, CurrencyPipe, DatePipe, DecimalPipe, RouterLink, TranslatePipe],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.css'
+  styleUrl: './dashboard.css',
 })
-export class Dashboard implements OnInit {
-  private readonly store = inject(DashboardStore);
-  private readonly api = inject(DashboardApiService);
-  private readonly orderingStore = inject(OrderingStore);
-  private readonly router = inject(Router);
+export class Dashboard {
+  private readonly iam = inject(IamStore);
+  private readonly analyticsApi = inject(AnalyticsApi);
+  private readonly ordering = inject(OrderingApi);
+  private readonly equipment = inject(ProviderEquipmentApi);
+  private readonly fulfillment = inject(FulfillmentApi);
+  private readonly destroyRef = inject(DestroyRef);
+  private analyticsRequest?: Subscription;
+  private ordersRequest?: Subscription;
+  private inboxRequest?: Subscription;
+  readonly isBuyer = this.iam.isBuyer();
+  readonly loading = signal(true);
+  readonly error = signal(false);
+  readonly analytics = signal<BuyerAnalytics | ProviderAnalytics | null>(null);
+  readonly orders = signal<Order[]>([]);
+  readonly pendingRequests = signal<Request[]>([]);
+  readonly inboxLoading = signal(false);
+  readonly inboxError = signal(false);
+  readonly ordersLoading = signal(false);
+  readonly ordersError = signal(false);
+  readonly criticalTanks = signal<Card<ProviderTank[]>>({ loading: true, error: false, data: [] });
+  readonly todayDeliveries = signal<Card<ProviderDelivery[]>>({ loading: true, error: false, data: [] });
+  readonly granularity = signal<TrendGranularity>('day');
+  readonly granularities: TrendGranularity[] = ['day', 'week', 'month'];
+  private readonly today = todayLima();
+  private readonly monthStart = `${this.today.slice(0, 8)}01`;
+  readonly statuses: OrderStatus[] = ['PENDING', 'CONFIRMED', 'DISPATCHED', 'PENDING_PAYMENT', 'PAID', 'IN_PROGRESS', 'DELIVERED', 'CANCELLED'];
+  readonly statusCounts = computed(() => this.statuses.map(status => ({ status, count: this.orders().filter(order => order.status === status).length })));
+  // ponytail: el pedido no trae fecha de creación; el id (autoincremental) ordena de más reciente a más antiguo.
+  readonly recent = computed(() => [...this.orders()].sort((a, b) => b.id - a.id).slice(0, 5));
+  readonly kpis = computed<Kpi[]>(() => {
+    const data = this.analytics();
+    if (!data) return [];
+    if (this.isBuyer) {
+      const buyer = data as BuyerAnalytics;
+      return [
+        { label: 'analytics.total-spent', value: buyer.totalSpent, money: true, hint: 'analytics.hint-completed-payments' },
+        { label: 'analytics.pending-payments', value: buyer.pendingPayments },
+        { label: 'analytics.total-orders', value: buyer.totalOrders },
+        { label: 'analytics.completed-payments', value: buyer.completedPayments },
+      ];
+    }
+    const provider = data as ProviderAnalytics;
+    return [
+      { label: 'analytics.total-revenue', value: provider.totalRevenue, money: true, hint: 'analytics.hint-completed-payments' },
+      { label: 'analytics.fuel-sold', value: provider.totalFuelSoldLitres, hint: 'analytics.litres-hint' },
+      { label: 'analytics.pending-orders', value: provider.pendingOrders },
+      { label: 'analytics.total-orders', value: provider.totalOrders },
+      { label: 'analytics.confirmed-orders', value: provider.confirmedOrders, hint: 'analytics.hint-confirmed' },
+      { label: 'analytics.cancelled-orders', value: provider.cancelledOrders },
+    ];
+  });
 
-  // From existing DashboardStore
-  totalFuel = this.store.totalFuel;
-  pendingOrders = this.store.pendingOrders;
+  readonly trend = computed(() => {
+    const data = this.analytics() as ProviderAnalytics | null;
+    return data && !this.isBuyer ? groupSalesTrend(data.salesTrend ?? [], this.granularity(), this.monthStart, this.today) : [];
+  });
+  readonly hasSales = computed(() => this.trend().some(point => point.litres > 0));
+  readonly chartData = computed<ChartData<'bar', number[], string>>(() => ({
+    labels: this.trend().map(point => point.date),
+    datasets: [{ data: this.trend().map(point => point.litres), backgroundColor: '#3972c6', borderRadius: 4 }],
+  }));
+  readonly chartOptions: ChartOptions<'bar'> = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
 
-  // From OrderingStore — real orders from db.json
-  activeOrders = this.orderingStore.activeOrders;
-  pendingRequests = this.orderingStore.pendingRequests;
+  constructor() { this.load(); if (!this.isBuyer) { this.loadCriticalTanks(); this.loadTodayDeliveries(); } }
 
-  protected readonly displayedColumns = ['orderId', 'destination', 'volume', 'eta', 'actions'];
-
-  ngOnInit(): void {
-    this.loadDashboardData();
-  }
-
-  private loadDashboardData(): void {
-    forkJoin({
-      inventory: this.api.getInventory(),
-      orders: this.api.getOrders()
-    }).subscribe(({ inventory, orders }) => {
-      const totalFuel = inventory.reduce((sum: number, item: any) => sum + Number(item.pricePerLiter || 0), 0);
-      const pending = orders.filter((o: any) => o.status === 'CREATED').length;
-      this.store.totalFuel.set(
-        // Calculate total liters from all orders
-        orders.reduce((sum: number, o: any) => sum + Number(o.quantity || 0), 0)
-      );
-      this.store.pendingOrders.set(pending);
+  loadCriticalTanks(): void {
+    this.criticalTanks.set({ loading: true, error: false, data: [] });
+    this.equipment.tanks().subscribe({
+      next: rows => this.criticalTanks.set({ loading: false, error: false, data: rows.filter(t => t.critical).sort((a, b) => a.levelPercent - b.levelPercent).slice(0, CRITICAL_LIMIT) }),
+      error: () => this.criticalTanks.set({ loading: false, error: true, data: [] }),
     });
   }
 
-  formatVolume(quantity: number, unit: string): string {
-    return `${quantity.toLocaleString()} ${unit === 'LITERS' ? 'L' : unit}`;
+  loadTodayDeliveries(): void {
+    this.todayDeliveries.set({ loading: true, error: false, data: [] });
+    this.fulfillment.deliveries(this.today).subscribe({
+      next: data => this.todayDeliveries.set({ loading: false, error: false, data }),
+      error: () => this.todayDeliveries.set({ loading: false, error: true, data: [] }),
+    });
   }
 
-  formatEta(order: Order): string {
-    if (order.status === 'DELIVERED' || order.status === 'CLOSED') return 'Completed';
-    if (order.dispatchedAt) {
-      const date = new Date(order.dispatchedAt);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    }
-    if (order.createdAt) {
-      const eta = new Date(new Date(order.createdAt).getTime() + 2 * 24 * 60 * 60 * 1000);
-      return eta.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    }
-    return '—';
+  load(): void {
+    const id = this.isBuyer ? this.iam.companyId() : this.iam.providerId();
+    this.error.set(false);
+    if (id === null) { this.loading.set(false); this.error.set(true); return; }
+    this.loading.set(true);
+    this.analyticsRequest?.unsubscribe();
+    this.analytics.set(null);
+    const analytics: Observable<BuyerAnalytics | ProviderAnalytics> = this.isBuyer ? this.analyticsApi.getBuyerAnalytics(id) : this.analyticsApi.getProviderAnalytics(id, this.monthStart, this.today);
+    this.analyticsRequest = analytics.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: data => { this.analytics.set(data); this.loading.set(false); },
+      error: () => { this.error.set(true); this.loading.set(false); },
+    });
+    this.loadOrders();
+    if (!this.isBuyer) this.loadInbox();
   }
-
-  getStatusClass(status: string): string {
-    return status?.toLowerCase().replace('_', '-') ?? '';
+  loadOrders(): void {
+    this.ordersRequest?.unsubscribe();
+    const id = this.isBuyer ? this.iam.companyId() : this.iam.providerId();
+    this.ordersLoading.set(true);
+    this.ordersError.set(false);
+    this.orders.set([]);
+    if (!id) { this.ordersLoading.set(false); this.ordersError.set(true); return; }
+    this.ordersRequest = this.ordering.orders(this.isBuyer ? 'company' : 'provider', id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: rows => { this.orders.set(rows); this.ordersLoading.set(false); },
+      error: () => { this.ordersError.set(true); this.ordersLoading.set(false); },
+    });
   }
-
-  goToOrders(): void {
-    this.router.navigate(['/ordering/order-list']);
-  }
-
-  goToReports(): void {
-    this.router.navigate(['/reporting']);
-  }
-
-  viewOrder(order: Order): void {
-    this.router.navigate(['/ordering/order-detail', order.id]);
+  loadInbox(): void {
+    if (this.isBuyer) return;
+    this.inboxRequest?.unsubscribe();
+    this.pendingRequests.set([]);
+    this.inboxLoading.set(true);
+    this.inboxError.set(false);
+    this.inboxRequest = this.ordering.requestInbox().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: rows => { this.pendingRequests.set(rows.filter(r => r.status === 'PENDING')); this.inboxLoading.set(false); },
+      error: () => { this.inboxError.set(true); this.inboxLoading.set(false); },
+    });
   }
 }

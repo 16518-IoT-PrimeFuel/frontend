@@ -1,90 +1,22 @@
-import { AfterViewChecked, Component, computed, inject, ViewChild } from '@angular/core';
-import { OrderingStore } from '../../../application/ordering.store';
-import { Router } from '@angular/router';
-import { MatSort, MatSortHeader } from '@angular/material/sort';
-import { MatPaginator } from '@angular/material/paginator';
-import {
-  MatCell, MatCellDef, MatColumnDef, MatHeaderCell, MatHeaderCellDef, MatHeaderRow,
-  MatHeaderRowDef, MatRow, MatRowDef, MatTable, MatTableDataSource
-} from '@angular/material/table';
+import { Component, computed, inject, signal } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { MatError } from '@angular/material/input';
-import { MatIconButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { MatChip, MatChipSet } from '@angular/material/chips';
-import { MatTooltip } from '@angular/material/tooltip';
-import { DecimalPipe } from '@angular/common';
+import { MatButton } from '@angular/material/button';
+import { FormsModule } from '@angular/forms';
+import { MatFormField, MatInput, MatLabel } from '@angular/material/input';
+import { OrderingStore } from '../../../application/ordering.store';
 
-@Component({
-  selector: 'app-order-list',
-  imports: [
-    DecimalPipe,
-    TranslatePipe,
-    MatProgressSpinner,
-    MatError,
-    MatTable,
-    MatSort,
-    MatColumnDef,
-    MatHeaderCell,
-    MatCell,
-    MatHeaderCellDef,
-    MatSortHeader,
-    MatCellDef,
-    MatIconButton,
-    MatIcon,
-    MatHeaderRow,
-    MatHeaderRowDef,
-    MatRow,
-    MatRowDef,
-    MatPaginator,
-    MatChip,
-    MatChipSet,
-    MatTooltip,
-  ],
-  templateUrl: './order-list.html',
-  styleUrl: './order-list.css',
-})
-export class OrderList implements AfterViewChecked {
-
-  ngAfterViewChecked(): void {
-    if (this.dataSource().paginator !== this.paginator) {
-      this.dataSource().paginator = this.paginator;
-    }
-    if (this.dataSource().sort !== this.sort) {
-      this.dataSource().sort = this.sort;
-    }
-  }
-
+@Component({ selector: 'app-order-list', providers: [OrderingStore], imports: [CurrencyPipe, RouterLink, FormsModule, TranslatePipe, MatButton, MatFormField, MatInput, MatLabel], templateUrl: './order-list.html', styleUrl: './order-list.css' })
+export class OrderList {
   readonly store = inject(OrderingStore);
-  protected router = inject(Router);
-
-  displayedColumns: string[] = ['id', 'requestId', 'quantity', 'totalAmount', 'status', 'actions'];
-
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
-
-  dataSource = computed(() => {
-    const source = new MatTableDataSource(this.store.orders());
-    source.sort = this.sort;
-    source.paginator = this.paginator;
-    return source;
-  });
-
-  viewOrder(id: string) {
-    this.router.navigate(['/ordering/order-detail', id]).then();
-  }
-
-  deleteOrder(id: string) {
-    this.store.deleteOrder(id);
-  }
-
-  shortId(id: string): string {
-    return id.length > 8 ? `${id.substring(0, 8)}…` : id;
-  }
-
-  statusClass(status: string): string {
-    return status.toLowerCase();
-  }
-
+  private readonly router = inject(Router);
+  readonly search = signal('');
+  readonly status = signal('');
+  readonly statuses = ['PENDING', 'CONFIRMED', 'DISPATCHED', 'PENDING_PAYMENT', 'PAID', 'IN_PROGRESS', 'DELIVERED', 'CANCELLED'];
+  readonly counts = computed(() => this.statuses.map(value => ({ value, count: this.store.orders().filter(order => order.status === value).length })).filter(item => item.count > 0));
+  readonly filtered = computed(() => this.store.orders().filter(order => (!this.search() || String(order.id).includes(this.search().trim())) && (!this.status() || order.status === this.status())));
+  constructor() { this.store.loadOrders(); this.store.loadNames(); }
+  open(id: number): void { this.router.navigate(['/ordering/order-detail', id]).then(); }
+  clear(): void { this.search.set(''); this.status.set(''); }
 }

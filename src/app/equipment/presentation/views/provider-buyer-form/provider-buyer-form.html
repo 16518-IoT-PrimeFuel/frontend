@@ -1,0 +1,73 @@
+<div class="pv-container">
+  <header class="pv-header">
+    <div>
+      <h1>{{ 'provider-equipment.buyer-form.title' | translate }}</h1>
+      <p class="pv-note">{{ 'provider-equipment.buyer-form.subtitle' | translate }}</p>
+    </div>
+  </header>
+
+  @if (step() === 'lookup') {
+    <form class="pv-form" [formGroup]="lookupForm" (ngSubmit)="search()" novalidate>
+      <label>{{ 'provider-equipment.buyer-form.ruc' | translate }}
+        <input formControlName="ruc" inputmode="numeric" maxlength="11" autocomplete="off" [readOnly]="saving()" />
+        @if (lookupForm.controls.ruc.touched && lookupForm.controls.ruc.errors?.['required']) { <span class="pv-err" role="alert">{{ 'provider-equipment.buyer-form.ruc-required' | translate }}</span> }
+        @else if (lookupForm.controls.ruc.touched && lookupForm.controls.ruc.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.buyer-form.ruc-invalid' | translate }}</span> }
+      </label>
+      <p class="pv-hint">{{ 'provider-equipment.buyer-form.lookup-hint' | translate }}</p>
+
+      @if (error()) { <p class="pv-err" role="alert">{{ error() | translate }}</p> }
+      @if (waitSeconds() > 0) { <p class="pv-hint" role="status">{{ 'provider-equipment.buyer-form.wait' | translate: { seconds: waitSeconds() } }}</p> }
+
+      @if (found(); as buyer) {
+        <div class="pv-card" role="status">
+          <strong>{{ buyer.name }}</strong>
+          <span>{{ 'provider-equipment.buyer-form.ruc' | translate }}: {{ buyer.ruc }}</span>
+          <span class="pv-hint">{{ 'provider-equipment.buyer-form.found' | translate }}</span>
+          <button mat-flat-button type="button" [disabled]="saving()" (click)="link()">{{ 'provider-equipment.buyer-form.link' | translate }}</button>
+        </div>
+      }
+
+      <div class="pv-actions">
+        <button mat-flat-button type="submit" [disabled]="searching() || saving() || waitSeconds() > 0">{{ 'provider-equipment.buyer-form.search' | translate }}</button>
+        <a mat-button routerLink="/clients">{{ 'provider-equipment.buyer-form.cancel' | translate }}</a>
+      </div>
+    </form>
+  } @else {
+    <p class="pv-note">{{ 'provider-equipment.buyer-form.not-found' | translate }}</p>
+    <form class="pv-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label>{{ 'provider-equipment.buyer-form.name' | translate }}
+        <input formControlName="name" maxlength="150" autocomplete="off" />
+        @if (form.controls.name.touched && form.controls.name.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.buyer-form.name-required' | translate }}</span> }
+      </label>
+      <label>{{ 'provider-equipment.buyer-form.ruc' | translate }}
+        <input formControlName="ruc" inputmode="numeric" maxlength="11" autocomplete="off" />
+        @if (form.controls.ruc.touched && form.controls.ruc.errors?.['required']) { <span class="pv-err" role="alert">{{ 'provider-equipment.buyer-form.ruc-required' | translate }}</span> }
+        @else if (form.controls.ruc.touched && form.controls.ruc.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.buyer-form.ruc-invalid' | translate }}</span> }
+      </label>
+      <label>{{ 'provider-equipment.buyer-form.sector' | translate }}
+        <input formControlName="sector" />
+      </label>
+      <label>{{ 'provider-equipment.buyer-form.address' | translate }}
+        <input formControlName="address" />
+      </label>
+      <label>{{ 'provider-equipment.buyer-form.contact-email' | translate }}
+        <input type="email" formControlName="contactEmail" />
+        @if (form.controls.contactEmail.touched && form.controls.contactEmail.invalid) { <span class="pv-err" role="alert">{{ 'provider-equipment.buyer-form.email-invalid' | translate }}</span> }
+      </label>
+      <label>{{ 'provider-equipment.buyer-form.phone' | translate }}
+        <input type="tel" formControlName="phone" />
+      </label>
+      <label>{{ 'provider-equipment.buyer-form.site-name' | translate }}
+        <input formControlName="siteName" />
+      </label>
+
+      @if (error()) { <p class="pv-err" role="alert">{{ error() | translate }}</p> }
+
+      <div class="pv-actions">
+        <button mat-flat-button type="submit" [disabled]="saving()">{{ 'provider-equipment.buyer-form.submit' | translate }}</button>
+        <button mat-stroked-button type="button" (click)="backToLookup()">{{ 'provider-equipment.buyer-form.back' | translate }}</button>
+        <a mat-button routerLink="/clients">{{ 'provider-equipment.buyer-form.cancel' | translate }}</a>
+      </div>
+    </form>
+  }
+</div>

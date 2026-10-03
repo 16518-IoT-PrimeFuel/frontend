@@ -31,11 +31,12 @@
 .table-container {
   background: white;
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 table {
   width: 100%;
+  min-width: 880px;
 }
 
 .bold-text {

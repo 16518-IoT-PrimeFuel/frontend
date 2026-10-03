@@ -1,0 +1,116 @@
+<div class="pv-container">
+  <a mat-button [routerLink]="tank().data ? ['/clients', tank()!.data!.buyerCompanyId] : '/clients'">{{ 'provider-equipment.tank-detail.back' | translate }}</a>
+
+  @if (tank().loading) {
+    <div class="pv-state" role="status"><mat-spinner diameter="32" /></div>
+  } @else if (tank().error) {
+    <div class="pv-state error" role="alert">
+      <p>{{ 'provider-equipment.detail.tanks-error' | translate }}</p>
+      <button mat-stroked-button type="button" (click)="loadTank()">{{ 'provider-equipment.detail.retry' | translate }}</button>
+    </div>
+  } @else if (!tank().data) {
+    <div class="pv-state">{{ 'provider-equipment.tank-detail.not-found' | translate }}</div>
+  } @else {
+    @let t = tank()!.data!;
+    <header class="pv-header">
+      <h1>{{ t.name }}</h1>
+      <a mat-stroked-button [routerLink]="['/clients', t.buyerCompanyId, 'tanks', t.id, 'edit']">{{ 'provider-equipment.detail.edit' | translate }}</a>
+    </header>
+
+    <section class="ptd-level">
+      <div class="ptd-vbar" [class.critical]="t.critical" role="img" [attr.aria-label]="t.levelPercent + '%'">
+        <div class="fill" [style.height.%]="t.levelPercent"></div>
+        <div class="threshold" [style.bottom.%]="t.lowLevelPercent"></div>
+      </div>
+      <div class="pv-card">
+        <span>{{ t.siteName ?? '-' }} · {{ t.fuelType }}</span>
+        <span>{{ 'provider-equipment.detail.level' | translate }}: {{ t.currentLevel | number }} / {{ t.capacity | number }} {{ unitKey(t.unit) | translate }} ({{ t.levelPercent | number: '1.0-1' }}%)</span>
+        <span>{{ 'provider-equipment.detail.threshold' | translate }}: {{ t.lowLevelPercent }}%</span>
+        @if (t.critical) { <span class="pv-badge">{{ 'provider-equipment.detail.critical' | translate }}</span> }
+      </div>
+    </section>
+  }
+
+  <section>
+    <h2>{{ 'provider-equipment.tank-detail.readings' | translate }}</h2>
+    @if (readings().loading) {
+      <div class="pv-state" role="status"><mat-spinner diameter="24" /></div>
+    } @else if (readings().error) {
+      <div class="pv-state error" role="alert">
+        <p>{{ 'provider-equipment.tank-detail.readings-error' | translate }}</p>
+        <button mat-stroked-button type="button" (click)="loadReadings()">{{ 'provider-equipment.detail.retry' | translate }}</button>
+      </div>
+    } @else if (!readings().data.length) {
+      <p class="pv-note">{{ 'provider-equipment.tank-detail.no-readings' | translate }}</p>
+    } @else {
+      <p [class.ptd-stale]="stale()">
+        {{ 'provider-equipment.tank-detail.last-reading' | translate }}: {{ last()!.level | number }} {{ unitKey(last()!.unit) | translate }}
+        · {{ 'provider-equipment.tank-detail.age' | translate: { minutes: ageMinutes() } }}
+        · {{ 'provider-equipment.tank-detail.quality' | translate }}: {{ last()!.quality }}
+        @if (stale()) { · {{ 'provider-equipment.tank-detail.stale' | translate }} }
+      </p>
+      <div class="ptd-chart"><canvas baseChart [data]="chartData()" [options]="chartOptions" type="line"></canvas></div>
+      <table class="pv-table">
+        <thead>
+          <tr>
+            <th>{{ 'provider-equipment.tank-detail.captured-at' | translate }}</th>
+            <th>{{ 'provider-equipment.detail.level' | translate }}</th>
+            <th>{{ 'provider-equipment.detail.device' | translate }}</th>
+            <th>{{ 'provider-equipment.tank-detail.quality' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of reversed(); track r.id) {
+            <tr>
+              <td>{{ r.capturedAt | date: 'short' }}</td>
+              <td>{{ r.level | number }} {{ unitKey(r.unit) | translate }}</td>
+              <td>{{ r.deviceId }} ({{ r.channel }})</td>
+              <td>{{ r.quality }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+
+  <section>
+    <h2>{{ 'provider-equipment.tank-detail.episodes' | translate }}</h2>
+    @if (episodes().loading) {
+      <div class="pv-state" role="status"><mat-spinner diameter="24" /></div>
+    } @else if (episodes().error) {
+      <div class="pv-state error" role="alert">
+        <p>{{ 'provider-equipment.tank-detail.episodes-error' | translate }}</p>
+        <button mat-stroked-button type="button" (click)="loadEpisodes()">{{ 'provider-equipment.detail.retry' | translate }}</button>
+      </div>
+    } @else if (!episodes().data.length) {
+      <p class="pv-note">{{ 'provider-equipment.tank-detail.no-episodes' | translate }}</p>
+    } @else {
+      <table class="pv-table">
+        <thead>
+          <tr>
+            <th>{{ 'provider-equipment.detail.status' | translate }}</th>
+            <th>{{ 'provider-equipment.tank-detail.opened-at' | translate }}</th>
+            <th>{{ 'provider-equipment.tank-detail.volume' | translate }}</th>
+            <th>{{ 'provider-equipment.tank-detail.request' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of episodes().data; track e.id) {
+            <tr>
+              <td>{{ e.status }}</td>
+              <td>{{ e.openedAt | date: 'short' }}</td>
+              <td>{{ e.requestedVolume | number }} {{ unitKey(e.unit) | translate }}</td>
+              <td>
+                @if (e.requestId) {
+                  <a [routerLink]="['/ordering/request-detail', e.requestId]">#{{ e.requestId }}</a>
+                } @else {
+                  {{ (e.requestEmitted ? 'provider-equipment.tank-detail.emitted' : 'provider-equipment.tank-detail.not-emitted') | translate }}
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+</div>

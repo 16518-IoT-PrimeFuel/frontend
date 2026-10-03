@@ -1,35 +1,39 @@
 <div class="driver-form-container">
   <header class="page-header">
     <div class="header-content">
-      <h1>{{ 'driver-form.title' | translate }}</h1>
-      <p>{{ 'driver-form.subtitle' | translate }}</p>
+      <h1>{{ (isEditMode ? 'driver-form.edit-title' : 'driver-form.title') | translate }}</h1>
+      <p>{{ (isEditMode ? 'driver-form.edit-subtitle' : 'driver-form.subtitle') | translate }}</p>
     </div>
   </header>
 
   @if (store.error()) {
     <div class="error-container">
       <mat-icon>error_outline</mat-icon>
-      <p>{{ store.error() }}</p>
+      <p>{{ store.error() | translate }}</p>
     </div>
   }
 
   @if (store.successMsg()) {
     <div class="success-container">
       <mat-icon>check_circle</mat-icon>
-      <p>{{ store.successMsg() }}</p>
+      <p>{{ store.successMsg() | translate }}</p>
     </div>
   }
 
   <mat-card class="form-card">
     <mat-card-content>
       <form [formGroup]="driverForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'driver-form.fields.user-id' | translate }}</mat-label>
+          <input matInput type="number" formControlName="userId" />
+        </mat-form-field>
         <!-- First Name and Last Name Row -->
         <div class="form-row">
           <mat-form-field appearance="outline">
             <mat-label>{{ 'driver-form.fields.first-name' | translate }}</mat-label>
             <input
               matInput
-              formControlName="firstName"
+              formControlName="firstName" maxlength="80"
               [placeholder]="'driver-form.placeholders.first-name' | translate"
             />
             <mat-icon matPrefix>person</mat-icon>
@@ -42,7 +46,7 @@
             <mat-label>{{ 'driver-form.fields.last-name' | translate }}</mat-label>
             <input
               matInput
-              formControlName="lastName"
+              formControlName="lastName" maxlength="80"
               [placeholder]="'driver-form.placeholders.last-name' | translate"
             />
             <mat-icon matPrefix>person</mat-icon>
@@ -57,7 +61,7 @@
           <mat-label>{{ 'driver-form.fields.license-number' | translate }}</mat-label>
           <input
             matInput
-            formControlName="licenseNumber"
+            formControlName="licenseNumber" maxlength="60"
             [placeholder]="'driver-form.placeholders.license-number' | translate"
           />
           <mat-icon matPrefix>badge</mat-icon>
@@ -72,7 +76,7 @@
             <mat-label>{{ 'driver-form.fields.phone' | translate }}</mat-label>
             <input
               matInput
-              formControlName="phoneNumber"
+              formControlName="phoneNumber" maxlength="30"
               [placeholder]="'driver-form.placeholders.phone' | translate"
             />
             <mat-icon matPrefix>phone</mat-icon>
@@ -86,7 +90,7 @@
             <input
               matInput
               type="email"
-              formControlName="email"
+              formControlName="email" maxlength="160"
               [placeholder]="'driver-form.placeholders.email' | translate"
             />
             <mat-icon matPrefix>email</mat-icon>
@@ -95,6 +99,17 @@
             }
           </mat-form-field>
         </div>
+
+        @if (isEditMode) {
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'driver-form.fields.status' | translate }}</mat-label>
+            <mat-select formControlName="status">
+              @for (status of statuses; track status) {
+                <mat-option [value]="status">{{ 'driver-status.' + status.toLowerCase() | translate }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
 
         <!-- Form Actions -->
         <div class="form-actions">
@@ -108,7 +123,7 @@
             } @else {
               <mat-icon>save</mat-icon>
             }
-            {{ 'driver-form.register' | translate }}
+            {{ (isEditMode ? 'driver-form.save' : 'driver-form.register') | translate }}
           </button>
         </div>
       </form>

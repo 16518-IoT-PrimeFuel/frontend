@@ -1,0 +1,61 @@
+<div class="pv-container">
+  <header class="pv-header">
+    <h1>{{ 'nav.clients' | translate }}</h1>
+    <a mat-flat-button routerLink="/clients/new">{{ 'provider-equipment.clients.register' | translate }}</a>
+  </header>
+
+  @if (loading()) {
+    <div class="pv-state" role="status"><mat-spinner diameter="32" /></div>
+  } @else if (error()) {
+    <div class="pv-state error" role="alert">
+      <p>{{ 'provider-equipment.clients.error' | translate }}</p>
+      <button mat-stroked-button type="button" (click)="load()">{{ 'provider-equipment.clients.retry' | translate }}</button>
+    </div>
+  } @else if (!buyers().length) {
+    <div class="pv-state">
+      <p>{{ 'provider-equipment.clients.empty' | translate }}</p>
+      <p class="pv-hint">{{ 'provider-equipment.clients.empty-hint' | translate }}</p>
+      <a mat-stroked-button routerLink="/clients/new">{{ 'provider-equipment.clients.register' | translate }}</a>
+    </div>
+  } @else {
+    <div class="pv-form">
+      <label>{{ 'provider-equipment.clients.search' | translate }}
+        <input type="search" [value]="search()" (input)="search.set($any($event.target).value)" />
+      </label>
+    </div>
+    @if (!rows().length) {
+      <div class="pv-state">{{ 'provider-equipment.clients.search-none' | translate }}</div>
+    } @else {
+      <table class="pv-table">
+        <thead>
+          <tr>
+            <th>{{ 'provider-equipment.clients.name' | translate }}</th>
+            <th>{{ 'provider-equipment.clients.ruc' | translate }}</th>
+            <th>{{ 'provider-equipment.clients.sector' | translate }}</th>
+            <th>{{ 'provider-equipment.clients.active-orders' | translate }}</th>
+            <th>{{ 'provider-equipment.clients.historical-orders' | translate }}</th>
+            <th>{{ 'provider-equipment.clients.tanks' | translate }}</th>
+            <th>{{ 'provider-equipment.clients.critical' | translate }}</th>
+            <th>{{ 'provider-equipment.clients.sites' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (b of rows(); track b.id) {
+            <tr class="clickable" tabindex="0" (click)="open(b.id)" (keydown.enter)="open(b.id)">
+              <td>{{ b.name }}</td>
+              <td>{{ b.ruc ?? '-' }}</td>
+              <td>{{ b.sector ?? '-' }}</td>
+              <td>{{ b.activeOrderCount }}</td>
+              <td>{{ b.historicalOrderCount }}</td>
+              <td>{{ b.tankCount }}</td>
+              <td>
+                @if (b.criticalTankCount) { <span class="pv-badge">{{ b.criticalTankCount }}</span> } @else { 0 }
+              </td>
+              <td>{{ b.sites.length }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+</div>

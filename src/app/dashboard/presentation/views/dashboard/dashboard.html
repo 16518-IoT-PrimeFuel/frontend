@@ -1,117 +1,121 @@
-<div class="dashboard-container">
-
-  <!-- Page Header -->
-  <div class="page-header">
+<main class="dashboard">
+  <header class="heading">
     <div>
-      <h1 class="page-title">Dashboard</h1>
-      <p class="page-subtitle">Resume of your logistics</p>
+      <h1>{{ (isBuyer ? 'analytics.buyer-title' : 'analytics.provider-title') | translate }}</h1>
+      <p>{{ (isBuyer ? 'analytics.buyer-subtitle' : 'analytics.provider-subtitle') | translate }}</p>
     </div>
-  </div>
+    <nav class="actions" [attr.aria-label]="'analytics.quick-links' | translate">
+      @if (isBuyer) { <a class="primary" routerLink="/ordering/request-form">{{ 'analytics.new-request' | translate }}</a> }
+      @if (!isBuyer) { <a routerLink="/ordering/order-list">{{ 'analytics.all-orders' | translate }}</a> }
+      <a routerLink="/analytics">{{ 'analytics.open-analytics' | translate }}</a>
+    </nav>
+  </header>
 
-  <!-- KPI Cards -->
-  <div class="kpi-row">
-    <mat-card class="kpi-card">
-      <mat-card-content>
-        <div class="kpi-icon-wrap fuel">
-          <mat-icon>local_gas_station</mat-icon>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">TOTAL FUEL SELLING</span>
-          <span class="kpi-value">
-            {{ (totalFuel() / 1000 | number:'1.1-1') }}k
-            <span class="kpi-unit">Liters</span>
-          </span>
-        </div>
-      </mat-card-content>
-    </mat-card>
+  @if (loading()) { <p role="status">{{ 'analytics.loading' | translate }}</p> }
+  @if (error()) {
+    <div class="state" role="alert">
+      <p>{{ 'analytics.error' | translate }}</p>
+      <button type="button" (click)="load()">{{ 'analytics.retry' | translate }}</button>
+    </div>
+  }
 
-    <mat-card class="kpi-card">
-      <mat-card-content>
-        <div class="kpi-icon-wrap orders">
-          <mat-icon>receipt_long</mat-icon>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">PENDING ORDERS</span>
-          <span class="kpi-value">{{ pendingOrders() }}</span>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <!-- Selling Trend Chart -->
-  <mat-card class="chart-card" (click)="goToReports()" style="cursor:pointer">
-    <mat-card-content>
-      <app-trend-chart></app-trend-chart>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Active Orders Table -->
-  <mat-card class="orders-card">
-    <mat-card-content>
-      <div class="orders-header">
-        <div>
-          <div class="orders-title">Active Orders</div>
-          <div class="orders-subtitle">Track real-time fuel deliveries and scheduled refills.</div>
-        </div>
-        <button mat-stroked-button class="view-all-btn" (click)="goToOrders()">
-          View all orders
-          <mat-icon>arrow_forward</mat-icon>
-        </button>
+  @if (analytics() || !isBuyer) {
+    <div class="layout">
+      <div class="main">
+        <section class="kpis" [attr.aria-label]="'analytics.indicators' | translate">
+          @for (kpi of kpis(); track kpi.label; let first = $first) {
+            <article [class.lead]="first">
+              <h2>{{ kpi.label | translate }}</h2>
+              <p class="value">{{ kpi.money ? (kpi.value | currency:'PEN':'S/ ':'1.2-2') : (kpi.value | number) }}</p>
+              @if (kpi.hint) { <small>{{ kpi.hint | translate }}</small> }
+            </article>
+          }
+        </section>
+        @if (!isBuyer) {
+          @if (analytics()) { <section class="panel">
+            <h2>{{ 'analytics.sales-trend' | translate }}</h2>
+            <div class="view-switch" role="group">
+              @for (g of granularities; track g) {
+                <button type="button" [class.active]="granularity() === g" [attr.aria-pressed]="granularity() === g" (click)="granularity.set(g)">{{ 'analytics.view-' + g | translate }}</button>
+              }
+            </div>
+            @if (hasSales()) {
+              <div class="chart"><canvas baseChart [data]="chartData()" [options]="chartOptions" type="bar"></canvas></div>
+            } @else { <p class="muted">{{ 'analytics.no-sales' | translate }}</p> }
+          </section> }
+          <section class="panel">
+            <h2>{{ 'analytics.pending-requests' | translate }} ({{ pendingRequests().length }})</h2>
+            @if (inboxLoading()) { <p role="status">{{ 'analytics.card-loading' | translate }}</p> }
+            @else if (inboxError()) { <p role="alert">{{ 'analytics.inbox-error' | translate }} <button type="button" (click)="loadInbox()">{{ 'analytics.retry' | translate }}</button></p> }
+            @else if (pendingRequests().length) {
+              <ul class="status-list">
+                @for (req of pendingRequests().slice(0, 5); track req.id) {
+                  <li><a [routerLink]="['/ordering/request-detail', req.id]">#{{ req.id }} · {{ req.quantity | number }} {{ req.unit }}</a><span>{{ req.deliveryDate | date:'mediumDate' }}</span></li>
+                }
+              </ul>
+              <a class="all" routerLink="/ordering/request-list">{{ 'analytics.all-requests' | translate }}</a>
+            } @else { <p class="muted">{{ 'analytics.no-pending-requests' | translate }}</p> }
+          </section>
+          <section class="panel">
+            <h2>{{ 'analytics.critical-tanks' | translate }}</h2>
+            @if (criticalTanks().loading) {
+              <p class="muted" role="status">{{ 'analytics.card-loading' | translate }}</p>
+            } @else if (criticalTanks().error) {
+              <p class="muted" role="alert">{{ 'analytics.critical-tanks-error' | translate }} <button type="button" (click)="loadCriticalTanks()">{{ 'analytics.card-retry' | translate }}</button></p>
+            } @else if (criticalTanks().data.length) {
+              <ul class="status-list">
+                @for (t of criticalTanks().data; track t.id) {
+                  <li><a [routerLink]="['/clients', 'tank', t.id]">{{ t.name }}</a><strong>{{ t.levelPercent | number:'1.0-0' }}%</strong></li>
+                }
+              </ul>
+            } @else { <p class="muted">{{ 'analytics.no-critical-tanks' | translate }}</p> }
+          </section>
+          <section class="panel">
+            <h2>{{ 'analytics.today-deliveries' | translate }} ({{ todayDeliveries().data.length }})</h2>
+            @if (todayDeliveries().loading) {
+              <p class="muted" role="status">{{ 'analytics.card-loading' | translate }}</p>
+            } @else if (todayDeliveries().error) {
+              <p class="muted" role="alert">{{ 'analytics.today-deliveries-error' | translate }} <button type="button" (click)="loadTodayDeliveries()">{{ 'analytics.card-retry' | translate }}</button></p>
+            } @else if (todayDeliveries().data.length) {
+              <ul class="status-list">
+                @for (d of todayDeliveries().data.slice(0, 5); track d.id) {
+                  <li><a [routerLink]="['/fulfillment/delivery-detail', d.id]">#{{ d.id }} · {{ d.buyerCompanyName ?? '-' }}</a><span>{{ 'delivery-status.' + d.physicalState.toLowerCase() | translate }}</span></li>
+                }
+              </ul>
+            } @else { <p class="muted">{{ 'analytics.no-today-deliveries' | translate }}</p> }
+            <a class="all" routerLink="/fulfillment/delivery-list">{{ 'analytics.all-deliveries' | translate }}</a>
+          </section>
+        }
+        <section class="panel">
+          <h2>{{ 'analytics.orders-by-status' | translate }}</h2>
+          @if (ordersLoading()) { <p role="status">{{ 'analytics.card-loading' | translate }}</p> }
+          @else if (ordersError()) { <p role="alert">{{ 'analytics.orders-error' | translate }} <button type="button" (click)="loadOrders()">{{ 'analytics.retry' | translate }}</button></p> }
+          @else {
+          <ul class="status-list">
+            @for (item of statusCounts(); track item.status) {
+              <li [class.zero]="!item.count"><span>{{ ('order-status.' + item.status.toLowerCase()) | translate }}</span><strong>{{ item.count }}</strong></li>
+            }
+          </ul>
+          }
+        </section>
       </div>
-
-      <table mat-table [dataSource]="activeOrders()" class="orders-table">
-
-        <!-- Order ID -->
-        <ng-container matColumnDef="orderId">
-          <th mat-header-cell *matHeaderCellDef>Order ID</th>
-          <td mat-cell *matCellDef="let order">
-            <span class="order-id">#FT-{{ order.id.toUpperCase() }}</span>
-          </td>
-        </ng-container>
-
-        <!-- Destination -->
-        <ng-container matColumnDef="destination">
-          <th mat-header-cell *matHeaderCellDef>Destination</th>
-          <td mat-cell *matCellDef="let order">
-            <span class="destination-main">{{ order.deliveryAddress.split(',')[0] }}</span>
-            <span class="destination-sub">{{ order.deliveryAddress.split(',').slice(1).join(',').trim() }}</span>
-          </td>
-        </ng-container>
-
-        <!-- Volume -->
-        <ng-container matColumnDef="volume">
-          <th mat-header-cell *matHeaderCellDef>Volume</th>
-          <td mat-cell *matCellDef="let order">
-            <span class="volume-text">{{ formatVolume(order.quantity, order.unit) }}</span>
-          </td>
-        </ng-container>
-
-        <!-- ETA -->
-        <ng-container matColumnDef="eta">
-          <th mat-header-cell *matHeaderCellDef>ETA</th>
-          <td mat-cell *matCellDef="let order">
-            <span [class]="'eta-text ' + getStatusClass(order.status)">{{ formatEta(order) }}</span>
-          </td>
-        </ng-container>
-
-        <!-- Actions -->
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let order">
-            <button mat-icon-button class="view-btn" (click)="viewOrder(order)" title="View order">
-              <mat-icon>visibility</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="order-row" (click)="viewOrder(row)"></tr>
-
-        <tr class="mat-row" *matNoDataRow>
-          <td class="mat-cell no-data" colspan="5">No active orders</td>
-        </tr>
-      </table>
-    </mat-card-content>
-  </mat-card>
-
-</div>
+      <aside class="panel recent" [attr.aria-label]="'analytics.recent-orders' | translate">
+        <h2>{{ 'analytics.recent-orders' | translate }}</h2>
+        @if (ordersLoading()) { <p role="status">{{ 'analytics.card-loading' | translate }}</p> }
+        @else if (ordersError()) { <p role="alert">{{ 'analytics.orders-error' | translate }}</p> }
+        @else if (recent().length) {
+          <ul>
+            @for (order of recent(); track order.id) {
+              <li><a [routerLink]="['/ordering/order-detail', order.id]">
+                <span class="id">#{{ order.id }}</span>
+                <span class="status">{{ ('order-status.' + order.status.toLowerCase()) | translate }}</span>
+                <span class="meta">{{ order.totalPrice | currency:'PEN':'S/ ':'1.2-2' }}@if (order.scheduledDate) { · {{ order.scheduledDate | date:'mediumDate' }} }</span>
+              </a></li>
+            }
+          </ul>
+          <a class="all" routerLink="/ordering/order-list">{{ 'analytics.all-orders' | translate }}</a>
+        } @else { <p class="muted">{{ 'analytics.no-orders' | translate }}</p> }
+      </aside>
+    </div>
+  }
+</main>

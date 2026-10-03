@@ -1,0 +1,80 @@
+/* Página de perfil. Tokens locales: el resto de la app usa el azul #1e3a8a. */
+:host { --ink: #111827; --muted: #4b5563; --line: #e5e7eb; --brand: #1e3a8a; --tint: #eef2ff; --ok: #166534; --danger: #a32121; display: block; max-width: 720px; margin: 0 auto; padding: 32px 16px 48px; color: var(--ink); }
+
+.head { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.avatar { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--tint); color: var(--brand); flex: none; }
+.avatar mat-icon { width: 30px; height: 30px; font-size: 30px; }
+.who { min-width: 0; }
+.title { margin: 0; font-size: 1.5rem; font-weight: 600; line-height: 1.25; text-wrap: balance; }
+.sub { margin: 2px 0 0; color: var(--muted); font-size: 0.9375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Una sola superficie: pestañas, contenido y acciones. */
+.panel { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.body { min-height: 320px; }
+.body > .skeleton, .body > .error { margin: 24px; }
+
+.account { display: grid; margin: 0; padding: 8px 24px 16px; }
+.account div { display: grid; grid-template-columns: 8.5rem 1fr; gap: 12px; align-items: center; min-height: 56px; border-bottom: 1px solid var(--line); }
+.account div:last-child { border-bottom: 0; }
+.account dt { color: var(--muted); font-size: 0.875rem; }
+.account dd { margin: 0; overflow-wrap: anywhere; }
+.roles { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--tint); color: var(--brand); font-size: 0.8125rem; font-weight: 500; }
+
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; padding: 24px 24px 8px; }
+.grid .full { grid-column: 1 / -1; }
+.fuel-label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.875rem; }
+.grid .dl-chips { margin-bottom: 20px; }
+
+.orgs { display: grid; margin: 0; padding: 8px 24px 16px; list-style: none; }
+.orgs li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 56px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.orgs li:last-child { border-bottom: 0; }
+.org-name { flex: 1 1 12rem; font-weight: 500; }
+.empty { display: grid; justify-items: center; gap: 8px; padding: 48px 24px; color: var(--muted); text-align: center; }
+.empty p { margin: 0; }
+.empty mat-icon { width: 32px; height: 32px; font-size: 32px; color: #6b7280; }
+
+.skeleton { display: grid; gap: 14px; }
+.skeleton span { height: 44px; border-radius: 6px; background: #e5e7eb; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .skeleton span { animation: none; } }
+
+.foot { display: flex; align-items: center; gap: 8px; padding: 12px 24px; border-top: 1px solid var(--line); background: #f9fafb; }
+.status { flex: 1; margin: 0; min-height: 1.25rem; font-size: 0.875rem; }
+.ok { color: var(--ok); }
+.error { color: var(--danger); margin: 0; }
+.foot .mat-mdc-unelevated-button:not(:disabled) { --mat-button-filled-container-color: var(--brand); --mat-button-filled-label-text-color: #fff; }
+
+/* Pestañas: acento de marca, alineadas a la izquierda en escritorio. */
+:host ::ng-deep .mat-mdc-tab-group {
+  --mat-tab-active-label-text-color: var(--brand);
+  --mat-tab-active-focus-label-text-color: var(--brand);
+  --mat-tab-active-hover-label-text-color: var(--brand);
+  --mat-tab-active-indicator-color: var(--brand);
+  --mat-tab-active-focus-indicator-color: var(--brand);
+  --mat-tab-active-hover-indicator-color: var(--brand);
+  --mat-tab-inactive-label-text-color: var(--muted);
+  --mat-tab-inactive-focus-label-text-color: var(--ink);
+  --mat-tab-inactive-hover-label-text-color: var(--ink);
+  --mat-tab-divider-color: var(--line);
+}
+:host ::ng-deep .mdc-tab { min-width: 0; padding: 0 20px; height: 52px; letter-spacing: 0; }
+:host ::ng-deep .mat-mdc-tab-header { padding: 0 4px; }
+
+@media (max-width: 560px) {
+  :host { padding: 20px 16px 32px; }
+  :host ::ng-deep .mdc-tab { padding: 0 8px; flex-grow: 1; }
+  .grid { grid-template-columns: 1fr; padding: 20px 16px 8px; }
+  .account, .orgs { padding-left: 16px; padding-right: 16px; }
+  .account div { grid-template-columns: 1fr; gap: 2px; padding: 12px 0; }
+  .foot { padding: 12px 16px; flex-wrap: wrap; }
+  .status { flex-basis: 100%; }
+}
+
+.invitations { padding: 16px; }
+.invitation-help { color: var(--muted); font-size: .875rem; }
+.invitation-form { padding: 0; }
+.invitation-table-wrap { overflow-x: auto; }
+.invitation-table { min-width: 660px; }
+.invitation-table th, .invitation-table td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; }
+.revoke-email { overflow-wrap: anywhere; }

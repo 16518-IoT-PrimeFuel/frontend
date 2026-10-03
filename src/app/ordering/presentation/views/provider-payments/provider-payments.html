@@ -1,0 +1,101 @@
+<header class="dl-head">
+  <h1>{{ 'provider-payments.title' | translate }}</h1>
+  <button mat-stroked-button type="button" [disabled]="loading() || busyId() !== null" (click)="load()">{{ 'provider-payments.refresh' | translate }}</button>
+</header>
+<div class="dl-toolbar">
+  <div class="dl-chips" role="group" [attr.aria-label]="'provider-payments.filter-status' | translate">
+    <button type="button" class="dl-chip" [attr.aria-pressed]="!status()" (click)="setStatus('')">{{ 'provider-payments.all' | translate }}</button>
+    @for (value of statuses; track value) {
+      <button type="button" class="dl-chip" [attr.aria-pressed]="status() === value" (click)="setStatus(value)">{{ 'payment-status.' + value.toLowerCase() | translate }}</button>
+    }
+  </div>
+  <label>{{ 'provider-payments.from' | translate }}
+    <input type="date" [value]="from()" [max]="to() || null" (change)="setDate('from', $any($event.target).value)" />
+  </label>
+  <label>{{ 'provider-payments.to' | translate }}
+    <input type="date" [value]="to()" [min]="from() || null" (change)="setDate('to', $any($event.target).value)" />
+  </label>
+  @if (from() || to()) { <button mat-button type="button" (click)="clearDates()">{{ 'provider-payments.clear' | translate }}</button> }
+</div>
+@if (rangeInvalid()) { <p class="dl-error" role="alert">{{ 'errors.http-400' | translate }}</p> }
+<p role="note"><small>{{ 'provider-payments.currency-hint' | translate }}</small></p>
+@if (notice()) { <p class="dl-notice" role="status">{{ notice() | translate }}</p> }
+@if (actionError()) { <p class="dl-error" role="alert">{{ actionError() | translate }}</p> }
+@if (loading()) {
+  <p role="status">{{ 'common.loading' | translate }}</p>
+} @else if (error()) {
+  <div class="dl-error" role="alert">
+    <p>{{ error() | translate }}</p>
+    <button mat-stroked-button type="button" (click)="load()">{{ 'provider-equipment.clients.retry' | translate }}</button>
+  </div>
+} @else if (!payments().length) {
+  <div class="dl-empty"><p>{{ 'provider-payments.empty' | translate }}</p></div>
+} @else {
+  <div class="payment-wrap" role="region" tabindex="0" [attr.aria-label]="'provider-payments.table-label' | translate">
+    <table class="payment-table">
+      <thead><tr>
+        <th scope="col">{{ 'provider-payments.order' | translate }}</th>
+        <th scope="col">{{ 'provider-payments.buyer' | translate }}</th>
+        <th scope="col" class="num">{{ 'provider-payments.amount' | translate }}</th>
+        <th scope="col">{{ 'provider-payments.method' | translate }}</th>
+        <th scope="col">{{ 'provider-payments.status' | translate }}</th>
+        <th scope="col">{{ 'provider-payments.created' | translate }}</th>
+        <th scope="col">{{ 'provider-payments.paid' | translate }}</th>
+        <th scope="col">{{ 'provider-payments.actions' | translate }}</th>
+      </tr></thead>
+      <tbody>@for (p of pageRows(); track p.id) {
+        <tr>
+          <td><a [routerLink]="['/ordering/order-detail', p.orderId]">#{{ p.orderId }}</a></td>
+          <td>{{ p.buyerName ?? '—' }}</td>
+          <td class="num amount">{{ p.amount | number:'1.2-2' }} <small>({{ (p.currency ?? 'provider-payments.currency-unknown') | translate }})</small></td>
+          <td>{{ 'order-detail.method-' + p.paymentMethod.toLowerCase() | translate }}</td>
+          <td><span class="dl-badge st-{{ p.status.toLowerCase() }}">{{ 'payment-status.' + p.status.toLowerCase() | translate }}</span></td>
+          <td>{{ p.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ p.paidAt ? (p.paidAt | date:'dd/MM/yyyy HH:mm') : ('provider-payments.no-date' | translate) }}</td>
+          <td class="refund-action">
+            @if (p.status === 'PENDING') {
+              <button mat-stroked-button type="button" [disabled]="busyId() !== null" [attr.aria-busy]="busyId() === p.id" (click)="requestComplete(p)">
+                {{ (busyId() === p.id ? 'provider-payments.completing' : 'provider-payments.complete') | translate }}
+              </button>
+            } @else if (p.status === 'COMPLETED') {
+              <button mat-stroked-button type="button" [disabled]="busyId() !== null" [attr.aria-busy]="busyId() === p.id" (click)="requestRefund(p)">
+                {{ (busyId() === p.id ? 'provider-payments.refunding' : 'provider-payments.refund') | translate }}
+              </button>
+            }
+          </td>
+        </tr>
+      }</tbody>
+    </table>
+  </div>
+  <nav class="dl-toolbar" [attr.aria-label]="'provider-payments.pagination' | translate">
+    <span role="status">{{ 'provider-payments.page-range' | translate: { first: firstRow(), last: lastRow(), total: payments().length } }}</span>
+    <button mat-stroked-button type="button" [disabled]="page() === 0" (click)="changePage(-1)">{{ 'provider-payments.previous' | translate }}</button>
+    <button mat-stroked-button type="button" [disabled]="page() + 1 >= pageCount()" (click)="changePage(1)">{{ 'provider-payments.next' | translate }}</button>
+  </nav>
+}
+
+<ng-template #completeDialog>
+  <h2 mat-dialog-title>{{ 'provider-payments.complete-title' | translate }}</h2>
+  <mat-dialog-content>
+    <p>{{ 'provider-payments.order' | translate }} #{{ selected()?.orderId }} · {{ selected()?.amount | number:'1.2-2' }}</p>
+    <label>{{ 'provider-payments.reference' | translate }}
+      <input [formControl]="reference" autocomplete="off" />
+    </label>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [mat-dialog-close]="false">{{ 'confirm.cancel' | translate }}</button>
+    <button mat-flat-button [mat-dialog-close]="true" [disabled]="reference.invalid">{{ 'confirm.confirm' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>
+
+<ng-template #refundDialog>
+  <h2 mat-dialog-title>{{ 'provider-payments.refund' | translate }}</h2>
+  <mat-dialog-content>
+    <p>{{ 'provider-payments.order' | translate }} #{{ selected()?.orderId }} · {{ selected()?.amount | number:'1.2-2' }}</p>
+    <p>{{ 'provider-payments.refund-confirmation' | translate }}</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [mat-dialog-close]="false">{{ 'confirm.cancel' | translate }}</button>
+    <button mat-flat-button [mat-dialog-close]="true">{{ 'confirm.confirm' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>

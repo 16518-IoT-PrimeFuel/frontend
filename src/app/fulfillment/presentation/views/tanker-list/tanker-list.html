@@ -1,0 +1,140 @@
+<div class="tanker-list-container">
+  <header class="page-header">
+    <div class="header-content">
+      <h1>{{ 'tanker-list.title' | translate }}</h1>
+      <p>{{ 'tanker-list.subtitle' | translate }}</p>
+    </div>
+
+    <div class="header-actions">
+      <button mat-button (click)="onShowAll()" [disabled]="store.isLoading()">
+        <mat-icon>list</mat-icon>
+        {{ 'tanker-list.show-all' | translate }}
+      </button>
+      <button mat-button (click)="onShowAvailable()" [disabled]="store.isLoading()">
+        <mat-icon>check_circle</mat-icon>
+        {{ 'tanker-list.show-available' | translate }}
+      </button>
+      <button mat-icon-button (click)="onRefresh()" [disabled]="store.isLoading()">
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <button mat-raised-button color="primary" routerLink="../tanker-form">
+        <mat-icon>add</mat-icon>
+        {{ 'tanker-list.add-button' | translate }}
+      </button>
+    </div>
+  </header>
+
+  @if (store.isLoading()) {
+    <div class="loading-shade">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+  }
+
+  @if (store.error()) {
+    <div class="error-container">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ store.error() | translate }}</p>
+    </div>
+  }
+
+  @if (store.successMsg()) {
+    <div class="success-container" role="status">
+      <mat-icon>check_circle</mat-icon>
+      <p>{{ store.successMsg() | translate }}</p>
+    </div>
+  }
+
+  <div class="table-container mat-elevation-z2">
+    <table mat-table [dataSource]="store.tankerList()">
+      <!-- License Plate Column -->
+      <ng-container matColumnDef="licensePlate">
+        <th mat-header-cell *matHeaderCellDef>{{ 'tanker-list.fields.license-plate' | translate }}</th>
+        <td mat-cell *matCellDef="let element" class="bold-text">
+          <code>{{ element.licensePlate }}</code>
+        </td>
+      </ng-container>
+
+      <!-- Brand Column -->
+      <ng-container matColumnDef="brand">
+        <th mat-header-cell *matHeaderCellDef>{{ 'tanker-list.fields.brand' | translate }}</th>
+        <td mat-cell *matCellDef="let element">{{ element.brand }}</td>
+      </ng-container>
+
+      <!-- Model Column -->
+      <ng-container matColumnDef="model">
+        <th mat-header-cell *matHeaderCellDef>{{ 'tanker-list.fields.model' | translate }}</th>
+        <td mat-cell *matCellDef="let element">{{ element.model }}</td>
+      </ng-container>
+
+      <!-- Capacity Column -->
+      <ng-container matColumnDef="capacity">
+        <th mat-header-cell *matHeaderCellDef>{{ 'tanker-list.fields.capacity' | translate }}</th>
+        <td mat-cell *matCellDef="let element">
+          <span class="capacity-text">{{ element.capacity | number: '1.0-0' }} {{ element.unit }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>{{ 'tanker-list.fields.status' | translate }}</th>
+        <td mat-cell *matCellDef="let element">
+          <mat-chip-set>
+            <mat-chip [class]="getStatusClass(element.status)">
+              {{ 'vehicle-status.' + element.status.toLowerCase() | translate }}
+            </mat-chip>
+          </mat-chip-set>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let element">
+          <button
+            mat-icon-button
+            [routerLink]="['../tanker-form', element.id]"
+            color="primary"
+            [matTooltip]="'tanker-list.edit-tooltip' | translate"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button (click)="onToggleActive(element.id, element.active)" [matTooltip]="element.active ? ('tanker-list.deactivate' | translate) : ('tanker-list.activate' | translate)"><mat-icon>{{ element.active ? 'block' : 'check_circle' }}</mat-icon></button>
+          <button mat-button (click)="onEligibility(element.id)" [disabled]="store.tankerEligibilityLoading()[element.id]" [attr.aria-label]="'tanker-list.eligibility-for' | translate:{ plate: element.licensePlate }">
+            {{ 'tanker-list.eligibility' | translate }}
+            @if (store.tankerEligibilityLoading()[element.id]) { <mat-spinner diameter="16"></mat-spinner> }
+          </button>
+          @if (store.tankerEligibility()[element.id]; as eligibility) {
+            <div class="eligibility-result" role="status">
+              <span class="eligibility-label" [ngClass]="eligibilityClass(eligibility.outcome)">
+                @if (eligibilityKey(eligibility.outcome); as key) { {{ key | translate }} } @else { {{ eligibility.outcome }} }
+              </span>
+              <span>{{ eligibility.reason }}</span>
+            </div>
+          }
+          @if (store.tankerEligibilityError()[element.id]; as error) {
+            <p class="eligibility-error" role="alert">{{ error | translate }}</p>
+          }
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+      <!-- Row shown when there is no data -->
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell" colspan="6" style="text-align: center; padding: 2rem">
+          {{ 'tanker-list.empty' | translate }}
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<ng-template #confirmDialog>
+  <h2 mat-dialog-title>{{ 'confirm.title' | translate }}</h2>
+  <mat-dialog-content>{{ 'confirm.deactivate' | translate }}</mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [mat-dialog-close]="false">{{ 'confirm.cancel' | translate }}</button>
+    <button mat-flat-button color="warn" [mat-dialog-close]="true">{{ 'confirm.confirm' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>

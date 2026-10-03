@@ -1,280 +1,72 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
-import { retry } from 'rxjs';
+import { Injectable, signal, inject } from '@angular/core';
 import { InventoryApi } from '../infrastructure/inventory-api';
-import {
-  FuelProduct,
-  CreateProductPayload,
-  UpdateProductPayload
-} from '../domain/model/fuel-product.entity';
+import { FuelProduct, CreateProductPayload, UpdateProductPayload } from '../domain/model/fuel-product.entity';
 
-import {
-  InventoryItem,
-  UpdateStockPayload,
-  ReserveStockPayload
-} from '../domain/model/inventory-item.entity';
-
-/**
- * @summary Store para gestión de estado del BC Inventory.
- * @remarks Maneja productos de combustible e inventario usando signals.
- * Expone selectores computados y comandos para el presentation layer.
- * @author FullTank Platform
- */
 @Injectable({ providedIn: 'root' })
 export class InventoryStore {
   private readonly api = inject(InventoryApi);
-
-  // ── State ────────────────────────────────────────────────────────────────
   private readonly _productList = signal<FuelProduct[]>([]);
   private readonly _selectedProduct = signal<FuelProduct | null>(null);
-  private readonly _inventoryList = signal<InventoryItem[]>([]);
-  private readonly _isLoading = signal<boolean>(false);
+  private readonly _isLoading = signal(false);
   private readonly _error = signal<string | null>(null);
-  private readonly _successMsg = signal<string | null>(null);
-
-  // ── Selectors (readonly) ─────────────────────────────────────────────────
   readonly productList = this._productList.asReadonly();
   readonly selectedProduct = this._selectedProduct.asReadonly();
-  readonly inventoryList = this._inventoryList.asReadonly();
   readonly isLoading = this._isLoading.asReadonly();
   readonly error = this._error.asReadonly();
-  readonly successMsg = this._successMsg.asReadonly();
 
-  // Selectores Computados
-  readonly activeProducts = computed(() =>
-    this._productList().filter((p) => p.isActive),
-  );
-  readonly dieselProducts = computed(() =>
-    this._productList().filter((p) => p.type === 'DIESEL'),
-  );
-  readonly gasolineProducts = computed(() =>
-    this._productList().filter((p) => p.type.startsWith('GASOLINE')),
-  );
-  readonly lowStockItems = computed(() =>
-    this._inventoryList().filter((i) => i.availableQuantity < 1000),
-  );
+  clearError(): void { this._error.set(null); }
 
-  // ── Products CRUD ────────────────────────────────────────────────────────
-
-  loadAllProducts(): void {
+  loadAllProducts(providerId?: number): void {
     this._isLoading.set(true);
     this._error.set(null);
-    this.api
-      .getAllProducts()
-      .pipe(retry(2))
-      .subscribe({
-        next: (products: FuelProduct[]) => {
-          this._productList.set(products);
-          this._isLoading.set(false);
-        },
-        error: (err: any) => {
-          this._error.set(this.formatError(err, 'Failed to load products'));
-          this._isLoading.set(false);
-        },
-      });
+    (providerId === undefined ? this.api.getAllProducts() : this.api.getProductsByProvider(providerId)).subscribe({
+      next: (products) => { this._productList.set(products); this._isLoading.set(false); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
+    });
   }
 
-  loadActiveProducts(): void {
+  loadProductById(id: number): void {
     this._isLoading.set(true);
     this._error.set(null);
-    this.api
-      .getActiveProducts()
-      .pipe(retry(2))
-      .subscribe({
-        next: (products: FuelProduct[]) => {
-          this._productList.set(products);
-          this._isLoading.set(false);
-        },
-        error: (err: any) => {
-          this._error.set(this.formatError(err, 'Failed to load active products'));
-          this._isLoading.set(false);
-        },
-      });
+    this.api.getProductById(id).subscribe({
+      next: (product) => { this._selectedProduct.set(product); this._isLoading.set(false); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
+    });
   }
 
-  loadProductById(productId: string): void {
+  createProduct(payload: CreateProductPayload, done?: () => void): void {
     this._isLoading.set(true);
     this._error.set(null);
-    this.api
-      .getProductById(productId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (product: FuelProduct) => {
-          this._selectedProduct.set(product);
-          this._isLoading.set(false);
-        },
-        error: (err: any) => {
-          this._error.set(this.formatError(err, `Failed to load product ${productId}`));
-          this._isLoading.set(false);
-        },
-      });
+    this.api.createProduct(payload).subscribe({
+      next: (product) => { this._productList.update((list) => [...list, product]); this._isLoading.set(false); done?.(); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
+    });
   }
 
-  createProduct(
-    payload: CreateProductPayload,
-    onSuccess?: () => void
-  ): void{
+  updateProduct(id: number, payload: UpdateProductPayload, done?: () => void): void {
     this._isLoading.set(true);
     this._error.set(null);
-    this.api
-      .createProduct(payload)
-      .pipe(retry(2))
-      .subscribe({
-        next: (product: FuelProduct) => {
-          this._productList.update((list) => [...list, product]);
-          this._successMsg.set('Product created successfully');
-          this._isLoading.set(false);
-          onSuccess?.();
-        },
-        error: (err: any) => {
-          this._error.set(this.formatError(err, 'Failed to create product'));
-          this._isLoading.set(false);
-        },
-      });
+    this.api.updateProduct(id, payload).subscribe({
+      next: (product) => { this._productList.update((list) => list.map((item) => item.id === id ? product : item)); this._selectedProduct.set(product); this._isLoading.set(false); done?.(); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
+    });
   }
 
-  updateProduct(
-    productId: string,
-    payload: UpdateProductPayload,
-    onSuccess?: () => void
-  ): void{
+  updateStock(id: number, stock: number): void {
     this._isLoading.set(true);
     this._error.set(null);
-    this.api
-      .updateProduct(productId, payload)
-      .pipe(retry(2))
-      .subscribe({
-        next: (product: FuelProduct) => {
-          this._productList.update((list) =>
-            list.map((p) => (p.id === productId ? product : p)),
-          );
-          this._successMsg.set('Product updated successfully');
-          this._isLoading.set(false);
-          onSuccess?.();
-        },
-        error: (err: any) => {
-          this._error.set(this.formatError(err, 'Failed to update product'));
-          this._isLoading.set(false);
-        },
-      });
+    this.api.updateStock(id, stock).subscribe({
+      next: (product) => { this._productList.update((list) => list.map((item) => item.id === id ? product : item)); this._isLoading.set(false); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
+    });
   }
 
-  deleteProduct(productId: string): void {
+  deleteProduct(id: number): void {
     this._isLoading.set(true);
     this._error.set(null);
-    this.api
-      .deleteProduct(productId)
-      .pipe(retry(2))
-      .subscribe({
-        next: () => {
-          this._productList.update((list) => list.filter((p) => p.id !== productId));
-          this._successMsg.set('Product deleted successfully');
-          this._isLoading.set(false);
-        },
-        error: (err: any) => {
-          this._error.set(this.formatError(err, 'Failed to delete product'));
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  // ── Inventory ────────────────────────────────────────────────────────────
-
-  loadInventoryByProvider(providerId: string): void {
-    this._isLoading.set(true);
-    this._error.set(null);
-    this.api
-      .getInventoryByProvider(providerId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (inventory: InventoryItem[]) => {
-          this._inventoryList.set(inventory);
-          this._isLoading.set(false);
-        },
-        error: (err: any) => {
-          this._error.set(this.formatError(err, 'Failed to load inventory'));
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  loadInventoryByProduct(productId: string): void {
-    this._isLoading.set(true);
-    this._error.set(null);
-    this.api
-      .getInventoryByProduct(productId)
-      .pipe(retry(2))
-      .subscribe({
-        next: (inventory: InventoryItem[]) => {
-          this._inventoryList.set(inventory);
-          this._isLoading.set(false);
-        },
-        error: (err: any) => {
-          this._error.set(this.formatError(err, 'Failed to load inventory'));
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  updateStock(
-    inventoryItemId: string,
-    payload: UpdateStockPayload
-  ): void{
-    this._isLoading.set(true);
-    this._error.set(null);
-    this.api
-      .updateStock(inventoryItemId, payload)
-      .pipe(retry(2))
-      .subscribe({
-        next: (item: InventoryItem) => {
-          this._inventoryList.update((list) =>
-            list.map((i) => (i.id === inventoryItemId ? item : i)),
-          );
-          this._successMsg.set('Stock updated successfully');
-          this._isLoading.set(false);
-        },
-        error: (err: any) => {
-          this._error.set(this.formatError(err, 'Failed to update stock'));
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-  reserveStock(
-    inventoryItemId: string,
-    payload: ReserveStockPayload
-  ): void{
-    this._isLoading.set(true);
-    this._error.set(null);
-    this.api
-      .reserveStock(inventoryItemId, payload)
-      .pipe(retry(2))
-      .subscribe({
-        next: (item: InventoryItem) => {
-          this._inventoryList.update((list) =>
-            list.map((i) => (i.id === inventoryItemId ? item : i)),
-          );
-          this._successMsg.set('Stock reserved successfully');
-          this._isLoading.set(false);
-        },
-        error: (err: any) => {
-          this._error.set(this.formatError(err, 'Failed to reserve stock'));
-          this._isLoading.set(false);
-        },
-      });
-  }
-
-
-  clearMessages(): void {
-    this._error.set(null);
-    this._successMsg.set(null);
-  }
-
-  private formatError(error: any, fallback: string): string {
-    if (error instanceof Error) {
-      return error.message.includes('Resource not found')
-        ? `${fallback}: Not Found`
-        : error.message;
-    }
-    return fallback;
+    this.api.deleteProduct(id).subscribe({
+      next: () => { this._productList.update((list) => list.filter((item) => item.id !== id)); this._isLoading.set(false); },
+      error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
+    });
   }
 }

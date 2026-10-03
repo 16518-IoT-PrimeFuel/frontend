@@ -4,11 +4,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "server": "json-server --watch server/db.json --routes server/routes.json --port 3000",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "server:render": "json-server --watch server/db.json --routes server/routes.json --host 0.0.0.0 --port $PORT"
+    "test": "ng test"
   },
   "private": true,
   "packageManager": "npm@11.12.1",
@@ -24,8 +22,6 @@
     "@ngx-translate/core": "^17.0.0",
     "@ngx-translate/http-loader": "^17.0.0",
     "chart.js": "^4.5.1",
-    "firebase": "^12.13.0",
-    "json-server": "^0.17.4",
     "ng2-charts": "^10.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
@@ -38,11 +34,13 @@
     "@types/jasmine": "~5.1.0",
     "baseline-browser-mapping": "^2.10.20",
     "jasmine-core": "^5.9.0",
+    "jsdom": "29.1.1",
     "karma": "^6.4.0",
     "karma-chrome-launcher": "^3.2.0",
     "karma-coverage": "^2.2.0",
     "karma-jasmine": "^5.1.0",
     "karma-jasmine-html-reporter": "^2.1.0",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "4.1.11"
   }
 }

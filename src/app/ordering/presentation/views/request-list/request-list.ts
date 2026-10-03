@@ -1,105 +1,70 @@
-import { AfterViewChecked, Component, computed, inject, ViewChild } from '@angular/core';
-import { OrderingStore } from '../../../application/ordering.store';
-import { Router } from '@angular/router';
-import { Request } from '../../../domain/model/request.entity';
+import { Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MatSort, MatSortHeader } from '@angular/material/sort';
-import { MatPaginator } from '@angular/material/paginator';
-import {
-  MatCell, MatCellDef, MatColumnDef, MatHeaderCell, MatHeaderCellDef, MatHeaderRow,
-  MatHeaderRowDef, MatRow, MatRowDef, MatTable, MatTableDataSource
-} from '@angular/material/table';
-import { TranslatePipe } from '@ngx-translate/core';
-import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import { MatError, MatFormField, MatInput, MatLabel } from '@angular/material/input';
-import { MatButton, MatIconButton } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { MatChip, MatChipSet } from '@angular/material/chips';
-import { MatTooltip } from '@angular/material/tooltip';
-import { DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, registerLocaleData } from '@angular/common';
+import localeEs from '@angular/common/locales/es';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map, startWith } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { OrderingStore } from '../../../application/ordering.store';
+import { IamStore } from '../../../../iam/application/iam.store';
+import { Request } from '../../../domain/model/request.entity';
 
-@Component({
-  selector: 'app-request-list',
-  imports: [
-    DatePipe,
-    FormsModule,
-    TranslatePipe,
-    MatProgressSpinner,
-    MatError,
-    MatTable,
-    MatSort,
-    MatColumnDef,
-    MatHeaderCell,
-    MatCell,
-    MatHeaderCellDef,
-    MatSortHeader,
-    MatCellDef,
-    MatIconButton,
-    MatIcon,
-    MatHeaderRow,
-    MatHeaderRowDef,
-    MatRow,
-    MatRowDef,
-    MatPaginator,
-    MatButton,
-    MatChip,
-    MatChipSet,
-    MatTooltip,
-  ],
-  templateUrl: './request-list.html',
-  styleUrl: './request-list.css',
-})
-export class RequestList implements AfterViewChecked {
+registerLocaleData(localeEs);
 
-  ngAfterViewChecked(): void {
-    if (this.dataSource().paginator !== this.paginator) {
-      this.dataSource().paginator = this.paginator;
-    }
-    if (this.dataSource().sort !== this.sort) {
-      this.dataSource().sort = this.sort;
-    }
-  }
+export function missingRequestFields(request: Request): string[] {
+  const fields: string[] = [];
+  if (!request.organizationId || request.organizationId < 1) fields.push('organization');
+  if (!['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED'].includes(request.status)) fields.push('status');
+  if (!request.customerAccountId || request.customerAccountId < 1) fields.push('customer');
+  if (!request.fuelProductId || request.fuelProductId < 1) fields.push('product');
+  if (!request.providerId || request.providerId < 1) fields.push('provider');
+  if (!Number.isFinite(request.quantity) || request.quantity <= 0) fields.push('quantity');
+  if (!request.unit?.trim()) fields.push('unit');
+  if (request.unitPrice == null || !Number.isFinite(request.unitPrice) || request.unitPrice < 0) fields.push('price');
+  if (!request.deliveryAddress?.trim()) fields.push('address');
+  const date = request.deliveryDate;
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date) fields.push('date');
+  return fields;
+}
 
+@Component({ selector: 'app-request-list', providers: [OrderingStore], imports: [CurrencyPipe, RouterLink, DatePipe, FormsModule, TranslatePipe, MatButtonModule, MatIconModule], templateUrl: './request-list.html', styleUrl: './request-list.css' })
+export class RequestList {
   readonly store = inject(OrderingStore);
-  protected router = inject(Router);
-
-  displayedColumns: string[] = ['id', 'productId', 'quantity', 'desiredDeliveryDate', 'status', 'actions'];
-
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
-
-  dataSource = computed(() => {
-    const source = new MatTableDataSource(this.store.pendingRequests());
-    source.sort = this.sort;
-    source.paginator = this.paginator;
-    return source;
-  });
-
-  rejectingRequestId: string | null = null;
+  readonly iam = inject(IamStore);
+  private readonly translate = inject(TranslateService);
+  readonly locale = toSignal(this.translate.onLangChange.pipe(map(event => event.lang), startWith(this.translate.getCurrentLang() || 'es')), { requireSync: true });
+  readonly status = signal('');
+  readonly search = signal('');
+  readonly incompleteOnly = signal(false);
+  readonly expandedId = signal<number | null>(null);
+  readonly decision = signal<'accept' | 'reject' | null>(null);
   rejectionReason = '';
-
-  navigateToNew() {
-    this.router.navigate(['/ordering/request-form']).then();
+  readonly statuses = ['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED'];
+  readonly counts = computed(() => this.statuses.map(value => ({ value, count: this.store.requests().filter(request => request.status === value).length })));
+  readonly incompleteCount = computed(() => this.store.requests().filter(row => missingRequestFields(row).length).length);
+  readonly filtered = computed(() => {
+    const search = this.search().trim().toLocaleLowerCase();
+    return this.store.requests().filter(row => (!this.status() || row.status === this.status())
+      && (!this.incompleteOnly() || missingRequestFields(row).length > 0)
+      && (!search || [row.id, row.customerAccountId, row.deliveryAddress, this.store.productNames()[row.fuelProductId], this.store.providerNames()[row.providerId]].join(' ').toLocaleLowerCase().includes(search)))
+      .sort((a, b) => b.id - a.id);
+  });
+  readonly missing = missingRequestFields;
+  statusKey(row: Request): string { return this.statuses.includes(row.status) ? row.status.toLowerCase() : 'unknown'; }
+  constructor() { this.store.loadRequests(); this.store.loadNames(); }
+  refresh(): void { if (!this.store.loading()) { this.store.loadRequests(); this.store.loadNames(); } }
+  clearFilters(): void { this.search.set(''); this.status.set(''); this.incompleteOnly.set(false); }
+  toggleTracking(id: number): void { this.expandedId.set(this.expandedId() === id ? null : id); this.decision.set(null); this.rejectionReason = ''; }
+  canDecide(row: Request): boolean { return this.store.isProvider() && this.iam.providerId() === row.providerId && row.status === 'PENDING' && !this.store.loading(); }
+  prepareDecision(action: 'accept' | 'reject'): void { this.decision.set(action); this.rejectionReason = ''; }
+  submitDecision(row: Request): void {
+    if (!this.canDecide(row)) return;
+    if (this.decision() === 'accept' && !missingRequestFields(row).length) this.store.acceptRequest(row.id);
+    else if (this.decision() === 'reject' && this.rejectionReason.trim() && this.rejectionReason.trim().length <= 240) this.store.rejectRequest(row.id, this.rejectionReason.trim());
+    else return;
+    this.decision.set(null); this.rejectionReason = '';
   }
-
-  acceptRequest(request: Request) {
-    this.store.acceptRequest(request);
-  }
-
-  denyRequest(request: Request) {
-    this.store.deleteRequest(request.id);
-  }
-
-  deleteRequest(id: string) {
-    this.store.deleteRequest(id);
-  }
-
-  shortId(id: string): string {
-    return id.length > 8 ? `${id.substring(0, 8)}…` : id;
-  }
-
-  statusClass(status: string): string {
-    return status.toLowerCase().replace('_', '-');
-  }
-
 }

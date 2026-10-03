@@ -8,8 +8,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { IamStore } from '../../../../iam/application/iam.store';
 import { NotificationStore } from '../../../application/notification.store';
 import { Notification } from '../../../domain/model/notification.entity';
 
@@ -35,59 +36,47 @@ import { Notification } from '../../../domain/model/notification.entity';
 export class NotificationList implements OnInit {
   protected readonly store = inject(NotificationStore);
 
-  // TODO: Reemplazar con userId real de IAM cuando se implemente
-  private readonly TEMP_USER_ID = 'u1';
+  private readonly router = inject(Router);
+  private readonly iam = inject(IamStore);
 
   protected filterMode: 'all' | 'unread' = 'all';
 
   ngOnInit(): void {
-    this.store.loadNotificationsByUser(this.TEMP_USER_ID);
+    this.store.loadNotifications();
   }
 
   protected onShowAll(): void {
     this.filterMode = 'all';
-    this.store.loadNotificationsByUser(this.TEMP_USER_ID);
+    this.store.loadNotifications();
   }
 
   protected onShowUnread(): void {
     this.filterMode = 'unread';
-    this.store.loadUnreadNotificationsByUser(this.TEMP_USER_ID);
+    this.store.loadUnreadNotifications();
   }
 
   protected onRefresh(): void {
     if (this.filterMode === 'unread') {
-      this.store.loadUnreadNotificationsByUser(this.TEMP_USER_ID);
+      this.store.loadUnreadNotifications();
     } else {
-      this.store.loadNotificationsByUser(this.TEMP_USER_ID);
+      this.store.loadNotifications();
     }
   }
 
   protected onMarkAsRead(notification: Notification): void {
-    if (!notification.isRead) {
+    if (!notification.read) {
       this.store.markAsRead(notification.id);
     }
   }
 
-  protected onMarkAsUnread(notification: Notification): void {
-    if (notification.isRead) {
-      this.store.markAsUnread(notification.id);
-    }
-  }
-
   protected onToggleRead(notification: Notification): void {
-    if (notification.isRead) {
-      this.store.markAsUnread(notification.id);
-    } else {
+    if (!notification.read) {
       this.store.markAsRead(notification.id);
     }
   }
 
   protected onMarkAllAsRead(): void {
-    this.store.markAllAsRead(this.TEMP_USER_ID);
-  }
-
-  protected onDelete(notificationId: string): void {
-    this.store.deleteNotification(notificationId);
+    this.store.markAllAsRead();
   }
 
   /**
@@ -95,8 +84,9 @@ export class NotificationList implements OnInit {
    * @remarks Usa los métodos de dominio de la entidad para clasificar.
    */
   protected getIconFor(notification: Notification): string {
-    if (notification.isOrderEvent()) return 'receipt_long';
+    if (notification.isRequestEvent()) return 'assignment';
     if (notification.isPaymentEvent()) return 'payments';
+    if (notification.isOrderEvent()) return 'receipt_long';
     if (notification.isDeliveryEvent()) return 'local_shipping';
     return 'notifications';
   }
@@ -106,31 +96,38 @@ export class NotificationList implements OnInit {
   }
 
   protected getCategoryClass(notification: Notification): string {
-    if (notification.isOrderEvent()) return 'category-order';
     if (notification.isPaymentEvent()) return 'category-payment';
+    if (notification.isRequestEvent() || notification.isOrderEvent()) return 'category-order';
     if (notification.isDeliveryEvent()) return 'category-delivery';
     return 'category-default';
   }
 
-  /**
-   * Devuelve un texto relativo "hace X" para la fecha de creación.
-   */
-  protected timeAgo(createdAt: string): string {
-    const created = new Date(createdAt).getTime();
-    const now = Date.now();
-    const diffMs = Math.max(0, now - created);
-    const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 1) return 'hace unos segundos';
-    if (diffMin < 60) return `hace ${diffMin} min`;
-    const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `hace ${diffH} h`;
-    const diffD = Math.floor(diffH / 24);
-    if (diffD < 30) return `hace ${diffD} d`;
-    const diffMo = Math.floor(diffD / 30);
-    return `hace ${diffMo} mes${diffMo > 1 ? 'es' : ''}`;
+  /** Rótulo i18n de la referencia; null si el tipo no tiene un destino conocido. */
+  protected referenceLabel(n: Notification): string | null {
+    if (n.type === 'ORDER_ACCEPTED' || n.type === 'ORDER_REJECTED' || n.isRequestEvent()) return 'notification-list.fields.request';
+    if (n.isDeliveryEvent()) return 'notification-list.fields.delivery';
+    return null;
   }
 
-  protected trackById(_index: number, notification: Notification): string {
+  /** ORDER_ACCEPTED/REJECTED referencian la solicitud (agregado del evento). La entrega solo tiene pantalla para PROVIDER (B4). */
+  protected linkFor(n: Notification): string[] | null {
+    if (n.type === 'ORDER_ACCEPTED' || n.type === 'ORDER_REJECTED' || n.isRequestEvent()) return ['/ordering/request-list'];
+    if (n.isDeliveryEvent() && n.referenceId && this.iam.role() === 'PROVIDER') return ['/fulfillment/delivery-detail', String(n.referenceId)];
+    return null;
+  }
+
+  protected open(n: Notification): void {
+    const link = this.linkFor(n);
+    if (!link) return;
+    this.onMarkAsRead(n);
+    this.router.navigate(link);
+  }
+
+  protected timeAgo(createdAt: string): string {
+    return new Date(createdAt).toLocaleString();
+  }
+
+  protected trackById(_index: number, notification: Notification): number {
     return notification.id;
   }
 }

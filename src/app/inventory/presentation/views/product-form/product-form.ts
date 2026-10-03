@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -10,11 +10,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { InventoryStore } from '../../../application/inventory.store';
+import { IamStore } from '../../../../iam/application/iam.store';
 import {
   CreateProductPayload,
-  UpdateProductPayload
+  UpdateProductPayload,
+  FUEL_TYPES
 } from '../../../domain/model/fuel-product.entity';
 
 /**
@@ -44,20 +46,22 @@ import {
 })
 export class ProductForm implements OnInit {
   protected readonly store = inject(InventoryStore);
+  private readonly iam = inject(IamStore);
+  private readonly syncProduct = effect(() => {
+    const product = this.store.selectedProduct();
+    if (this.isEditMode && product?.id === this.productId && this.productForm) this.productForm.patchValue(product);
+  });
+  private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
+  private readonly translate = inject(TranslateService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   protected productForm!: FormGroup;
   protected isEditMode = false;
-  protected productId: string | null = null;
+  protected productId: number | null = null;
 
-  protected readonly fuelTypes = [
-    { value: 'DIESEL', label: 'fuel-type.diesel' },
-    { value: 'GASOLINE_90', label: 'fuel-type.gasoline_90' },
-    { value: 'GASOLINE_95', label: 'fuel-type.gasoline_95' },
-    { value: 'GASOLINE_97', label: 'fuel-type.gasoline_97' },
-  ];
+  protected readonly fuelTypes = FUEL_TYPES.map(value => ({ value, label: 'fuel-type.' + value.toLowerCase() }));
 
   protected readonly units = [
     { value: 'LITERS', label: 'unit.liters' },
@@ -65,7 +69,8 @@ export class ProductForm implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.productId = this.route.snapshot.paramMap.get('id');
+    this.store.clearError();
+    this.productId = Number(this.route.snapshot.paramMap.get('id')) || null;
     this.isEditMode = !!this.productId;
 
     this.initForm();
@@ -78,34 +83,22 @@ export class ProductForm implements OnInit {
   private initForm(): void {
     this.productForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      type: ['', Validators.required],
-      description: ['', [Validators.required, Validators.minLength(10)]],
-      pricePerLiter: [0, [Validators.required, Validators.min(0.01)]],
+      fuelType: ['', Validators.required],
+      pricePerUnit: [0, [Validators.required, Validators.min(0.01)]],
       unit: ['LITERS', Validators.required],
-      isActive: [true],
+      availableStock: [0, [Validators.required, Validators.min(0)]],
+      capacity: [0, [Validators.required, Validators.min(0.01)]],
+      active: [true],
     });
   }
 
-  private loadProduct(productId: string): void {
+  private loadProduct(productId: number): void {
     this.store.loadProductById(productId);
 
-    // Esperar a que el producto se cargue y poblar el formulario
-    setTimeout(() => {
-      const product = this.store.selectedProduct();
-      if (product) {
-        this.productForm.patchValue({
-          name: product.name,
-          type: product.type,
-          description: product.description,
-          pricePerLiter: product.pricePerLiter,
-          unit: product.unit,
-          isActive: product.isActive,
-        });
-      }
-    }, 500);
   }
 
   protected onSubmit(): void {
+    if (this.store.isLoading()) return;
     if (this.productForm.invalid) {
       this.productForm.markAllAsTouched();
       return;
@@ -119,16 +112,21 @@ export class ProductForm implements OnInit {
   }
 
   private createProduct(): void {
+    const providerId = this.iam.providerId();
+    if (providerId === null) return;
     const payload: CreateProductPayload = {
       name: this.productForm.value.name,
-      type: this.productForm.value.type,
-      description: this.productForm.value.description,
-      pricePerLiter: this.productForm.value.pricePerLiter,
+      fuelType: this.productForm.value.fuelType,
+      pricePerUnit: this.productForm.value.pricePerUnit,
       unit: this.productForm.value.unit,
+      availableStock: this.productForm.value.availableStock,
+      capacity: this.productForm.value.capacity,
+      providerId,
+      active: true,
     };
 
     this.store.createProduct(payload, () => {
-      this.router.navigate(['../product-inventory'], { relativeTo: this.route });
+      if (!this.destroyRef.destroyed) void this.router.navigateByUrl('/fuel-products');
     });
   }
 
@@ -137,30 +135,30 @@ export class ProductForm implements OnInit {
 
     const payload: UpdateProductPayload = {
       name: this.productForm.value.name,
-      type: this.productForm.value.type,
-      description: this.productForm.value.description,
-      pricePerLiter: this.productForm.value.pricePerLiter,
+      fuelType: this.productForm.value.fuelType,
+      pricePerUnit: this.productForm.value.pricePerUnit,
       unit: this.productForm.value.unit,
-      isActive: this.productForm.value.isActive,
+      availableStock: this.productForm.value.availableStock,
+      capacity: this.productForm.value.capacity,
+      active: this.productForm.value.active,
     };
 
     this.store.updateProduct(this.productId, payload, () => {
-      this.router.navigate(['../../product-inventory'], { relativeTo: this.route });
+      if (!this.destroyRef.destroyed) void this.router.navigateByUrl('/fuel-products');
     });
   }
 
   protected onCancel(): void {
-    const path = this.isEditMode ? '../../product-inventory' : '../product-inventory';
-    this.router.navigate([path], { relativeTo: this.route });
+    this.router.navigateByUrl('/fuel-products');
   }
 
   protected getErrorMessage(fieldName: string): string {
     const field = this.productForm.get(fieldName);
     if (!field || !field.errors) return '';
 
-    if (field.errors['required']) return 'This field is required';
-    if (field.errors['minlength']) return `Minimum length: ${field.errors['minlength'].requiredLength}`;
-    if (field.errors['min']) return `Minimum value: ${field.errors['min'].min}`;
+    if (field.errors['required']) return this.translate.instant('validation.required');
+    if (field.errors['minlength']) return this.translate.instant('validation.min-length', { n: field.errors['minlength'].requiredLength });
+    if (field.errors['min']) return this.translate.instant('validation.min-value', { n: field.errors['min'].min });
 
     return '';
   }

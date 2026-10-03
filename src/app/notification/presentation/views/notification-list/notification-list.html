@@ -53,14 +53,14 @@
   @if (store.error()) {
     <div class="error-container">
       <mat-icon>error_outline</mat-icon>
-      <p>{{ store.error() }}</p>
+      <p>{{ store.error() | translate }}</p>
     </div>
   }
 
   @if (store.successMsg()) {
     <div class="success-container">
       <mat-icon>check_circle</mat-icon>
-      <p>{{ store.successMsg() }}</p>
+      <p>{{ store.successMsg() | translate }}</p>
     </div>
   }
 
@@ -74,12 +74,14 @@
       @for (notification of store.notificationList(); track trackById($index, notification)) {
         <mat-card
           class="notification-card"
-          [class.unread]="!notification.isRead"
+          [class.unread]="!notification.read"
           [class]="getCategoryClass(notification)"
+          [class.clickable]="linkFor(notification)"
+          (click)="open(notification)"
         >
           <div class="notification-icon">
             <mat-icon>{{ getIconFor(notification) }}</mat-icon>
-            @if (!notification.isRead) {
+            @if (!notification.read) {
               <span class="unread-dot"></span>
             }
           </div>
@@ -94,40 +96,26 @@
               <span class="notification-time">{{ timeAgo(notification.createdAt) }}</span>
             </div>
 
-            <p class="notification-message">{{ notification.message }}</p>
+            <h2 class="notification-message">{{ notification.title }}</h2>
+            <p>{{ notification.message }}</p>
 
-            @if (notification.orderId) {
+            @if (notification.referenceId && referenceLabel(notification); as label) {
               <p class="notification-meta">
                 <mat-icon>tag</mat-icon>
-                {{ 'notification-list.fields.order' | translate }}:
-                <code>{{ notification.orderId }}</code>
+                {{ label | translate }}:
+                <code>{{ notification.referenceId }}</code>
               </p>
             }
           </div>
 
           <div class="notification-actions">
-            <button
-              mat-icon-button
-              (click)="onToggleRead(notification)"
-              [matTooltip]="
-                (notification.isRead
-                  ? 'notification-list.mark-unread-tooltip'
-                  : 'notification-list.mark-read-tooltip'
-                ) | translate
-              "
-            >
+            @if (!notification.read) {
+            <button mat-icon-button (click)="onToggleRead(notification)" [matTooltip]="'notification-list.mark-read-tooltip' | translate">
               <mat-icon>
-                {{ notification.isRead ? 'mark_email_unread' : 'mark_email_read' }}
+                mark_email_read
               </mat-icon>
             </button>
-            <button
-              mat-icon-button
-              color="warn"
-              (click)="onDelete(notification.id)"
-              [matTooltip]="'notification-list.delete-tooltip' | translate"
-            >
-              <mat-icon>close</mat-icon>
-            </button>
+            }
           </div>
         </mat-card>
       }

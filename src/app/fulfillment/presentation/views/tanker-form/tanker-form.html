@@ -1,0 +1,85 @@
+<div class="tanker-form-container">
+  <header class="page-header">
+    <span class="page-kicker"><mat-icon aria-hidden="true">local_shipping</mat-icon>{{ 'tanker-form.fleet' | translate }}</span>
+    <h1>{{ (isEditMode ? 'tanker-form.edit-title' : 'tanker-form.title') | translate }}</h1>
+    <p>{{ (isEditMode ? 'tanker-form.edit-subtitle' : 'tanker-form.subtitle') | translate }}</p>
+  </header>
+
+  @if (error()) {
+    <div class="error-container" role="alert">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <p>{{ error() | translate }}</p>
+      @if (isEditMode && tankerId && !loadedTanker()) {
+        <button mat-button type="button" (click)="loadTanker()" [disabled]="loading()">{{ 'tanker-form.retry' | translate }}</button>
+      }
+    </div>
+  }
+  @if (loading()) {
+    <div class="loading-state" role="status"><mat-spinner diameter="28"></mat-spinner><p>{{ 'tanker-form.loading' | translate }}</p></div>
+  } @else if (!isEditMode || loadedTanker()) {
+    <mat-card class="form-card">
+      <mat-card-content>
+        <form [formGroup]="tankerForm" (ngSubmit)="onSubmit()" [attr.aria-busy]="saving()">
+          <section aria-labelledby="vehicle-title">
+            <div class="section-heading"><span>01</span><div><h2 id="vehicle-title">{{ 'tanker-form.identity-title' | translate }}</h2><p>{{ 'tanker-form.identity-help' | translate }}</p></div></div>
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'tanker-form.fields.license-plate' | translate }}</mat-label>
+              <input matInput formControlName="licensePlate" maxlength="20" [placeholder]="'tanker-form.placeholders.license-plate' | translate" />
+              <mat-icon matPrefix aria-hidden="true">badge</mat-icon>
+              <mat-hint>{{ 'tanker-form.plate-help' | translate }}</mat-hint>
+              <mat-error>{{ getErrorMessage('licensePlate') }}</mat-error>
+            </mat-form-field>
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'tanker-form.fields.brand' | translate }}</mat-label>
+                <input matInput formControlName="brand" maxlength="80" [placeholder]="'tanker-form.placeholders.brand' | translate" />
+                <mat-error>{{ getErrorMessage('brand') }}</mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'tanker-form.fields.model' | translate }}</mat-label>
+                <input matInput formControlName="model" maxlength="80" [placeholder]="'tanker-form.placeholders.model' | translate" />
+                <mat-error>{{ getErrorMessage('model') }}</mat-error>
+              </mat-form-field>
+            </div>
+          </section>
+          <section aria-labelledby="capacity-title">
+            <div class="section-heading"><span>02</span><div><h2 id="capacity-title">{{ 'tanker-form.capacity-title' | translate }}</h2><p>{{ 'tanker-form.capacity-help' | translate }}</p></div></div>
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'tanker-form.fields.capacity' | translate }}</mat-label>
+                <input matInput type="number" step="any" formControlName="capacity" [placeholder]="'tanker-form.placeholders.capacity' | translate" />
+                <mat-icon matPrefix aria-hidden="true">local_gas_station</mat-icon>
+                <mat-error>{{ getErrorMessage('capacity') }}</mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'tanker-form.fields.unit' | translate }}</mat-label>
+                <input matInput formControlName="unit" maxlength="20" list="tanker-units" />
+                <datalist id="tanker-units">@for (unit of units; track unit.value) { <option [value]="unit.value">{{ unit.label | translate }}</option> }</datalist>
+                <mat-hint>{{ 'tanker-form.unit-help' | translate }}</mat-hint>
+                <mat-error>{{ getErrorMessage('unit') }}</mat-error>
+              </mat-form-field>
+            </div>
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'tanker-form.fields.status' | translate }}</mat-label>
+              <mat-select formControlName="status">
+                @for (status of statuses; track status) { <mat-option [value]="status">{{ 'vehicle-status.' + status.toLowerCase() | translate }}</mat-option> }
+              </mat-select>
+              <mat-hint>{{ 'tanker-form.status-help' | translate }}</mat-hint>
+              <mat-error>{{ getErrorMessage('status') }}</mat-error>
+            </mat-form-field>
+          </section>
+          @if (loadedTanker(); as tanker) {
+            <p class="record-note"><mat-icon aria-hidden="true">info_outline</mat-icon>{{ (tanker.active ? 'tanker-form.active-record' : 'tanker-form.inactive-record') | translate }}</p>
+          }
+          <div class="form-actions">
+            <button mat-button type="button" (click)="onCancel()" [disabled]="saving()">{{ 'tanker-form.cancel' | translate }}</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="saving()">
+              @if (saving()) { <mat-spinner diameter="20"></mat-spinner> } @else { <mat-icon aria-hidden="true">{{ isEditMode ? 'save' : 'add' }}</mat-icon> }
+              {{ (saving() ? 'tanker-form.saving' : isEditMode ? 'tanker-form.save' : 'tanker-form.register') | translate }}
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

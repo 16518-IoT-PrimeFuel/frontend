@@ -1,66 +1,45 @@
-<h1 class="title">{{ 'request-list.title' | translate }}</h1>
-
-@if (store.loading()) {
-  <mat-spinner diameter="40"></mat-spinner>
-}
-@if (store.error()) {
-  <mat-error>{{ store.error() }}</mat-error>
-}
-
-
-
-<table mat-table [dataSource]="dataSource()" class="mat-elevation-z8" matSort matSortActive="id" matSortDirection="asc" matSortDisableClear>
-  <ng-container matColumnDef="id">
-    <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'request-list.id' | translate }}</th>
-    <td mat-cell *matCellDef="let request" class="mono">{{ shortId(request.id) }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="productId">
-    <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'request-list.product' | translate }}</th>
-    <td mat-cell *matCellDef="let request">{{ shortId(request.productId) }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="quantity">
-    <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'request-list.quantity' | translate }}</th>
-    <td mat-cell *matCellDef="let request">{{ request.quantity }} {{ request.unit }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="desiredDeliveryDate">
-    <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'request-list.delivery-date' | translate }}</th>
-    <td mat-cell *matCellDef="let request">{{ request.desiredDeliveryDate | date:'mediumDate' }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="status">
-    <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'request-list.status' | translate }}</th>
-    <td mat-cell *matCellDef="let request">
-      <mat-chip-set>
-        <mat-chip [class]="statusClass(request.status)">
-          {{ 'request-status.' + request.status.toLowerCase() | translate }}
-        </mat-chip>
-      </mat-chip-set>
-    </td>
-  </ng-container>
-
-  <ng-container matColumnDef="actions">
-    <th mat-header-cell *matHeaderCellDef>{{ 'request-list.actions' | translate }}</th>
-    <td mat-cell *matCellDef="let request">
-      <button mat-icon-button color="primary"
-              matTooltip="Aceptar"
-              (click)="acceptRequest(request)">
-        <mat-icon>check_circle</mat-icon>
-      </button>
-
-      <button mat-icon-button color="warn"
-              matTooltip="Denegar"
-              (click)="denyRequest(request)">
-        <mat-icon>block</mat-icon>
-      </button>
-    </td>
-  </ng-container>
-
-  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-</table>
-<mat-paginator [pageSizeOptions]="[5,10,20]" showFirstLastButtons></mat-paginator>
-
-<button mat-raised-button color="primary" (click)="navigateToNew()">{{ 'request-list.new' | translate }}</button>
+<section class="inbox" [attr.aria-busy]="store.loading()">
+  <header class="inbox-head">
+    <div><h1>{{ (store.isProvider() ? 'request-list.inbox-title' : 'request-list.title') | translate }}</h1><p>{{ (store.isProvider() ? 'request-list.inbox-subtitle' : 'request-list.buyer-subtitle') | translate }}</p></div>
+    <div class="inbox-head-actions"><button mat-stroked-button type="button" (click)="refresh()" [disabled]="store.loading()"><mat-icon>refresh</mat-icon>{{ 'request-list.refresh' | translate }}</button>@if (!store.isProvider()) { <a mat-flat-button routerLink="/ordering/request-form"><mat-icon>add</mat-icon>{{ 'request-list.new' | translate }}</a> }</div>
+  </header>
+  @if (store.error()) { <div class="inbox-alert error" role="alert"><mat-icon>error_outline</mat-icon><span>{{ 'request-list.load-error' | translate }}</span><button mat-button (click)="refresh()" [disabled]="store.loading()">{{ 'request-list.retry' | translate }}</button></div> }
+  @if (store.notice()) { <div class="inbox-alert" role="status"><mat-icon>check_circle</mat-icon>{{ store.notice() | translate }}</div> }
+  <div class="inbox-toolbar">
+    <label class="inbox-search"><mat-icon aria-hidden="true">search</mat-icon><input type="search" [ngModel]="search()" (ngModelChange)="search.set($event)" [placeholder]="'request-list.search' | translate" [attr.aria-label]="'request-list.search' | translate"></label>
+    <label class="inbox-check"><input type="checkbox" [ngModel]="incompleteOnly()" (ngModelChange)="incompleteOnly.set($event)">{{ 'request-list.incomplete-only' | translate }} <span>{{ incompleteCount() }}</span></label>
+  </div>
+  <div class="inbox-filters" role="group" [attr.aria-label]="'request-list.filter-status' | translate">
+    <button type="button" [attr.aria-pressed]="!status()" (click)="status.set('')">{{ 'request-list.all-statuses' | translate }} <span>{{ store.requests().length }}</span></button>
+    @for (item of counts(); track item.value) { <button type="button" [attr.aria-pressed]="status() === item.value" (click)="status.set(item.value)">{{ 'request-status.' + item.value.toLowerCase() | translate }} <span>{{ item.count }}</span></button> }
+  </div>
+  <p class="inbox-count" role="status">{{ 'request-list.result-count' | translate:{ count: filtered().length, total: store.requests().length } }} @if (store.loading()) { · {{ 'common.loading' | translate }} }</p>
+  @if (store.loading() && !store.requests().length) {
+    <div class="inbox-loading" role="status"><span>{{ 'common.loading' | translate }}</span><div></div><div></div><div></div></div>
+  } @else if (!filtered().length && !store.error()) {
+    <div class="inbox-empty"><mat-icon>{{ store.requests().length ? 'search_off' : 'inbox' }}</mat-icon><h2>{{ (store.requests().length ? 'request-list.no-match' : 'request-list.empty') | translate }}</h2><p>{{ (store.requests().length ? 'request-list.no-match-hint' : store.isProvider() ? 'request-list.empty-inbox-hint' : 'request-list.empty-buyer-hint') | translate }}</p>@if (store.requests().length) { <button mat-stroked-button (click)="clearFilters()">{{ 'request-list.clear' | translate }}</button> } @else if (!store.isProvider()) { <a mat-flat-button routerLink="/ordering/request-form">{{ 'request-list.new' | translate }}</a> }</div>
+  } @else if (filtered().length) {
+    <div class="inbox-table-wrap"><table class="inbox-table"><caption>{{ 'request-list.table-label' | translate }}</caption><thead><tr><th>{{ (store.isProvider() ? 'request-list.customer' : 'request-list.provider') | translate }}</th><th>{{ 'request-list.product' | translate }}</th><th>{{ 'request-list.delivery-date' | translate }}</th><th>{{ 'request-list.status' | translate }}</th><th>{{ 'request-list.information' | translate }}</th><th>{{ 'request-list.actions' | translate }}</th></tr></thead>
+      <tbody>@for (request of filtered(); track request.id) {
+        <tr [class.expanded]="expandedId() === request.id">
+          <td [attr.data-label]="(store.isProvider() ? 'request-list.customer' : 'request-list.provider') | translate"><strong>{{ store.isProvider() ? ('request-list.customer' | translate) + ' #' + (request.customerAccountId || '—') : (store.providerNames()[request.providerId] || ('request-list.provider' | translate) + ' #' + request.providerId) }}</strong><small>{{ 'request-list.reference' | translate }} #{{ request.id }}</small></td>
+          <td [attr.data-label]="'request-list.product' | translate"><strong>{{ store.productNames()[request.fuelProductId] || ('request-list.product' | translate) + ' #' + request.fuelProductId }}</strong><small>{{ request.quantity }} {{ request.unit }} · {{ request.unitPrice != null ? (request.unitPrice | currency:'PEN':'S/':'1.2-2':locale()) : '—' }} / {{ request.unit }}</small></td>
+          <td [attr.data-label]="'request-list.delivery-date' | translate"><strong>{{ missing(request).includes('date') ? '—' : (request.deliveryDate | date:'mediumDate':undefined:locale()) }}</strong><small>{{ request.deliveryAddress || ('request-list.missing.address' | translate) }}</small></td>
+          <td [attr.data-label]="'request-list.status' | translate"><span class="inbox-status st-{{ statusKey(request) }}">{{ 'request-status.' + statusKey(request) | translate }}</span>@if (request.source === 'AUTOMATIC') { <small>{{ 'request-list.automatic' | translate }}</small> }</td>
+          <td [attr.data-label]="'request-list.information' | translate"><span class="info-state" [class.incomplete]="missing(request).length"><mat-icon>{{ missing(request).length ? 'warning_amber' : 'check_circle_outline' }}</mat-icon>{{ (missing(request).length ? 'request-list.incomplete' : 'request-list.complete') | translate }}</span></td>
+          <td [attr.data-label]="'request-list.actions' | translate"><button mat-button type="button" [attr.aria-expanded]="expandedId() === request.id" [attr.aria-controls]="'tracking-' + request.id" (click)="toggleTracking(request.id)">{{ 'request-list.track' | translate }}<mat-icon>{{ expandedId() === request.id ? 'expand_less' : 'expand_more' }}</mat-icon></button></td>
+        </tr>
+        @if (expandedId() === request.id) { <tr class="tracking-row"><td colspan="6"><section class="tracking" [id]="'tracking-' + request.id" [attr.aria-label]="'request-list.track' | translate">
+          <div class="tracking-head"><h2>{{ 'request-list.tracking-title' | translate }} #{{ request.id }}</h2><a mat-button [routerLink]="['/ordering/request-detail', request.id]">{{ 'request-list.details' | translate }}<mat-icon>arrow_forward</mat-icon></a></div>
+          <div class="tracking-state"><mat-icon>{{ request.status === 'PENDING' ? 'schedule' : request.status === 'ACCEPTED' ? 'check_circle_outline' : 'info_outline' }}</mat-icon><div><strong>{{ 'request-status.' + statusKey(request) | translate }}</strong><p>{{ 'request-list.tracking.' + statusKey(request) | translate }}</p>@if (request.rejectionReason) { <p><strong>{{ 'request-list.reason' | translate }}:</strong> {{ request.rejectionReason }}</p> }@if (request.orderId) { <a [routerLink]="['/ordering/order-detail', request.orderId]">{{ 'request-list.follow-order' | translate }} #{{ request.orderId }}</a> }</div></div>
+          @if (missing(request).length) { <div class="inbox-alert warning"><mat-icon>warning_amber</mat-icon><div><strong>{{ 'request-list.missing-title' | translate }}</strong><ul>@for (field of missing(request); track field) { <li>{{ 'request-list.missing.' + field | translate }}</li> }</ul><p>{{ 'request-list.missing-hint' | translate }}</p></div></div> }
+          @if (canDecide(request)) {
+            @if (!decision()) { <div class="tracking-actions"><button mat-flat-button type="button" (click)="prepareDecision('accept')" [disabled]="missing(request).length > 0">{{ 'request-list.accept-by-id' | translate }}</button><button mat-stroked-button type="button" (click)="prepareDecision('reject')">{{ 'request-list.reject-by-id' | translate }}</button></div> }
+            @else { <form class="decision-form" (ngSubmit)="submitDecision(request)"><p>{{ (decision() === 'accept' ? 'request-list.confirm-accept' : 'request-list.confirm-reject') | translate }}</p>@if (decision() === 'reject') { <label>{{ 'request-list.reason' | translate }}<textarea name="reason" [(ngModel)]="rejectionReason" rows="3" maxlength="240" required></textarea><small>{{ rejectionReason.length }} / 240</small></label> }<div class="tracking-actions"><button mat-flat-button type="submit" [disabled]="store.loading() || (decision() === 'accept' ? missing(request).length > 0 : !rejectionReason.trim())">{{ 'request-list.confirm-decision' | translate }}</button><button mat-button type="button" (click)="decision.set(null)">{{ 'confirm.cancel' | translate }}</button></div></form> }
+          }
+          @if (!store.isProvider() && request.status === 'PENDING') { <a mat-stroked-button [routerLink]="['/ordering/request-detail', request.id]">{{ 'request-list.manage-request' | translate }}</a> }
+        </section></td></tr> }
+      }</tbody>
+    </table></div>
+  }
+</section>

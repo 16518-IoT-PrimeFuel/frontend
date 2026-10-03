@@ -12,31 +12,19 @@ export abstract class ErrorHandlingEnabledBaseType {
   /**
    * Handles HTTP errors and returns an observable that throws a typed error.
    * @param operation - A human-readable description of the failed operation.
+   * @param localized - Return translation keys instead of backend text and technical details.
    * @returns A function that takes an HttpErrorResponse and returns an Observable<never>.
    */
-  protected handleError(operation: string) {
+  protected handleError(operation: string, localized = false) {
     return (error: HttpErrorResponse): Observable<never> => {
-      let errorMessage = operation;
+      const body = typeof error.error === 'object' ? error.error : null;
+      const fallback = error.status === 0 ? 'errors.network' : error.status >= 500 ? 'errors.server'
+        : [400, 401, 403, 404, 409, 422].includes(error.status) ? `errors.http-${error.status}` : 'errors.generic';
+      const message = localized || error.status === 0 || error.status >= 500 ? fallback : (body?.message ?? fallback);
+      const details = !localized && error.status < 500 && typeof body?.details === 'string' && body.details !== message ? body.details : '';
+      const errorMessage = details ? `${message}: ${details}` : message;
 
-      if (error.status === 400) {
-        errorMessage = `${operation}: Invalid request data`;
-      } else if (error.status === 401) {
-        errorMessage = `${operation}: Unauthorized. Please sign in again`;
-      } else if (error.status === 403) {
-        errorMessage = `${operation}: Forbidden. Insufficient permissions`;
-      } else if (error.status === 404) {
-        errorMessage = `Resource not found: ${operation}`;
-      } else if (error.status === 409) {
-        errorMessage = `${operation}: Conflict. The resource already exists`;
-      } else if (error.status === 422) {
-        errorMessage = `${operation}: Unprocessable entity. Insufficient data`;
-      } else if (error.error instanceof ErrorEvent) {
-        errorMessage = `${operation}: ${error.error.message}`;
-      } else {
-        errorMessage = `${operation}: ${error.statusText || 'Unexpected server error'}`;
-      }
-
-      console.error(`[FullTank API Error] ${errorMessage}`, error);
+      console.error(`[FullTank API Error] ${operation}: HTTP ${error.status}`);
       return throwError(() => new Error(errorMessage));
     };
   }

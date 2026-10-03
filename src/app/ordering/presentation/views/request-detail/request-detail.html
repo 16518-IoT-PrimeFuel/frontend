@@ -1,0 +1,53 @@
+<header class="dl-head">
+  <h1>{{ 'request-detail.title' | translate }} @if (request()) { #{{ request()!.id }} }</h1>
+  <button mat-stroked-button type="button" [disabled]="loading() || acting() || !!action()" (click)="reload()">{{ 'payment-history.refresh' | translate }}</button>
+</header>
+<a routerLink="/ordering/request-list">{{ 'request-detail.back' | translate }}</a>
+@if (notice()) { <p class="dl-notice" role="status">{{ notice() | translate }}</p> }
+@if (error()) { <p class="dl-error" role="alert">{{ error() | translate }}</p> }
+@if (loading()) { <p role="status">{{ 'common.loading' | translate }}</p> }
+@if (request(); as item) {
+  <section class="request-card" [attr.aria-label]="'request-detail.title' | translate">
+    <div class="status-row"><span class="dl-badge st-{{ item.status.toLowerCase() }}">{{ 'request-status.' + item.status.toLowerCase() | translate }}</span></div>
+    <dl>
+      <div><dt>{{ 'request-list.id' | translate }}</dt><dd>#{{ item.id }}</dd></div>
+      <div><dt>{{ 'request-detail.organization' | translate }}</dt><dd>#{{ item.organizationId }}</dd></div>
+      <div><dt>{{ 'request-detail.customer' | translate }}</dt><dd>#{{ item.customerAccountId }}</dd></div>
+      <div><dt>{{ 'request-detail.tank' | translate }}</dt><dd>{{ item.tankId === null ? '—' : '#' + item.tankId }}</dd></div>
+      <div><dt>{{ 'request-list.provider' | translate }}</dt><dd>{{ store.providerNames()[item.providerId] ?? '#' + item.providerId }}</dd></div>
+      <div><dt>{{ 'request-list.product' | translate }}</dt><dd>{{ store.productNames()[item.fuelProductId] ?? '#' + item.fuelProductId }}</dd></div>
+      <div><dt>{{ 'request-list.quantity' | translate }}</dt><dd>{{ item.quantity | number:'1.0-3':locale() }}</dd></div>
+      <div><dt>{{ 'request-detail.unit' | translate }}</dt><dd>{{ (item.unit === 'LITRE' || item.unit === 'LITERS' ? 'unit.liters' : item.unit === 'GALLON' || item.unit === 'GALLONS' ? 'unit.gallons' : item.unit) | translate }}</dd></div>
+      <div><dt>{{ 'request-list.unit-price' | translate }}</dt><dd>{{ item.unitPrice | currency:'PEN':'S/':'1.2-2':locale() }}</dd></div>
+      <div><dt>{{ 'request-detail.source' | translate }}</dt><dd>{{ (item.source === 'AUTOMATIC' ? 'request-list.automatic' : 'request-detail.manual') | translate }}</dd></div>
+      @if (item.rejectionReason) { <div><dt>{{ 'request-list.rejection-reason' | translate }}</dt><dd>{{ item.rejectionReason }}</dd></div> }
+      <div><dt>{{ 'request-list.order' | translate }}</dt><dd>@if (item.orderId !== null) { <a [routerLink]="['/ordering/order-detail', item.orderId]">#{{ item.orderId }}</a> } @else { — }</dd></div>
+      <div class="wide"><dt>{{ 'request-list.address' | translate }}</dt><dd>{{ item.deliveryAddress || '—' }}</dd></div>
+      <div><dt>{{ 'request-list.delivery-date' | translate }}</dt><dd>{{ item.deliveryDate ? (item.deliveryDate | date:'mediumDate':undefined:locale()) : '—' }}</dd></div>
+      <div><dt>{{ 'request-detail.version' | translate }}</dt><dd>{{ item.version }}</dd></div>
+    </dl>
+    @if (item.status === 'PENDING') {
+      <div class="request-actions">
+        @if (iam.isBuyer()) { <button mat-stroked-button type="button" [disabled]="!canAct('cancel') || !!action()" (click)="confirmAction('cancel')">{{ 'request-list.cancel' | translate }}</button> }
+        @if (iam.isProvider() && iam.providerId() === item.providerId) {
+          <button mat-flat-button type="button" [disabled]="!canAct('accept') || !!action()" (click)="confirmAction('accept')">{{ 'request-detail.accept' | translate }}</button>
+          <button mat-stroked-button type="button" [disabled]="!canAct('reject') || !!action()" (click)="confirmAction('reject')">{{ 'request-detail.reject' | translate }}</button>
+        }
+      </div>
+    }
+    @if (acting()) { <p role="status">{{ 'common.loading' | translate }}</p> }
+  </section>
+}
+<ng-template #confirmation>
+  <h2 mat-dialog-title>{{ 'confirm.title' | translate }}</h2>
+  <mat-dialog-content>
+    <p>{{ 'request-detail.confirm-' + action() | translate }}</p>
+    @if (action() === 'reject') {
+      <label class="reason-label">{{ 'request-list.reason' | translate }}<textarea [(ngModel)]="rejectionReason" rows="3" required></textarea></label>
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" [mat-dialog-close]="false">{{ 'confirm.cancel' | translate }}</button>
+    <button mat-flat-button type="button" [disabled]="action() === 'reject' && !rejectionReason.trim()" [mat-dialog-close]="true">{{ 'confirm.confirm' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>

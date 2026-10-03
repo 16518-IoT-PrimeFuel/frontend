@@ -1,0 +1,57 @@
+<main class="iam-page">
+  <form #registerForm="ngForm" class="iam-card" (ngSubmit)="submit(registerForm)" [attr.aria-busy]="submitting()">
+    <h1>{{ (role === 'BUYER' ? 'auth.register.buyer-title' : 'auth.register.provider-title') | translate }}</h1>
+    <label>{{ 'auth.username' | translate }}
+      <input #emailField="ngModel" name="username" type="email" email [(ngModel)]="username" (ngModelChange)="error.set('')" required maxlength="100" autocomplete="email" [attr.aria-invalid]="emailField.invalid && emailField.touched" aria-describedby="register-email-hint register-email-error">
+      <small id="register-email-hint" class="iam-hint"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg>{{ 'auth.register.email-hint' | translate }}</small>
+      <small id="register-email-error" class="iam-error" aria-live="polite">@if (emailField.invalid && emailField.touched) { {{ (emailField.hasError('required') ? 'auth.validation.email-required' : emailField.hasError('maxlength') ? 'auth.validation.email-length' : 'auth.validation.email-invalid') | translate }} }</small>
+    </label>
+    <label>{{ 'auth.password' | translate }}
+      <span class="iam-password">
+        <input #passwordField="ngModel" name="password" [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" (ngModelChange)="error.set('')" required pattern=".*\S.*" minlength="8" maxlength="120" autocomplete="new-password" [attr.aria-invalid]="passwordField.invalid && passwordField.touched" aria-describedby="register-password-hint register-password-error">
+        <button type="button" class="iam-password-toggle" (click)="showPassword.set(!showPassword())" [attr.aria-pressed]="showPassword()" [attr.aria-label]="(showPassword() ? 'auth.hide-password' : 'auth.show-password') | translate" [attr.title]="(showPassword() ? 'auth.hide-password' : 'auth.show-password') | translate">
+          @if (showPassword()) {
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+          } @else {
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          }
+        </button>
+      </span>
+      <small id="register-password-hint" class="iam-hint"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>{{ 'auth.register.password-hint' | translate }}</small>
+      <small id="register-password-error" class="iam-error" aria-live="polite">@if (passwordField.invalid && passwordField.touched) { {{ (passwordField.hasError('required') || passwordField.hasError('pattern') ? 'auth.validation.password-required' : 'auth.validation.password-length') | translate }} }</small>
+    </label>
+    <label>{{ 'auth.company' | translate }}
+      <input #companyField="ngModel" name="name" [(ngModel)]="name" (ngModelChange)="error.set('')" required pattern=".*\S.*" [attr.aria-invalid]="companyField.invalid && companyField.touched" aria-describedby="register-company-error">
+      <small id="register-company-error" class="iam-error" aria-live="polite">@if (companyField.invalid && companyField.touched) { {{ 'auth.validation.company-required' | translate }} }</small>
+    </label>
+    <label>{{ 'auth.ruc' | translate }}
+      <input #rucField="ngModel" name="ruc" [(ngModel)]="ruc" (ngModelChange)="error.set('')" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11" [attr.aria-invalid]="rucField.invalid && rucField.touched" aria-describedby="register-ruc-hint register-ruc-error">
+      <small id="register-ruc-hint" class="iam-hint"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v2"/></svg>{{ 'auth.register.ruc-hint' | translate }}</small>
+      <small id="register-ruc-error" class="iam-error" aria-live="polite">@if (rucField.invalid && rucField.touched) { {{ (rucField.hasError('required') ? 'auth.validation.ruc-required' : 'auth.validation.ruc-invalid') | translate }} }</small>
+    </label>
+    <label>{{ 'auth.address' | translate }}
+      <input #addressField="ngModel" name="address" [(ngModel)]="address" (ngModelChange)="error.set('')" required pattern=".*\S.*" [attr.aria-invalid]="addressField.invalid && addressField.touched" aria-describedby="register-address-error">
+      <small id="register-address-error" class="iam-error" aria-live="polite">@if (addressField.invalid && addressField.touched) { {{ 'auth.validation.address-required' | translate }} }</small>
+    </label>
+    <label>{{ 'auth.phone' | translate }}
+      <input #phoneField="ngModel" name="phone" [(ngModel)]="phone" (ngModelChange)="error.set('')" required type="tel" pattern="[+]?[0-9() .-]*[0-9][0-9() .-]*" autocomplete="tel" [attr.aria-invalid]="phoneField.invalid && phoneField.touched" aria-describedby="register-phone-error">
+      <small id="register-phone-error" class="iam-error" aria-live="polite">@if (phoneField.invalid && phoneField.touched) { {{ (phoneField.hasError('required') ? 'auth.validation.phone-required' : 'auth.validation.phone-invalid') | translate }} }</small>
+    </label>
+    @if (role === 'BUYER') {
+      <label>{{ 'auth.sector' | translate }}
+        <input #sectorField="ngModel" name="sector" [(ngModel)]="sector" (ngModelChange)="error.set('')" required pattern=".*\S.*" [attr.aria-invalid]="sectorField.invalid && sectorField.touched" aria-describedby="register-sector-error">
+        <small id="register-sector-error" class="iam-error" aria-live="polite">@if (sectorField.invalid && sectorField.touched) { {{ 'auth.validation.sector-required' | translate }} }</small>
+      </label>
+    } @else {
+      <div class="iam-field" role="group" [attr.aria-label]="'auth.fuel-types' | translate">
+        <span>{{ 'auth.fuel-types' | translate }}</span>
+        <div class="dl-chips">@for (type of fuelTypeOptions; track type) { <button type="button" class="dl-chip" [attr.aria-pressed]="fuelTypes.includes(type)" (click)="toggleFuelType(type)">{{ 'fuel-type.' + type.toLowerCase() | translate }}</button> }</div>
+        @if (!fuelTypes.length) { <p class="iam-error" role="alert">{{ 'auth.fuel-types-required' | translate }}</p> }
+      </div>
+      <label>{{ 'auth.description' | translate }}<textarea name="description" [(ngModel)]="description"></textarea></label>
+    }
+    @if (error()) { <p class="iam-error" role="alert">{{ error() | translate }}</p> }
+    <button type="submit" [disabled]="submitting()">{{ 'auth.register.submit' | translate }}</button>
+    <a routerLink="/login" [queryParams]="returnUrl ? { returnUrl } : {}">{{ 'auth.login.link' | translate }}</a>
+  </form>
+</main>

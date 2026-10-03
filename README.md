@@ -17,7 +17,7 @@ The current implementation includes bounded contexts for fulfillment, inventory,
 - RxJS
 - @ngx-translate/core (for internationalization)
 - Chart.js
-- JSON Server
+- Spring Boot backend
 
 ## Project Structure (DDD-Oriented)
 ```text
@@ -99,24 +99,23 @@ Provides reusable infrastructure and presentation utilities.
 ### Prerequisites
 - Node.js + npm installed (use versions compatible with Angular 21).
 
-### 1) Install dependencies
+### 1) Start the backend
+
+Start the Spring Boot backend from `../backend` on port `8080`. Configure the
+required `AUTHORIZATION_JWT_SECRET` and `DATABASE_PASSWORD` environment
+variables as described by the backend, then wait for it to finish starting.
+
+### 2) Install frontend dependencies
 ```bash
 npm install
 ```
 
-### 2) Start the Angular app
+### 3) Start the Angular app
 ```bash
-ng serve
+npm start
 ```
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-### 3) Start the JSON Server (for mock data)
-```bash
-npm run server
-```
-
-This starts the JSON Server on port 3000 with the data from `server/db.json`.
 
 ### 4) Build for production
 ```bash
@@ -135,11 +134,8 @@ Environment files included:
 - `src/environments/environment.development.ts`
 - `src/environments/environment.ts`
 
-Main variables:
-- `serverBasePath` (base API URL, e.g., 'https://json-server-y51j.onrender.com')
-- Endpoint paths for IAM, Inventory, Ordering, Fulfillment, Payment, Notification, Reporting.
-
-Tip: In development, it uses the JSON Server; in production, external APIs.
+The development API base is `http://localhost:8080/api`. Production uses the
+backend URL configured in `src/environments/environment.ts`.
 
 ## Routing Notes
 - Routes are organized by bounded context under `/fulfillment`, `/inventory`, etc.
@@ -147,10 +143,8 @@ Tip: In development, it uses the JSON Server; in production, external APIs.
 - Supports localization with i18n files in `public/i18n/`.
 
 ## API and Data Notes
-- Uses JSON Server for local mock data (`server/db.json`).
-- External API endpoints for various services.
-- Firebase integration for additional services.
-- Chart.js for data visualization in reporting.
+- The frontend uses the Spring Boot backend for API data.
+- Chart.js is used for data visualization in reporting.
 
 ## Recommended Development Practices
 - Keep each feature inside its bounded context first; move to `shared` only when truly cross-context.

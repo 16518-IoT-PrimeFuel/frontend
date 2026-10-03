@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -19,6 +20,7 @@ import { FulfillmentStore } from '../../../application/fulfillment.store';
   selector: 'app-driver-list',
   standalone: true,
   imports: [
+    MatDialogModule,
     CommonModule,
     MatTableModule,
     MatButtonModule,
@@ -33,10 +35,12 @@ import { FulfillmentStore } from '../../../application/fulfillment.store';
   styleUrl: './driver-list.css',
 })
 export class DriverList implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly dialog = inject(MatDialog);
+  @ViewChild('confirmDialog') private confirmDialog!: TemplateRef<unknown>;
   protected readonly store = inject(FulfillmentStore);
 
-  // TODO: Reemplazar con providerId real de IAM cuando se implemente
-  private readonly TEMP_PROVIDER_ID = '1';
+
 
   protected readonly displayedColumns: string[] = [
     'fullName',
@@ -48,23 +52,38 @@ export class DriverList implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.store.loadDriversByProvider(this.TEMP_PROVIDER_ID);
+    this.store.loadDrivers();
   }
 
   protected onRefresh(): void {
-    this.store.loadDriversByProvider(this.TEMP_PROVIDER_ID);
+    this.store.loadDrivers();
   }
 
   protected onShowAvailable(): void {
-    this.store.loadAvailableDrivers(this.TEMP_PROVIDER_ID);
+    this.store.loadAvailableDrivers();
   }
 
   protected onShowAll(): void {
-    this.store.loadDriversByProvider(this.TEMP_PROVIDER_ID);
+    this.store.loadDrivers();
   }
 
-  protected onDelete(driverId: string): void {
-    this.store.deleteDriver(driverId);
+  protected onToggleActive(driverId: number, active: boolean): void {
+    const apply = () => this.store.updateDriverStatus(driverId, { status: active ? 'INACTIVE' : 'AVAILABLE' });
+    if (active) this.dialog.open(this.confirmDialog).afterClosed().subscribe((ok) => ok && apply());
+    else apply();
+  }
+
+  protected onEligibility(id: number): void {
+    this.store.checkDriverEligibility(id, this.destroyRef);
+  }
+
+  protected eligibilityKey(outcome: string): string {
+    if (outcome === 'BUSY') return 'eligibility.driver-busy';
+    return ['ELIGIBLE', 'INELIGIBLE'].includes(outcome) ? `eligibility.outcomes.${outcome}` : '';
+  }
+
+  protected eligibilityClass(outcome: string): string {
+    return ['ELIGIBLE', 'BUSY', 'INELIGIBLE'].includes(outcome) ? outcome.toLowerCase() : 'unknown';
   }
 
   protected getStatusClass(status: string): string {

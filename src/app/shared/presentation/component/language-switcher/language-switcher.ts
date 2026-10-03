@@ -27,6 +27,7 @@ export class LanguageSwitcher {
 
   useLanguage(language: string): void {
     this.translate.use(language);
+    try { localStorage.setItem('fulltank.lang', language); } catch { /* sin almacenamiento */ }
     this.currentLang = language;
   }
 }

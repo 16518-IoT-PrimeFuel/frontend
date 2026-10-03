@@ -9,7 +9,7 @@
   <mat-spinner diameter="40"></mat-spinner>
 }
 @if (store.error()) {
-  <mat-error>{{ store.error() }}</mat-error>
+  <mat-error>{{ store.error() | translate }}</mat-error>
 }
 
 @if (order(); as o) {
@@ -27,76 +27,114 @@
       <div class="grid">
         <div class="item">
           <label>{{ 'order-detail.request-id' | translate }}</label>
-          <span>{{ o.requestId }}</span>
+          <span>{{ o.requestId ?? '—' }}</span>
         </div>
         <div class="item">
           <label>{{ 'order-detail.client' | translate }}</label>
-          <span>{{ o.clientId }}</span>
+          <span>{{ companyName() ?? o.companyId }}</span>
         </div>
         <div class="item">
           <label>{{ 'order-detail.provider' | translate }}</label>
-          <span>{{ o.providerId }}</span>
+          <span>{{ store.providerNames()[o.providerId] ?? o.providerId }}</span>
         </div>
         <div class="item">
           <label>{{ 'order-detail.product' | translate }}</label>
-          <span>{{ o.productId }}</span>
+          <span>{{ store.productNames()[o.fuelProductId] ?? o.fuelProductId }}</span>
         </div>
         <div class="item">
           <label>{{ 'order-detail.quantity' | translate }}</label>
-          <span class="strong">{{ o.quantity }} {{ o.unit }}</span>
+          <span class="strong">{{ o.requestedQuantity }}</span>
         </div>
         <div class="item">
           <label>{{ 'order-detail.total' | translate }}</label>
-          <span class="strong">S/ {{ o.totalAmount | number:'1.2-2' }}</span>
+          <span class="strong">S/ {{ o.totalPrice | number:'1.2-2' }}</span>
         </div>
         <div class="item full">
           <label>{{ 'order-detail.address' | translate }}</label>
           <span>{{ o.deliveryAddress }}</span>
         </div>
-        <div class="item">
-          <label>{{ 'order-detail.created-at' | translate }}</label>
-          <span>{{ o.createdAt | date:'medium' }}</span>
-        </div>
-        @if (o.dispatchedAt) {
-          <div class="item">
-            <label>{{ 'order-detail.dispatched-at' | translate }}</label>
-            <span>{{ o.dispatchedAt | date:'medium' }}</span>
-          </div>
-        }
-        @if (o.deliveredAt) {
-          <div class="item">
-            <label>{{ 'order-detail.delivered-at' | translate }}</label>
-            <span>{{ o.deliveredAt | date:'medium' }}</span>
-          </div>
-        }
-        @if (o.closedAt) {
-          <div class="item">
-            <label>{{ 'order-detail.closed-at' | translate }}</label>
-            <span>{{ o.closedAt | date:'medium' }}</span>
-          </div>
-        }
+        @if (o.scheduledDate) { <div class="item"><label>{{ 'order-detail.scheduled-date' | translate }}</label><span>{{ o.scheduledDate | date:'mediumDate' }}</span></div> }
       </div>
 
       <div class="actions">
-        @if (o.status === 'CREATED') {
-          <button mat-raised-button color="primary" (click)="dispatch(o)">
-            <mat-icon>local_shipping</mat-icon>
-            {{ 'order-detail.dispatch' | translate }}
-          </button>
-        }
-        @if (o.status === 'DISPATCHED') {
-          <button mat-raised-button color="primary" (click)="confirmDelivery(o)">
-            <mat-icon>done_all</mat-icon>
-            {{ 'order-detail.confirm-delivery' | translate }}
-          </button>
-        }
-        @if (o.status === 'DELIVERED') {
-          <button mat-raised-button color="accent" (click)="closeOrder(o)">
-            <mat-icon>archive</mat-icon>
-            {{ 'order-detail.close' | translate }}
-          </button>
-        }
+        @if (isBuyer && o.status === 'PENDING') { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="confirm(o.id)">{{ 'order-detail.confirm' | translate }}</button> }
+        @if (!isBuyer && (o.status === 'PENDING' || o.status === 'CONFIRMED')) { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="openAssignment()">{{ 'fulfillment.assign' | translate }}</button> }
+        @if (o.status === 'PENDING' || o.status === 'CONFIRMED') { <button mat-button color="warn" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="cancelOrder(o.id)">{{ 'order-detail.cancel' | translate }}</button> }
       </div>
+      @if (['PENDING_PAYMENT', 'PAID', 'IN_PROGRESS', 'DELIVERED'].includes(o.status)) {
+        <section class="payment">
+          <h3>{{ 'order-detail.payment' | translate }}</h3>
+          @if (paymentLoading()) { <mat-spinner diameter="28"></mat-spinner> }
+          @if (payment(); as p) {
+            <p>{{ 'order-detail.payment-status' | translate }}: {{ 'payment-status.' + p.status.toLowerCase() | translate }}</p>
+            <p>{{ 'order-detail.payment-method' | translate }}: {{ 'order-detail.method-' + p.paymentMethod.toLowerCase() | translate }}</p>
+            <p>{{ 'order-detail.payment-amount' | translate }}: {{ p.amount | currency:'PEN':'S/':'1.2-2' }}</p>
+            @if (p.paidAt) { <p>{{ 'order-detail.paid-at' | translate }}: {{ p.paidAt | date:'medium' }}</p> }
+            @if (p.transactionReference) { <p>{{ 'order-detail.transaction-reference' | translate }}: {{ p.transactionReference }}</p> }
+            @if (isBuyer && p.status === 'PENDING') {
+              <label>{{ 'order-detail.transaction-reference' | translate }} <input [(ngModel)]="transactionReference" required></label>
+              <button mat-raised-button color="primary" [disabled]="paying() || !transactionReference.trim()" (click)="completePayment(o.id)">{{ 'order-detail.complete-payment' | translate }}</button>
+            }
+          } @else if (!paymentLoading() && isBuyer && o.status === 'PENDING_PAYMENT') {
+            <label>{{ 'order-detail.payment-method' | translate }}
+              <select [(ngModel)]="paymentMethod">
+                <option value="BANK_TRANSFER">{{ 'order-detail.method-bank_transfer' | translate }}</option>
+                <option value="CREDIT_CARD">{{ 'order-detail.method-credit_card' | translate }}</option>
+                <option value="DEBIT_CARD">{{ 'order-detail.method-debit_card' | translate }}</option>
+                <option value="CASH">{{ 'order-detail.method-cash' | translate }}</option>
+              </select>
+            </label>
+            <button mat-raised-button color="primary" [disabled]="paying() || paymentReadError() || store.loading()" (click)="pay(o)">{{ 'order-detail.submit-payment' | translate }}</button>
+          }
+          @if (paymentError) { <p class="error">{{ paymentError | translate }}</p> }
+          @if (paymentReadError()) { <button mat-stroked-button type="button" [disabled]="paying() || paymentLoading() || store.loading()" (click)="retryPayment()">{{ 'analytics.retry' | translate }}</button> }
+        </section>
+      }
+      @if (assigning()) {
+        <section class="assignment">
+          <h3>{{ 'fulfillment.assign' | translate }}</h3>
+          @if (resourcesLoading()) { <p role="status">{{ 'fulfillment.assignment.loading' | translate }}</p> }
+          @if (resourcesError()) { <p class="error" role="alert">{{ 'fulfillment.assignment.resources-error' | translate }} <button mat-button type="button" (click)="loadAssignmentResources()">{{ 'analytics.retry' | translate }}</button></p> }
+          @if (!assignmentReview()) {
+          @if (recommendationLoading()) {
+            <p role="status">{{ 'fulfillment.recommendation.loading' | translate }}</p>
+          } @else if (recommendationError()) {
+            <p class="error" role="alert">{{ recommendationError()! | translate }}</p>
+          } @else if (recommendation(); as rec) {
+            @if (rec.recommended) {
+              <div class="recommendation">
+                <strong>{{ 'fulfillment.recommendation.title' | translate }}</strong>
+                <p>{{ rec.driverName }} · {{ rec.licensePlate }} ({{ rec.tankerCapacityLitres | number }} L / {{ rec.requestedVolumeLitres | number }} L)</p>
+                <p class="hint">{{ 'fulfillment.recommendation.criterion' | translate }}</p>
+                <button mat-stroked-button type="button" (click)="useRecommendation()">{{ 'fulfillment.recommendation.use' | translate }}</button>
+              </div>
+            } @else {
+              <p class="error" role="status">{{ 'fulfillment.recommendation.reason.' + rec.reason | translate }}</p>
+            }
+          }
+          <label>{{ 'fulfillment.driver' | translate }} <select [(ngModel)]="driverId"><option [ngValue]="null">—</option>@for (driver of drivers(); track driver.id) { <option [ngValue]="driver.id">{{ driver.firstName }} {{ driver.lastName }}</option> }</select></label>
+          <label>{{ 'fulfillment.tanker' | translate }} <select [(ngModel)]="tankerId"><option [ngValue]="null">—</option>@for (tanker of tankers(); track tanker.id) { <option [ngValue]="tanker.id" [disabled]="!!tankerBlockReason(tanker)">{{ tanker.licensePlate }} · {{ tanker.capacity }} {{ tanker.unit }}@if (tankerBlockReason(tanker); as reason) { · {{ reason | translate }} }</option> }</select></label>
+          <label>{{ 'fulfillment.window-start' | translate }} <input type="datetime-local" required [(ngModel)]="windowStart" (ngModelChange)="onWindowChange()"></label>
+          <label>{{ 'fulfillment.window-end' | translate }} <input type="datetime-local" required [(ngModel)]="windowEnd" (ngModelChange)="onWindowChange()"></label>
+          @if (windowStart && windowEnd && windowStart >= windowEnd) { <p class="error" role="alert">{{ 'fulfillment.assignment.invalid-window' | translate }}</p> }
+          @if (!resourcesLoading() && !resourcesError() && !drivers().length) { <p role="status">{{ 'fulfillment.assignment.no-drivers' | translate }}</p> }
+          @if (requiredLitres() !== null) { <p>{{ 'fulfillment.assignment.required-volume' | translate }}: {{ requiredLitres() | number:'1.0-3' }} L</p> }
+          <button mat-raised-button type="button" color="primary" [disabled]="!assignmentValid" (click)="reviewAssignment()">{{ 'fulfillment.assignment.review' | translate }}</button>
+          } @else {
+            <div class="assignment-summary" role="region" [attr.aria-label]="'fulfillment.assignment.summary' | translate">
+              <h4>{{ 'fulfillment.assignment.summary' | translate }}</h4>
+              <p>{{ 'fulfillment.order' | translate }} #{{ o.id }} · {{ o.deliveryAddress }}</p>
+              <p>{{ selectedDriver?.firstName }} {{ selectedDriver?.lastName }} · {{ selectedTanker?.licensePlate }}</p>
+              <p>{{ 'fulfillment.assignment.required-volume' | translate }}: {{ requiredLitres() | number:'1.0-3' }} L · {{ selectedTanker?.capacity }} {{ selectedTanker?.unit }}</p>
+              <p>{{ windowStart | date:'dd/MM/yyyy HH:mm' }} → {{ windowEnd | date:'dd/MM/yyyy HH:mm' }}</p>
+              <p>{{ 'fulfillment.assignment.revalidate' | translate }}</p>
+              <button mat-button type="button" [disabled]="assignmentSubmitting()" (click)="editAssignment()">{{ 'fulfillment.assignment.edit' | translate }}</button>
+              <button mat-raised-button type="button" color="primary" [disabled]="assignmentSubmitting() || !assignmentValid" (click)="assign(o.id)">{{ (assignmentSubmitting() ? 'fulfillment.assignment.submitting' : 'fulfillment.submit-assignment') | translate }}</button>
+            </div>
+          }
+          @if (assignmentError) { <p class="error">{{ assignmentError | translate }}</p> }
+        </section>
+      }
     </mat-card-content>
   </mat-card>
 } @else if (!store.loading()) {

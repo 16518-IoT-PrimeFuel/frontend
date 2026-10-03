@@ -1,1 +1,75 @@
 /* You can add global styles to this file, and also import other style files */
+/* Initial authentication screens */
+.iam-page { min-height: 75vh; display: grid; place-items: center; padding: 24px; }
+.iam-card { box-sizing: border-box; width: min(100%, 440px); display: grid; gap: 16px; padding: 28px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px #00000012; }
+.iam-card h1 { margin: 0; }
+.iam-card label { display: grid; gap: 6px; font-weight: 500; }
+.iam-card input, .iam-card textarea { box-sizing: border-box; width: 100%; padding: 10px 12px; border: 1px solid #b8c0cc; border-radius: 6px; font: inherit; }
+.iam-card button { min-height: 42px; border: 0; border-radius: 6px; background: #1e3a8a; color: white; font: inherit; cursor: pointer; }
+.iam-card a { color: #1e3a8a; }
+.iam-subtitle { margin: 4px 0 0; color: #4b5563; }
+.iam-note { margin: 0; padding: 10px 12px; border-radius: 6px; background: #eef2ff; color: #1e3a8a; }
+.iam-field { display: grid; gap: 8px; }
+.iam-hint { display: flex; align-items: flex-start; gap: 6px; color: #4b5563; font-size: 0.8rem; font-weight: 400; line-height: 1.5; }
+.iam-hint svg { flex-shrink: 0; margin-top: 2px; }
+.iam-forgot { justify-self: end; font-size: 0.9rem; }
+.iam-card input[aria-invalid="true"] { border-color: #a32121; }
+.iam-card button:disabled { opacity: 0.7; cursor: progress; }
+.iam-alt { display: grid; gap: 8px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+.iam-alt span { color: #4b5563; font-size: 0.9rem; }
+.iam-password { position: relative; display: block; }
+.iam-password input { padding-right: 44px; }
+.iam-card .iam-password-toggle { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); display: grid; place-items: center; width: 36px; height: 36px; min-height: 0; padding: 0; background: transparent; color: #4b5563; }
+.iam-card .iam-password-toggle:hover { color: #1e3a8a; }
+.iam-card .iam-password-toggle:focus-visible { outline: 2px solid #1e3a8a; outline-offset: 2px; }
+.iam-error { margin: 0; color: #a32121; }
+.iam-error:empty { display: none; }
+
+/* Listados de órdenes y solicitudes */
+.dl-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 16px; margin: 16px 0; }
+.dl-head h1 { margin: 0; color: #1f2d3d; text-wrap: balance; }
+.dl-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-bottom: 16px; }
+.dl-search { width: min(100%, 240px); }
+.dl-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.dl-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px; border: 1px solid #b8c0cc; border-radius: 999px; background: #fff; color: #243447; font: inherit; font-size: 0.875rem; cursor: pointer; transition: background-color 0.15s ease-out, border-color 0.15s ease-out; }
+.dl-chip span { color: #4b5563; font-variant-numeric: tabular-nums; }
+.dl-chip:hover { background: #eef2ff; }
+.dl-chip[aria-pressed="true"] { border-color: #1e3a8a; background: #1e3a8a; color: #fff; }
+.dl-chip[aria-pressed="true"] span { color: #dbe4ff; }
+.dl-chip:focus-visible, .dl-table a:focus-visible, .dl-link:focus-visible { outline: 2px solid #1e3a8a; outline-offset: 2px; }
+.dl-table { width: 100%; border-collapse: separate; border-spacing: 0; overflow: hidden; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.dl-wrap { container-type: inline-size; overflow-x: auto; }
+.dl-table th { padding: 12px 12px; border-bottom: 1px solid #e5e7eb; background: #f7f8fb; color: #4b5563; font-size: 0.8125rem; font-weight: 600; text-align: left; }
+.dl-table td { padding: 14px 12px; border-bottom: 1px solid #eef0f4; color: #1f2d3d; vertical-align: middle; }
+.dl-table tbody tr:last-child td { border-bottom: 0; }
+.dl-table .nw { white-space: nowrap; }
+.dl-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.dl-table th.num { text-align: right; }
+.dl-table tr.link { cursor: pointer; }
+.dl-table tr.link:hover td { background: #f5f7ff; }
+.dl-table a { color: #1e3a8a; font-weight: 600; text-decoration: none; }
+.dl-table a:hover { text-decoration: underline; }
+.dl-table small { display: block; margin-top: 4px; color: #4b5563; }
+.dl-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; background: #eceff1; color: #37474f; font-size: 0.8125rem; font-weight: 500; white-space: nowrap; }
+.dl-badge.st-pending, .dl-badge.st-created, .dl-badge.st-pending_payment, .dl-badge.st-pending_approval { background: #fff1d6; color: #7a4100; }
+.dl-badge.st-confirmed, .dl-badge.st-dispatched, .dl-badge.st-in_progress { background: #e6edff; color: #1e3a8a; }
+.dl-badge.st-paid, .dl-badge.st-delivered, .dl-badge.st-accepted, .dl-badge.st-approved { background: #dff3e6; color: #14532d; }
+.dl-badge.st-cancelled, .dl-badge.st-rejected { background: #fde8e8; color: #8a1c1c; }
+.dl-empty { display: grid; justify-items: center; gap: 12px; padding: 40px 16px; border: 1px dashed #b8c0cc; border-radius: 12px; background: #fff; color: #4b5563; text-align: center; }
+.dl-empty p { margin: 0; }
+.dl-error { margin: 0 0 16px; padding: 10px 12px; border-radius: 6px; background: #fde8e8; color: #8a1c1c; }
+.dl-notice { margin: 0 0 16px; padding: 10px 12px; border-radius: 6px; background: #dff3e6; color: #14532d; }
+@container (max-width: 900px) {
+  .dl-table, .dl-table tbody, .dl-table tr, .dl-table td { display: block; }
+  .dl-table { border: 0; background: transparent; }
+  .dl-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .dl-table tr { margin-bottom: 12px; padding: 6px 4px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+  .dl-table td, .dl-table .num { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 6px 12px; border: 0; text-align: right; }
+  .dl-table td:empty { display: none; }
+  .dl-table td::before { content: attr(data-label); color: #4b5563; font-size: 0.8125rem; text-align: left; }
+  .dl-table tr.link:hover td { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) { .dl-chip { transition: none; } }
+.iam-card .dl-chip { min-height: 36px; border: 1px solid #b8c0cc; background: #fff; color: #243447; }
+.iam-card .dl-chip:hover { background: #eef2ff; }
+.iam-card .dl-chip[aria-pressed="true"] { border-color: #1e3a8a; background: #1e3a8a; color: #fff; }

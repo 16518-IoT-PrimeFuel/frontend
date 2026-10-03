@@ -1,0 +1,224 @@
+<header class="head">
+  <span class="avatar" aria-hidden="true"><mat-icon>person</mat-icon></span>
+  <div class="who">
+    <h1 class="title">{{ 'profile.title' | translate }}</h1>
+    @if (user()) { <p class="sub">{{ user()!.username }}</p> }
+  </div>
+</header>
+
+<div class="panel">
+<section class="body">
+  @if (loading()) {
+    <div class="skeleton" aria-busy="true" [attr.aria-label]="'profile.loading' | translate"><span></span><span></span><span></span></div>
+  } @else {
+    <mat-tab-group animationDuration="150ms" [selectedIndex]="tab()" (selectedIndexChange)="tab.set($event)">
+      <mat-tab [label]="'profile.tab-account' | translate">
+        @if (!user()) { <p class="error" role="alert">{{ error() | translate }}</p> } @else {
+        <dl class="account">
+          <div><dt>{{ 'profile.username' | translate }}</dt><dd>{{ user()!.username }}</dd></div>
+          <div><dt>{{ 'profile.roles' | translate }}</dt><dd class="roles">@for (r of user()!.roles; track r) { <span class="chip">{{ role(r) }}</span> }</dd></div>
+        </dl>
+        }
+      </mat-tab>
+      <mat-tab [label]="'profile.tab-company' | translate">
+        @if (companyLoading()) { <p role="status">{{ 'profile.loading' | translate }}</p> }
+        @else if (companyError()) { <p class="error" role="alert">{{ companyError() | translate }}</p> }
+        @else {
+        <form id="companyForm" #companyForm="ngForm" class="grid" (ngSubmit)="save()">
+@if (isBuyer) {
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.company' | translate }}</mat-label>
+            <input matInput name="name" #name="ngModel" [(ngModel)]="buyer.name" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'auth.ruc' | translate }}</mat-label>
+            <input matInput name="ruc" #ruc="ngModel" [(ngModel)]="buyer.ruc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11">
+            @if (ruc.errors?.['pattern']) { <mat-error>{{ 'profile.ruc-invalid' | translate }}</mat-error> } @else { <mat-error>{{ 'validation.required' | translate }}</mat-error> }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'auth.sector' | translate }}</mat-label>
+            <input matInput name="sector" #sector="ngModel" [(ngModel)]="buyer.sector" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.address' | translate }}</mat-label>
+            <input matInput name="address" #address="ngModel" [(ngModel)]="buyer.address" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'profile.contact-email' | translate }}</mat-label>
+            <input matInput name="contactEmail" #contactEmail="ngModel" [(ngModel)]="buyer.contactEmail" required type="email" email>
+            @if (contactEmail.errors?.['email']) { <mat-error>{{ 'validation.email' | translate }}</mat-error> } @else { <mat-error>{{ 'validation.required' | translate }}</mat-error> }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'auth.phone' | translate }}</mat-label>
+            <input matInput name="phone" #phone="ngModel" [(ngModel)]="buyer.phone" required type="tel">
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+} @else {
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.company' | translate }}</mat-label>
+            <input matInput name="name" #name="ngModel" [(ngModel)]="provider.name" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'auth.ruc' | translate }}</mat-label>
+            <input matInput name="ruc" #ruc="ngModel" [(ngModel)]="provider.ruc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11">
+            @if (ruc.errors?.['pattern']) { <mat-error>{{ 'profile.ruc-invalid' | translate }}</mat-error> } @else { <mat-error>{{ 'validation.required' | translate }}</mat-error> }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ 'auth.phone' | translate }}</mat-label>
+            <input matInput name="phone" #phone="ngModel" [(ngModel)]="provider.phone" required type="tel">
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.address' | translate }}</mat-label>
+            <input matInput name="address" #address="ngModel" [(ngModel)]="provider.address" required>
+            <mat-error>{{ 'validation.required' | translate }}</mat-error>
+          </mat-form-field>
+          <div class="full" role="group" [attr.aria-label]="'auth.fuel-types' | translate">
+            <span class="fuel-label">{{ 'auth.fuel-types' | translate }}</span>
+            <div class="dl-chips">@for (type of fuelTypeOptions; track type) { <button type="button" class="dl-chip" [attr.aria-pressed]="fuelTypes.includes(type)" (click)="toggleFuelType(type)">{{ 'fuel-type.' + type.toLowerCase() | translate }}</button> }</div>
+            @if (!fuelTypes.length) { <p class="error" role="alert">{{ 'auth.fuel-types-required' | translate }}</p> }
+          </div>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'profile.rating' | translate }}</mat-label>
+            <input matInput name="rating" [value]="provider.rating ?? '—'" readonly>
+            <mat-hint>{{ 'profile.rating-readonly' | translate }}</mat-hint>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>{{ 'auth.description' | translate }}</mat-label>
+            <textarea matInput rows="3" name="description" [(ngModel)]="provider.description"></textarea>
+          </mat-form-field>
+}
+        </form>
+        }
+      </mat-tab>
+      <mat-tab [label]="'profile.tab-organizations' | translate">
+        <section class="invitations" [attr.aria-label]="'onboarding.title' | translate">
+          <h2>{{ 'onboarding.title' | translate }}</h2>
+          <p class="invitation-help">{{ 'onboarding.help' | translate }}</p>
+          <form #onboardingForm="ngForm" class="grid invitation-form" (ngSubmit)="createOrganization(onboardingForm)">
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>{{ 'onboarding.name' | translate }}</mat-label>
+              <input matInput name="name" [(ngModel)]="onboardingName" required maxlength="150" [disabled]="onboarding() || onboardingRefreshing() || onboardingRefreshError()" autocomplete="organization">
+              <mat-error>{{ 'validation.required' | translate }}</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'onboarding.ruc' | translate }}</mat-label>
+              <input matInput name="ruc" [(ngModel)]="onboardingRuc" required maxlength="11" [disabled]="onboarding() || onboardingRefreshing() || onboardingRefreshError()" autocomplete="off">
+              <mat-error>{{ 'validation.required' | translate }}</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'onboarding.type' | translate }}</mat-label>
+              <mat-select name="type" [(ngModel)]="onboardingType" required [disabled]="onboarding() || onboardingRefreshing() || onboardingRefreshError()">
+                <mat-option value="CUSTOMER">{{ 'onboarding.type-customer' | translate }}</mat-option>
+                <mat-option value="DISTRIBUTOR">{{ 'onboarding.type-distributor' | translate }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <button mat-flat-button class="full" type="submit" [disabled]="onboardingForm.invalid || !onboardingName.trim() || !onboardingRuc.trim() || onboarding() || onboardingRefreshing() || onboardingRefreshError()" [attr.aria-busy]="onboarding() || onboardingRefreshing()">{{ (onboarding() ? 'onboarding.creating' : 'onboarding.create') | translate }}</button>
+          </form>
+          @if (createdOrganization()) { <p class="ok invitation-feedback" role="status">{{ 'onboarding.created' | translate }} · {{ createdOrganization()!.name }}</p> }
+          @if (onboardingError()) { <p class="error invitation-feedback" role="alert">{{ onboardingError() | translate }}</p> }
+          @if (onboardingRefreshError()) {
+            <p class="error invitation-feedback" role="alert">{{ 'onboarding.refresh-error' | translate }}</p>
+            <button mat-stroked-button type="button" [disabled]="onboardingRefreshing()" (click)="refreshCreatedOrganizations()">{{ 'onboarding.retry-refresh' | translate }}</button>
+          }
+        </section>
+        @if (organizationsError()) { <p class="error" role="alert">{{ organizationsError() | translate }}</p> }
+        @else if (organizations().length) {
+          <ul class="orgs">@for (org of organizations(); track org.id) { <li><span class="org-name">{{ org.name }}</span><span class="chip">{{ (org.type === 'CUSTOMER' ? 'onboarding.type-customer' : 'onboarding.type-distributor') | translate }}</span><span class="chip">{{ 'invitations.role-' + org.role.toLowerCase() | translate }}</span></li> }</ul>
+          <section class="invitations" [attr.aria-label]="'invitations.title' | translate">
+            <h2>{{ 'invitations.title' | translate }}</h2>
+            @if (organizations().length > 1) {
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'onboarding.context' | translate }}</mat-label>
+                <mat-select [value]="invitationOrganizationId()" (selectionChange)="selectInvitationOrganization($event.value)" [disabled]="inviting() || revokingId() !== null || !!selectedInvitation()">
+                  @for (org of organizations(); track org.id) { <mat-option [value]="org.id">{{ org.name }}</mat-option> }
+                </mat-select>
+              </mat-form-field>
+              <p class="invitation-help">{{ 'onboarding.context-hint' | translate }}</p>
+            } @else { <p class="invitation-context">{{ 'onboarding.context' | translate }}: {{ invitationOrganization()?.name }}</p><p class="invitation-help">{{ 'onboarding.context-hint' | translate }}</p> }
+            <p class="invitation-help">{{ 'invitations.no-email' | translate }}</p>
+            <form #invitationForm="ngForm" class="grid invitation-form" (ngSubmit)="inviteMember(invitationForm)">
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'invitations.email' | translate }}</mat-label>
+                <input matInput name="email" #email="ngModel" [(ngModel)]="invitationEmail" (ngModelChange)="clearInvitationMessages()" type="email" email required maxlength="150" [disabled]="inviting() || revokingId() !== null" autocomplete="email">
+                @if (email.errors?.['email']) { <mat-error>{{ 'validation.email' | translate }}</mat-error> } @else { <mat-error>{{ 'validation.required' | translate }}</mat-error> }
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'invitations.role' | translate }}</mat-label>
+                <mat-select name="role" [(ngModel)]="invitationRole" (ngModelChange)="clearInvitationMessages()" required [disabled]="inviting() || revokingId() !== null">
+                  @for (role of membershipRoles; track role) { <mat-option [value]="role">{{ 'invitations.role-' + role.toLowerCase() | translate }}</mat-option> }
+                </mat-select>
+              </mat-form-field>
+              <button mat-flat-button class="full" type="submit" [disabled]="invitationForm.invalid || inviting() || revokingId() !== null" [attr.aria-busy]="inviting()">{{ (inviting() ? 'invitations.creating' : 'invitations.create') | translate }}</button>
+            </form>
+            @if (invitationError()) { <p class="error invitation-feedback" role="alert">{{ invitationError() | translate }}</p> }
+            @if (invitationNotice()) { <p class="ok invitation-feedback" role="status">{{ invitationNotice() | translate }}</p> }
+            <h3>{{ 'invitations.session-title' | translate }}</h3>
+            <p class="invitation-help">{{ 'invitations.session-hint' | translate }}</p>
+            @if (visibleInvitations().length) {
+              <p class="invitation-help">{{ 'invitations.scroll-hint' | translate }}</p>
+              <div class="invitation-table-wrap" role="region" tabindex="0" [attr.aria-label]="'invitations.session-title' | translate">
+                <table class="invitation-table">
+                  <thead><tr>
+                    <th scope="col">{{ 'invitations.email' | translate }}</th>
+                    <th scope="col">{{ 'invitations.role' | translate }}</th>
+                    <th scope="col">{{ 'invitations.status' | translate }}</th>
+                    <th scope="col">{{ 'invitations.expires' | translate }}</th>
+                    <th scope="col">{{ 'invitations.token' | translate }}</th>
+                    <th scope="col">{{ 'invitations.actions' | translate }}</th>
+                  </tr></thead>
+                  <tbody>@for (invitation of visibleInvitations(); track invitation.id) {
+                    <tr>
+                      <td>{{ invitation.email }}</td>
+                      <td>{{ 'invitations.role-' + invitation.role.toLowerCase() | translate }}</td>
+                      <td><span class="chip status-{{ invitation.status.toLowerCase() }}">{{ 'invitations.status-' + invitation.status.toLowerCase() | translate }}</span></td>
+                      <td>{{ invitation.expiresAt ? (invitation.expiresAt | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+                      <td>
+                        @if (invitation.status === 'PENDING' && invitation.token) {
+                          <label>{{ 'invitations.token' | translate }}
+                            <input [type]="revealedInvitationId() === invitation.id ? 'text' : 'password'" [value]="invitation.token" readonly autocomplete="off" [attr.aria-label]="'invitations.token' | translate">
+                          </label>
+                          <button mat-button type="button" (click)="revealedInvitationId.set(revealedInvitationId() === invitation.id ? null : invitation.id)">{{ (revealedInvitationId() === invitation.id ? 'invitations.hide-token' : 'invitations.show-token') | translate }}</button>
+                          <button mat-stroked-button type="button" [disabled]="copyingInvitationId() !== null" (click)="copyInvitationLink(invitation)">{{ 'invitations.copy-link' | translate }}</button>
+                        } @else { — }
+                      </td>
+                      <td>@if (invitation.status === 'PENDING') { <button mat-stroked-button type="button" [disabled]="inviting() || revokingId() !== null || !!selectedInvitation()" (click)="requestRevoke(invitation)">{{ (revokingId() === invitation.id ? 'invitations.revoking' : 'invitations.revoke') | translate }}</button> }</td>
+                    </tr>
+                  }</tbody>
+                </table>
+              </div>
+            } @else { <p class="invitation-help">{{ 'invitations.empty' | translate }}</p> }
+          </section>
+        } @else { <div class="empty"><mat-icon aria-hidden="true">apartment</mat-icon><p>{{ 'profile.no-organizations' | translate }}</p></div> }
+      </mat-tab>
+    </mat-tab-group>
+  }
+</section>
+
+@if (user() && tab() === 1) {
+<footer class="foot">
+  <p class="status" aria-live="polite">
+    @if (error() && user()) { <span class="error" role="alert">{{ error() | translate }}</span> }
+    @else if (saved()) { <span class="ok">{{ 'profile.saved' | translate }}</span> }
+  </p>
+  <button mat-flat-button type="button" [disabled]="!canSave" (click)="save()">{{ (saving() ? 'profile.saving' : 'profile.save') | translate }}</button>
+</footer>
+}
+</div>
+
+<ng-template #revokeDialog>
+  <h2 mat-dialog-title>{{ 'invitations.revoke-title' | translate }}</h2>
+  <mat-dialog-content>
+    <p class="revoke-email">{{ selectedInvitation()?.email }}</p>
+    <p>{{ invitationOrganization()?.name }}</p>
+    <p>{{ 'invitations.revoke-confirmation' | translate }}</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [mat-dialog-close]="false">{{ 'confirm.cancel' | translate }}</button>
+    <button mat-flat-button [mat-dialog-close]="true">{{ 'invitations.revoke' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>

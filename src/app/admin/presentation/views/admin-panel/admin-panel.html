@@ -1,0 +1,97 @@
+<h1 class="title">{{ 'admin.title' | translate }}</h1>
+@if (store.loading()) { <p>{{ 'common.loading' | translate }}</p> }
+@if (store.error()) { <p class="error" role="alert">{{ store.error() | translate }}</p> }
+@if (store.notice()) { <p class="notice" role="status">{{ store.notice() | translate }}</p> }
+
+<mat-tab-group>
+  <mat-tab [label]="'admin.users.tab' | translate">
+    <div class="filters">
+      <mat-form-field appearance="outline"><mat-label>{{ 'admin.users.search' | translate }}</mat-label><input matInput [ngModel]="search()" (ngModelChange)="search.set($event)"></mat-form-field>
+    </div>
+    <div class="table-wrap">
+      <table mat-table [dataSource]="users()">
+        <ng-container matColumnDef="id"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.id' | translate }}</th><td mat-cell *matCellDef="let u">{{ u.id }}</td></ng-container>
+        <ng-container matColumnDef="username"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.username' | translate }}</th><td mat-cell *matCellDef="let u">{{ u.username }}</td></ng-container>
+        <ng-container matColumnDef="roles"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.roles' | translate }}</th><td mat-cell *matCellDef="let u">{{ u.roles.join(', ') }}</td></ng-container>
+        <ng-container matColumnDef="company"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.company' | translate }}</th><td mat-cell *matCellDef="let u">{{ u.companyId ?? '—' }}</td></ng-container>
+        <ng-container matColumnDef="provider"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.provider' | translate }}</th><td mat-cell *matCellDef="let u">{{ u.providerId ?? '—' }}</td></ng-container>
+        <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.actions' | translate }}</th><td mat-cell *matCellDef="let u">
+          @if (isAdmin(u)) { {{ 'admin.users.is-admin' | translate }} } @else { <button mat-button (click)="askPromote(u)">{{ 'admin.users.promote' | translate }}</button> }
+        </td></ng-container>
+        <tr mat-header-row *matHeaderRowDef="userColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: userColumns"></tr>
+      </table>
+    </div>
+    @if (!users().length && !store.loading()) { <p class="empty">{{ 'admin.users.empty' | translate }}</p> }
+  </mat-tab>
+
+  <mat-tab [label]="'admin.metrics.tab' | translate">
+    <div class="filters">
+      <mat-form-field appearance="outline"><mat-label>{{ 'admin.metrics.version' | translate }}</mat-label><mat-select [ngModel]="version()" (ngModelChange)="setVersion($event)"><mat-option value="v1">v1</mat-option><mat-option value="v2">v2</mat-option></mat-select></mat-form-field>
+    </div>
+    <div class="table-wrap">
+      <table mat-table [dataSource]="store.metrics()">
+        <ng-container matColumnDef="routeKey"><th mat-header-cell *matHeaderCellDef>{{ 'admin.metrics.route' | translate }}</th><td mat-cell *matCellDef="let m" class="mono">{{ m.routeKey }}</td></ng-container>
+        <ng-container matColumnDef="handler"><th mat-header-cell *matHeaderCellDef>{{ 'admin.metrics.handler' | translate }}</th><td mat-cell *matCellDef="let m" class="mono">{{ m.handler }}</td></ng-container>
+        <ng-container matColumnDef="count"><th mat-header-cell *matHeaderCellDef>{{ 'admin.metrics.count' | translate }}</th><td mat-cell *matCellDef="let m">{{ m.count }}</td></ng-container>
+        <ng-container matColumnDef="lastSeen"><th mat-header-cell *matHeaderCellDef>{{ 'admin.metrics.last-seen' | translate }}</th><td mat-cell *matCellDef="let m">{{ m.lastSeen ? (m.lastSeen | date:'medium') : '—' }}</td></ng-container>
+        <ng-container matColumnDef="distinctCallers"><th mat-header-cell *matHeaderCellDef>{{ 'admin.metrics.callers' | translate }}</th><td mat-cell *matCellDef="let m">{{ m.distinctCallers }}</td></ng-container>
+        <tr mat-header-row *matHeaderRowDef="metricColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: metricColumns"></tr>
+      </table>
+    </div>
+    @if (!store.metrics().length && !store.loading()) { <p class="empty">{{ 'admin.metrics.empty' | translate }}</p> }
+  </mat-tab>
+
+  <mat-tab [label]="'admin.payments.tab' | translate">
+    <div class="filters">
+      <mat-form-field appearance="outline"><mat-label>{{ 'admin.payments.status' | translate }}</mat-label><mat-select [ngModel]="paymentStatus()" (ngModelChange)="paymentStatus.set($event)"><mat-option value="">{{ 'admin.payments.all' | translate }}</mat-option>@for (s of statuses(); track s) { <mat-option [value]="s">{{ s }}</mat-option> }</mat-select></mat-form-field>
+    </div>
+    <div class="table-wrap">
+      <table mat-table [dataSource]="payments()">
+        <ng-container matColumnDef="id"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.id' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.id }}</td></ng-container>
+        <ng-container matColumnDef="orderId"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.order' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.orderId }}</td></ng-container>
+        <ng-container matColumnDef="companyId"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.company' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.companyId }}</td></ng-container>
+        <ng-container matColumnDef="amount"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.amount' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.amount | currency:'PEN':'symbol':'1.2-2' }}</td></ng-container>
+        <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.status' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.status }}</td></ng-container>
+        <ng-container matColumnDef="paymentMethod"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.method' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.paymentMethod }}</td></ng-container>
+        <ng-container matColumnDef="transactionReference"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.reference' | translate }}</th><td mat-cell *matCellDef="let p" class="mono">{{ p.transactionReference ?? '—' }}</td></ng-container>
+        <ng-container matColumnDef="paidAt"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.paid-at' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.paidAt ? (p.paidAt | date:'medium') : '—' }}</td></ng-container>
+        <tr mat-header-row *matHeaderRowDef="paymentColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: paymentColumns"></tr>
+      </table>
+    </div>
+    @if (!payments().length && !store.loading()) { <p class="empty">{{ 'admin.payments.empty' | translate }}</p> }
+  </mat-tab>
+
+  <mat-tab [label]="'admin.evidence.tab' | translate">
+    <div class="filters">
+      <mat-form-field appearance="outline"><mat-label>{{ 'admin.evidence.delivery-id' | translate }}</mat-label><input matInput inputmode="numeric" [ngModel]="deliveryId()" (ngModelChange)="deliveryId.set($event)"></mat-form-field>
+      <div class="actions">
+        <button mat-raised-button color="primary" [disabled]="!validDelivery() || store.loading()" (click)="export()">{{ 'admin.evidence.export' | translate }}</button>
+        <button mat-button color="warn" [disabled]="!validDelivery() || store.loading()" (click)="askDelete()">{{ 'admin.evidence.delete' | translate }}</button>
+      </div>
+    </div>
+  </mat-tab>
+</mat-tab-group>
+
+<ng-template #promoteDialog>
+  <h2 mat-dialog-title>{{ 'admin.users.confirm-title' | translate:{ username: candidate()?.username } }}</h2>
+  <mat-dialog-content>{{ 'admin.users.confirm-message' | translate }}</mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [mat-dialog-close]="false">{{ 'admin.cancel' | translate }}</button>
+    <button mat-raised-button color="primary" [mat-dialog-close]="true">{{ 'admin.users.promote' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>
+
+<ng-template #deleteDialog>
+  <h2 mat-dialog-title>{{ 'admin.evidence.confirm-title' | translate:{ id: deliveryId().trim() } }}</h2>
+  <mat-dialog-content>
+    <p>{{ 'admin.evidence.confirm-message' | translate }}</p>
+    <mat-form-field appearance="outline"><mat-label>{{ 'admin.evidence.delivery-id' | translate }}</mat-label><input matInput [ngModel]="confirmId()" (ngModelChange)="confirmId.set($event)"></mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [mat-dialog-close]="false">{{ 'admin.cancel' | translate }}</button>
+    <button mat-raised-button color="warn" [disabled]="confirmId().trim() !== deliveryId().trim()" [mat-dialog-close]="true">{{ 'admin.evidence.confirm-delete' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>

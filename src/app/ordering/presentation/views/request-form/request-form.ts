@@ -1,106 +1,84 @@
-import { Component, inject } from '@angular/core';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { OrderingStore } from '../../../application/ordering.store';
-import { Request } from '../../../domain/model/request.entity';
+import { Component, inject, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { MatError, MatFormField, MatInput, MatLabel } from '@angular/material/input';
 import { MatButton } from '@angular/material/button';
+import { MatError, MatFormField, MatInput, MatLabel } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
-import { MatDatepicker, MatDatepickerInput, MatDatepickerToggle } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
+import { OrderingApi } from '../../../infrastructure/ordering-api';
+import { OrderingStore } from '../../../application/ordering.store';
+import { EquipmentApi, apiError } from '../../../../equipment/infrastructure/equipment.api';
+import { EquipmentStore } from '../../../../equipment/application/equipment.store';
+import { Site, Tank } from '../../../../equipment/domain/model/equipment.entity';
+import { FuelProduct } from '../../../../inventory/domain/model/fuel-product.entity';
 
-@Component({
-  selector: 'app-request-form',
-  imports: [
-    TranslatePipe,
-    ReactiveFormsModule,
-    MatFormField, MatLabel, MatError, MatInput,
-    MatButton,
-    MatSelect, MatOption,
-    MatDatepicker, MatDatepickerInput, MatDatepickerToggle,
-    MatNativeDateModule,
-  ],
-  templateUrl: './request-form.html',
-  styleUrl: './request-form.css',
-})
+@Component({ selector: 'app-request-form', providers: [OrderingStore], imports: [TranslatePipe, ReactiveFormsModule, MatFormField, MatLabel, MatError, MatInput, MatButton, MatSelect, MatOption], templateUrl: './request-form.html', styleUrl: './request-form.css' })
 export class RequestForm {
-  private fb     = inject(FormBuilder);
-  private route  = inject(ActivatedRoute);
-  private router = inject(Router);
+  private readonly fb = inject(FormBuilder);
+  private readonly api = inject(OrderingApi);
+  private readonly equipmentApi = inject(EquipmentApi);
+  private readonly equipment = inject(EquipmentStore);
+  private readonly router = inject(Router);
   readonly store = inject(OrderingStore);
-
-  form = this.fb.group({
-    clientId:            new FormControl<string>('',   { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
-    providerId:          new FormControl<string>('',   { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
-    productId:           new FormControl<string>('',   { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
-    quantity:            new FormControl<number | null>(null, { validators: [Validators.required, Validators.min(1)] }),
-    unit:                new FormControl<string>('LITERS', { nonNullable: true, validators: [Validators.required] }),
-    desiredDeliveryDate: new FormControl<Date | null>(null, { validators: [Validators.required] }),
-    deliveryAddress:     new FormControl<string>('',   { nonNullable: true, validators: [Validators.required, Validators.minLength(10)] }),
-  });
-
-  isEdit     = false;
-  requestId: string | null = null;
-  readonly minDate = new Date();
-
-  readonly units = [
-    { value: 'LITERS',  label: 'unit.liters'  },
-    { value: 'GALLONS', label: 'unit.gallons' },
-  ];
+  /** Cuenta interna de la organización activa, resuelta desde la identidad; el comprador no la elige. */
+  readonly customerAccountId = signal<number | null>(null);
+  readonly loadError = signal('');
+  readonly tanks = signal<Tank[]>([]);
+  readonly sites = signal<Site[]>([]);
+  readonly providers = signal<{id: number; name: string}[]>([]);
+  readonly products = signal<FuelProduct[]>([]);
+  readonly productsLoading = signal(false);
+  readonly productError = signal('');
+  readonly catalogAlert = signal('');
+  private productsRequest?: Subscription;
+  readonly minDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  readonly form = this.fb.nonNullable.group({ siteId: [0], tankId: [0], providerId: [0, Validators.min(1)], fuelProductId: [0, Validators.min(1)], quantity: [1, [Validators.required, Validators.min(1)]], unit: ['LITERS', Validators.required], deliveryDate: [this.minDate, Validators.required], deliveryAddress: ['', [Validators.required, Validators.maxLength(255)]] });
 
   constructor() {
-    this.route.params.subscribe(params => {
-      this.requestId = params['id'] ?? null;
-      this.isEdit    = !!this.requestId;
-      if (this.isEdit && this.requestId) {
-        const request = this.store.getRequestById(this.requestId)();
-        if (request) {
-          this.form.patchValue({
-            clientId:            request.clientId,
-            providerId:          request.providerId,
-            productId:           request.productId,
-            quantity:            request.quantity,
-            unit:                request.unit,
-            desiredDeliveryDate: request.desiredDeliveryDate ? new Date(request.desiredDeliveryDate) : null,
-            deliveryAddress:     request.deliveryAddress,
+    this.equipment.resolveCustomer().subscribe({
+      next: customer => {
+        this.customerAccountId.set(customer.id);
+        this.api.tanks().subscribe(values => this.tanks.set(values.filter(t => t.customerAccountId === customer.id)));
+        this.equipmentApi.sites(customer.id).subscribe(values => this.sites.set(values));
+      },
+      error: e => this.loadError.set(apiError(e)),
+    });
+    this.api.providers().subscribe({ next: values => this.providers.set(values), error: () => this.loadError.set('request-form.providers-error') });
+  }
+  /** La solicitud no lleva sede: elegirla solo rellena la dirección, que sigue siendo editable. */
+  onSiteChange(): void {
+    const address = this.sites().find(s => s.id === this.form.controls.siteId.value)?.address;
+    if (address) this.form.controls.deliveryAddress.setValue(address.slice(0, 255));
+  }
+  onProviderChange(): void {
+    this.productsRequest?.unsubscribe();
+    const id = this.form.controls.providerId.value;
+    this.form.controls.fuelProductId.setValue(0); this.products.set([]);
+    this.productError.set(''); this.catalogAlert.set(''); this.productsLoading.set(!!id);
+    if (id) this.productsRequest = this.api.products(id).subscribe({
+      next: values => {
+        this.productsLoading.set(false);
+        this.products.set(values.filter(product => product.active !== false));
+        if (!this.products().length) {
+          this.productError.set('request-form.no-products');
+          this.api.alertEmptyCatalog(id).subscribe({
+            next: () => { if (this.form.controls.providerId.value === id) this.catalogAlert.set('request-form.provider-notified'); },
+            error: () => { if (this.form.controls.providerId.value === id) this.catalogAlert.set('request-form.notification-error'); },
           });
         }
-      }
+      },
+      error: () => { this.productsLoading.set(false); this.productError.set('request-form.products-error'); },
     });
   }
-
-  submit() {
-    if (this.form.invalid) return;
-
-    const now     = new Date().toISOString();
-    const dateVal = this.form.value.desiredDeliveryDate;
-    const desired = dateVal instanceof Date ? dateVal.toISOString() : new Date(dateVal!).toISOString();
-
-    const request = new Request({
-      id:                  this.requestId ?? '',
-      clientId:            this.form.value.clientId!,
-      providerId:          this.form.value.providerId!,
-      productId:           this.form.value.productId!,
-      quantity:            this.form.value.quantity!,
-      unit:                this.form.value.unit!,
-      desiredDeliveryDate: desired,
-      deliveryAddress:     this.form.value.deliveryAddress!,
-      status:              'PENDING_APPROVAL',
-      rejectionReason:     null,
-      createdAt:           now,
-      updatedAt:           now,
-    });
-
-    if (this.isEdit) {
-      this.store.updateRequest(request);
-    } else {
-      this.store.addRequest(request);
-    }
-    this.router.navigate(['/ordering/request-list']).then();
+  ngOnDestroy(): void { this.productsRequest?.unsubscribe(); }
+  submit(): void {
+    this.form.markAllAsTouched();
+    const customerAccountId = this.customerAccountId();
+    if (this.form.invalid || customerAccountId === null || this.productsLoading() || this.productError()
+      || !this.products().some(product => product.id === this.form.controls.fuelProductId.value)) return;
+    const { siteId, tankId, providerId, fuelProductId, ...details } = this.form.getRawValue();
+    this.store.createRequest({ ...details, customerAccountId, tankId: tankId || null, providerId, fuelProductId }, () => this.router.navigate(['/ordering/request-list']).then());
   }
-
-  cancel() {
-    this.router.navigate(['/ordering/request-list']).then();
-  }
+  cancel(): void { this.router.navigate(['/ordering/request-list']).then(); }
 }

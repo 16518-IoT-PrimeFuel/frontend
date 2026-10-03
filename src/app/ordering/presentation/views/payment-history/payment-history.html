@@ -1,0 +1,66 @@
+<header class="dl-head">
+  <h1>{{ 'payment-history.title' | translate }}</h1>
+  <button mat-stroked-button type="button" [disabled]="store.loading() || store.refundingId() !== null" (click)="store.loadPayments()">{{ 'payment-history.refresh' | translate }}</button>
+</header>
+<div class="dl-toolbar">
+  <div class="dl-chips" role="group" [attr.aria-label]="'order-list.filter-status' | translate">
+    <button type="button" class="dl-chip" [attr.aria-pressed]="!status()" (click)="status.set('')">{{ 'payment-history.all' | translate }}</button>
+    @for (value of statuses; track value) {
+      <button type="button" class="dl-chip" [attr.aria-pressed]="status() === value" (click)="status.set(value)">{{ 'payment-status.' + value.toLowerCase() | translate }}</button>
+    }
+  </div>
+</div>
+@if (store.notice()) { <p class="dl-notice" role="status">{{ store.notice() | translate }}</p> }
+@if (store.refundError()) { <p class="dl-error" role="alert">{{ store.refundError() | translate }}</p> }
+@if (store.loading()) {
+  <p role="status">{{ 'common.loading' | translate }}</p>
+} @else if (store.error()) {
+  <p class="dl-error" role="alert">{{ store.error() | translate }}</p>
+} @else if (!filtered().length) {
+  <div class="dl-empty"><p>{{ (store.payments().length ? 'payment-history.no-match' : 'payment-history.empty') | translate }}</p></div>
+} @else {
+  <p class="scroll-hint">{{ 'payment-history.scroll-hint' | translate }}</p>
+  <div class="payment-wrap" role="region" tabindex="0" [attr.aria-label]="'payment-history.table-label' | translate">
+    <table class="payment-table">
+      <thead><tr>
+        <th scope="col">{{ 'fulfillment.order' | translate }}</th>
+        <th scope="col" class="num">{{ 'order-detail.payment-amount' | translate }}</th>
+        <th scope="col">{{ 'order-detail.payment-status' | translate }}</th>
+        <th scope="col">{{ 'order-detail.payment-method' | translate }}</th>
+        <th scope="col">{{ 'order-detail.paid-at' | translate }}</th>
+        <th scope="col">{{ 'order-detail.transaction-reference' | translate }}</th>
+        <th scope="col">{{ 'payment-history.actions' | translate }}</th>
+      </tr></thead>
+      <tbody>@for (payment of filtered(); track payment.id) {
+        <tr>
+          <td><a [routerLink]="['/ordering/order-detail', payment.orderId]">#{{ payment.orderId }}</a></td>
+          <td class="num amount">{{ payment.amount | currency:'PEN':'S/':'1.2-2' }}</td>
+          <td><span class="dl-badge st-{{ payment.status.toLowerCase() }}">{{ 'payment-status.' + payment.status.toLowerCase() | translate }}</span></td>
+          <td>{{ 'order-detail.method-' + payment.paymentMethod.toLowerCase() | translate }}</td>
+          <td>{{ payment.paidAt ? (payment.paidAt | date:'dd/MM/yyyy HH:mm') : ('payment-history.no-date' | translate) }}</td>
+          <td class="reference">{{ payment.transactionReference || '—' }}</td>
+          <td class="refund-action">
+            @if (payment.status === 'COMPLETED') {
+              <button mat-stroked-button type="button" [disabled]="store.refundingId() !== null" [attr.aria-busy]="store.refundingId() === payment.id" (click)="requestRefund(payment)">
+                @if (store.refundingId() === payment.id) { <mat-spinner [diameter]="16" aria-hidden="true"></mat-spinner> }
+                {{ (store.refundingId() === payment.id ? 'payment-history.refunding' : 'payment-history.refund') | translate }}
+              </button>
+            }
+          </td>
+        </tr>
+      }</tbody>
+    </table>
+  </div>
+}
+
+<ng-template #confirmDialog>
+  <h2 mat-dialog-title>{{ 'payment-history.refund' | translate }}</h2>
+  <mat-dialog-content>
+    <p>{{ 'fulfillment.order' | translate }} #{{ selectedPayment()?.orderId }} · {{ selectedPayment()?.amount | currency:'PEN':'S/':'1.2-2' }}</p>
+    <p>{{ 'payment-history.refund-confirmation' | translate }}</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button [mat-dialog-close]="false">{{ 'confirm.cancel' | translate }}</button>
+    <button mat-flat-button [mat-dialog-close]="true">{{ 'confirm.confirm' | translate }}</button>
+  </mat-dialog-actions>
+</ng-template>
