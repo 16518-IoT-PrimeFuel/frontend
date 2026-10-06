@@ -1,0 +1,11 @@
+<h2 mat-dialog-title>{{ data.titleKey | translate }}</h2>
+<mat-dialog-content>
+  <p>{{ data.messageKey | translate }}</p>
+  @if (data.reason; as field) {
+    <label class="reason-label">{{ field.labelKey | translate }}<textarea [(ngModel)]="reason" rows="3" [required]="!!field.required" [attr.maxlength]="field.maxLength ?? null"></textarea></label>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [mat-dialog-close]="false">{{ 'confirm.cancel' | translate }}</button>
+  <button mat-flat-button type="button" [disabled]="!!data.reason?.required && !reason.trim()" (click)="confirm()">{{ (data.confirmKey ?? 'confirm.confirm') | translate }}</button>
+</mat-dialog-actions>
