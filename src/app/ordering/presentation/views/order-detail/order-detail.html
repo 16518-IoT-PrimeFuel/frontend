@@ -11,6 +11,7 @@
 @if (store.error()) {
   <mat-error>{{ store.error() | translate }}</mat-error>
 }
+@if (store.notice()) { <p class="notice" role="status">{{ store.notice() | translate }}</p> }
 
 @if (order(); as o) {
   <mat-card class="detail-card">
@@ -132,7 +133,7 @@
               <button mat-raised-button type="button" color="primary" [disabled]="assignmentSubmitting() || !assignmentValid" (click)="assign(o.id)">{{ (assignmentSubmitting() ? 'fulfillment.assignment.submitting' : 'fulfillment.submit-assignment') | translate }}</button>
             </div>
           }
-          @if (assignmentError) { <p class="error">{{ assignmentError | translate }}</p> }
+          @if (assignmentError) { <p class="error" role="alert">{{ assignmentError | translate }}</p> }
         </section>
       }
     </mat-card-content>

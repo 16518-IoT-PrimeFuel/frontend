@@ -97,4 +97,26 @@ describe('ProviderPayments', () => {
     view.requestRefund(payment);
     expect(view.actionError()).toBe('provider-payments.refund-conflict');
   });
+
+  it('keeps confirm active and shows the reference error under the field instead of closing', async () => {
+    const { fixture, view } = setup();
+    const complete = vi.fn(() => of(payment));
+    (api as any).completePayment = complete;
+    fixture.detectChanges();
+    view.requestComplete({ ...payment, status: 'PENDING' });
+    await fixture.whenStable();
+    const dialog = document.querySelector('mat-dialog-container')!;
+    const confirm = dialog.querySelector<HTMLButtonElement>('mat-dialog-actions button:last-child')!;
+    expect(confirm.disabled).toBe(false);
+    expect(dialog.querySelector('[role="alert"]')).toBeNull();
+    confirm.click();
+    await fixture.whenStable();
+    expect(dialog.querySelector('[role="alert"]')!.textContent).toContain('provider-payments.reference-required');
+    expect(document.querySelector('mat-dialog-container')).not.toBeNull();
+    expect(complete).not.toHaveBeenCalled();
+    const close = vi.fn();
+    view.reference.setValue(' TX-9 ');
+    view.submitReference({ close });
+    expect(close).toHaveBeenCalledExactlyOnceWith(true);
+  });
 });
