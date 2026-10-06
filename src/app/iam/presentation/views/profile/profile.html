@@ -99,16 +99,16 @@
         <section class="invitations" [attr.aria-label]="'onboarding.title' | translate">
           <h2>{{ 'onboarding.title' | translate }}</h2>
           <p class="invitation-help">{{ 'onboarding.help' | translate }}</p>
-          <form #onboardingForm="ngForm" class="grid invitation-form" (ngSubmit)="createOrganization(onboardingForm)">
+          <form id="onboardingForm" #onboardingForm="ngForm" class="grid invitation-form" (ngSubmit)="createOrganization(onboardingForm)">
             <mat-form-field appearance="outline" class="full">
               <mat-label>{{ 'onboarding.name' | translate }}</mat-label>
-              <input matInput name="name" [(ngModel)]="onboardingName" required maxlength="150" [disabled]="onboarding() || onboardingRefreshing() || onboardingRefreshError()" autocomplete="organization">
+              <input matInput name="name" [(ngModel)]="onboardingName" required pattern=".*\S.*" maxlength="150" [disabled]="onboarding() || onboardingRefreshing() || onboardingRefreshError()" autocomplete="organization">
               <mat-error>{{ 'validation.required' | translate }}</mat-error>
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>{{ 'onboarding.ruc' | translate }}</mat-label>
-              <input matInput name="ruc" [(ngModel)]="onboardingRuc" required maxlength="11" [disabled]="onboarding() || onboardingRefreshing() || onboardingRefreshError()" autocomplete="off">
-              <mat-error>{{ 'validation.required' | translate }}</mat-error>
+              <input matInput name="ruc" #onboardingRucField="ngModel" [(ngModel)]="onboardingRuc" required pattern="[0-9]{11}" inputmode="numeric" maxlength="11" [disabled]="onboarding() || onboardingRefreshing() || onboardingRefreshError()" autocomplete="off">
+              @if (onboardingRucField.errors?.['pattern']) { <mat-error>{{ 'profile.ruc-invalid' | translate }}</mat-error> } @else { <mat-error>{{ 'validation.required' | translate }}</mat-error> }
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>{{ 'onboarding.type' | translate }}</mat-label>
@@ -117,7 +117,7 @@
                 <mat-option value="DISTRIBUTOR">{{ 'onboarding.type-distributor' | translate }}</mat-option>
               </mat-select>
             </mat-form-field>
-            <button mat-flat-button class="full" type="submit" [disabled]="onboardingForm.invalid || !onboardingName.trim() || !onboardingRuc.trim() || onboarding() || onboardingRefreshing() || onboardingRefreshError()" [attr.aria-busy]="onboarding() || onboardingRefreshing()">{{ (onboarding() ? 'onboarding.creating' : 'onboarding.create') | translate }}</button>
+            <button mat-flat-button class="full" type="submit" [disabled]="onboarding() || onboardingRefreshing() || onboardingRefreshError()" [attr.aria-busy]="onboarding() || onboardingRefreshing()">{{ (onboarding() ? 'onboarding.creating' : 'onboarding.create') | translate }}</button>
           </form>
           @if (createdOrganization()) { <p class="ok invitation-feedback" role="status">{{ 'onboarding.created' | translate }} · {{ createdOrganization()!.name }}</p> }
           @if (onboardingError()) { <p class="error invitation-feedback" role="alert">{{ onboardingError() | translate }}</p> }
@@ -141,7 +141,7 @@
               <p class="invitation-help">{{ 'onboarding.context-hint' | translate }}</p>
             } @else { <p class="invitation-context">{{ 'onboarding.context' | translate }}: {{ invitationOrganization()?.name }}</p><p class="invitation-help">{{ 'onboarding.context-hint' | translate }}</p> }
             <p class="invitation-help">{{ 'invitations.no-email' | translate }}</p>
-            <form #invitationForm="ngForm" class="grid invitation-form" (ngSubmit)="inviteMember(invitationForm)">
+            <form id="invitationForm" #invitationForm="ngForm" class="grid invitation-form" (ngSubmit)="inviteMember(invitationForm)">
               <mat-form-field appearance="outline">
                 <mat-label>{{ 'invitations.email' | translate }}</mat-label>
                 <input matInput name="email" #email="ngModel" [(ngModel)]="invitationEmail" (ngModelChange)="clearInvitationMessages()" type="email" email required maxlength="150" [disabled]="inviting() || revokingId() !== null" autocomplete="email">
@@ -153,7 +153,7 @@
                   @for (role of membershipRoles; track role) { <mat-option [value]="role">{{ 'invitations.role-' + role.toLowerCase() | translate }}</mat-option> }
                 </mat-select>
               </mat-form-field>
-              <button mat-flat-button class="full" type="submit" [disabled]="invitationForm.invalid || inviting() || revokingId() !== null" [attr.aria-busy]="inviting()">{{ (inviting() ? 'invitations.creating' : 'invitations.create') | translate }}</button>
+              <button mat-flat-button class="full" type="submit" [disabled]="inviting() || revokingId() !== null" [attr.aria-busy]="inviting()">{{ (inviting() ? 'invitations.creating' : 'invitations.create') | translate }}</button>
             </form>
             @if (invitationError()) { <p class="error invitation-feedback" role="alert">{{ invitationError() | translate }}</p> }
             @if (invitationNotice()) { <p class="ok invitation-feedback" role="status">{{ invitationNotice() | translate }}</p> }
@@ -204,8 +204,9 @@
   <p class="status" aria-live="polite">
     @if (error() && user()) { <span class="error" role="alert">{{ error() | translate }}</span> }
     @else if (saved()) { <span class="ok">{{ 'profile.saved' | translate }}</span> }
+    @else if (noChanges() && !companyForm?.dirty) { <span role="status">{{ 'profile.no-changes' | translate }}</span> }
   </p>
-  <button mat-flat-button type="button" [disabled]="!canSave" (click)="save()">{{ (saving() ? 'profile.saving' : 'profile.save') | translate }}</button>
+  <button mat-flat-button type="button" [disabled]="saving() || companyLoading() || !!companyError()" (click)="save()">{{ (saving() ? 'profile.saving' : 'profile.save') | translate }}</button>
 </footer>
 }
 </div>

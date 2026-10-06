@@ -1,4 +1,5 @@
 import { Injectable, signal, inject } from '@angular/core';
+import { finalize } from 'rxjs';
 import { InventoryApi } from '../infrastructure/inventory-api';
 import { FuelProduct, CreateProductPayload, UpdateProductPayload } from '../domain/model/fuel-product.entity';
 
@@ -9,10 +10,13 @@ export class InventoryStore {
   private readonly _selectedProduct = signal<FuelProduct | null>(null);
   private readonly _isLoading = signal(false);
   private readonly _error = signal<string | null>(null);
+  private readonly _mutatingId = signal<number | null>(null);
   readonly productList = this._productList.asReadonly();
   readonly selectedProduct = this._selectedProduct.asReadonly();
   readonly isLoading = this._isLoading.asReadonly();
   readonly error = this._error.asReadonly();
+  /** Producto con un cambio de stock o una eliminación en curso. */
+  readonly mutatingId = this._mutatingId.asReadonly();
 
   clearError(): void { this._error.set(null); }
 
@@ -53,18 +57,22 @@ export class InventoryStore {
   }
 
   updateStock(id: number, stock: number): void {
+    if (this._isLoading() || this._mutatingId() !== null) return;
+    this._mutatingId.set(id);
     this._isLoading.set(true);
     this._error.set(null);
-    this.api.updateStock(id, stock).subscribe({
+    this.api.updateStock(id, stock).pipe(finalize(() => this._mutatingId.set(null))).subscribe({
       next: (product) => { this._productList.update((list) => list.map((item) => item.id === id ? product : item)); this._isLoading.set(false); },
       error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
     });
   }
 
   deleteProduct(id: number): void {
+    if (this._isLoading() || this._mutatingId() !== null) return;
+    this._mutatingId.set(id);
     this._isLoading.set(true);
     this._error.set(null);
-    this.api.deleteProduct(id).subscribe({
+    this.api.deleteProduct(id).pipe(finalize(() => this._mutatingId.set(null))).subscribe({
       next: () => { this._productList.update((list) => list.filter((item) => item.id !== id)); this._isLoading.set(false); },
       error: (error) => { this._error.set(error.message ?? 'errors.generic'); this._isLoading.set(false); },
     });
