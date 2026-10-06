@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, inject, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -29,13 +29,13 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
       @if (formOpen() && store.customer()) {
         <mat-card id="tank-form"><mat-card-header><mat-card-title>{{ 'equipment.add-tank' | translate }}</mat-card-title></mat-card-header><mat-card-content>
           <form #tankForm="ngForm" (ngSubmit)="addTank(tankForm)" class="tank-form">
-            <mat-form-field><mat-label>{{ 'equipment.name' | translate }}</mat-label><input matInput name="tankName" [(ngModel)]="tank.name" required maxlength="150"></mat-form-field>
+            <mat-form-field><mat-label>{{ 'equipment.name' | translate }}</mat-label><input matInput name="tankName" [(ngModel)]="tank.name" required maxlength="150"><mat-error>{{ 'validation.required' | translate }}</mat-error></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.site' | translate }}</mat-label><mat-select name="siteId" [(ngModel)]="tank.siteId"><mat-option [value]="null">—</mat-option>@for (site of store.sites(); track site.id) { <mat-option [value]="site.id">{{ site.name }}</mat-option> }</mat-select></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.fuel-type' | translate }}</mat-label><mat-select name="fuelType" [(ngModel)]="tank.fuelType"><mat-option value="">—</mat-option>@for (type of fuelTypes; track type) { <mat-option [value]="type">{{ 'fuel-type.' + type.toLowerCase() | translate }}</mat-option> }</mat-select></mat-form-field>
-            <mat-form-field><mat-label>{{ 'equipment.capacity' | translate }}</mat-label><input matInput type="number" min="0.01" name="capacity" [(ngModel)]="tank.capacity" required></mat-form-field>
-            <mat-form-field><mat-label>{{ 'equipment.unit' | translate }}</mat-label><mat-select name="unit" [(ngModel)]="tank.unit" required><mat-option value="LITERS">{{ 'unit.liters' | translate }}</mat-option><mat-option value="GALLONS">{{ 'unit.gallons' | translate }}</mat-option></mat-select></mat-form-field>
-            <mat-form-field><mat-label>{{ 'equipment.initial-level' | translate }}</mat-label><input matInput type="number" min="0" [max]="tank.capacity" name="initialLevel" [(ngModel)]="tank.initialLevel"></mat-form-field>
-            <div class="actions"><button mat-button type="button" (click)="formOpen.set(false)">{{ 'request-form.cancel' | translate }}</button><button mat-flat-button color="primary" [disabled]="tankForm.invalid || store.creatingTank()">{{ 'equipment.create-tank' | translate }}</button></div>
+            <mat-form-field><mat-label>{{ 'equipment.capacity' | translate }}</mat-label><input matInput type="number" min="0.01" name="capacity" #capacity="ngModel" [(ngModel)]="tank.capacity" required><mat-error>{{ (capacity.hasError('required') ? 'validation.required' : 'validation.min-value') | translate:{ n: 0.01 } }}</mat-error></mat-form-field>
+            <mat-form-field><mat-label>{{ 'equipment.unit' | translate }}</mat-label><mat-select name="unit" [(ngModel)]="tank.unit" required><mat-option value="LITERS">{{ 'unit.liters' | translate }}</mat-option><mat-option value="GALLONS">{{ 'unit.gallons' | translate }}</mat-option></mat-select><mat-error>{{ 'validation.required' | translate }}</mat-error></mat-form-field>
+            <mat-form-field><mat-label>{{ 'equipment.initial-level' | translate }}</mat-label><input matInput type="number" min="0" [max]="tank.capacity" name="initialLevel" #initialLevel="ngModel" [(ngModel)]="tank.initialLevel"><mat-error>{{ (initialLevel.hasError('min') ? 'validation.min-value' : 'equipment.err-initial-level') | translate:{ n: 0 } }}</mat-error></mat-form-field>
+            <div class="actions"><button mat-button type="button" (click)="formOpen.set(false)">{{ 'request-form.cancel' | translate }}</button><button mat-flat-button color="primary" [disabled]="store.creatingTank()">{{ 'equipment.create-tank' | translate }}</button></div>
           </form>
         </mat-card-content></mat-card>
       }
@@ -65,9 +65,9 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
         @if (store.customer() && !store.sites().length) { <p>{{ 'equipment.no-sites' | translate }}</p> }
         @if (store.customer()) {
           <form #siteForm="ngForm" (ngSubmit)="addSite(siteForm)" class="site-form">
-            <mat-form-field><mat-label>{{ 'equipment.name' | translate }}</mat-label><input matInput name="siteName" [(ngModel)]="site.name" required maxlength="150"></mat-form-field>
+            <mat-form-field><mat-label>{{ 'equipment.name' | translate }}</mat-label><input matInput name="siteName" [(ngModel)]="site.name" required maxlength="150"><mat-error>{{ 'validation.required' | translate }}</mat-error></mat-form-field>
             <mat-form-field><mat-label>{{ 'equipment.address' | translate }}</mat-label><input matInput name="siteAddress" [(ngModel)]="site.address"></mat-form-field>
-            <button mat-stroked-button [disabled]="siteForm.invalid || store.creatingSite()">{{ 'equipment.add-site' | translate }}</button>
+            <button mat-stroked-button [disabled]="store.creatingSite()">{{ 'equipment.add-site' | translate }}</button>
           </form>
         }
       </mat-card-content></mat-card>
@@ -89,6 +89,7 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
 })
 export class TankList implements OnInit {
   protected readonly store = inject(EquipmentStore);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly formOpen = signal(false);
   protected site = { name: '', address: '' };
   protected tank = emptyTank();
@@ -97,9 +98,13 @@ export class TankList implements OnInit {
   ngOnInit(): void { this.store.load(); }
   protected percent(tank: Tank): number { return tank.capacity > 0 ? Math.min(100, Math.max(0, Math.round(tank.currentLevel / tank.capacity * 100))) : 0; }
   protected unitKey(tank: Tank): string { return `unit.${(tank.unit ?? 'liters').toLowerCase()}`; }
-  protected addSite(form: NgForm): void { if (form.invalid) return; this.store.createSite({ ...this.site }, () => { this.site = { name: '', address: '' }; form.resetForm(this.site); }); }
+  protected addSite(form: NgForm): void { if (form.invalid) { this.showErrors(form, '.site-form'); return; } this.store.createSite({ ...this.site }, () => { this.site = { name: '', address: '' }; form.resetForm(this.site); }); }
   protected addTank(form: NgForm): void {
-    if (form.invalid) return;
+    if (form.invalid) { this.showErrors(form, '.tank-form'); return; }
     this.store.createTank({ ...this.tank }, () => { this.tank = emptyTank(); this.formOpen.set(false); });
+  }
+  private showErrors(form: NgForm, selector: string): void {
+    form.control.markAllAsTouched();
+    this.host.nativeElement.querySelector(selector)?.querySelector<HTMLElement>('input.ng-invalid, mat-select.ng-invalid')?.focus();
   }
 }

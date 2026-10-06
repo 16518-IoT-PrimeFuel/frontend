@@ -1,7 +1,7 @@
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, Subscription } from 'rxjs';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -32,7 +32,7 @@ const emptyPolicy = (): RefillPolicy => ({ lowLevelPercent: 20, hysteresisPercen
         </mat-card-content></mat-card>
       }
       <mat-card><mat-card-header><mat-card-title>{{ 'equipment.policy' | translate }}</mat-card-title></mat-card-header><mat-card-content>
-        <form #policyForm="ngForm" (ngSubmit)="savePolicy()">
+        <form #policyForm="ngForm" (ngSubmit)="savePolicy(policyForm)">
           <fieldset [disabled]="!policyReady() || saving()" style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:.25rem">
           <mat-form-field><mat-label>{{ 'equipment.low-level' | translate }}</mat-label><input matInput type="number" step="any" name="low" [(ngModel)]="policy.lowLevelPercent" required></mat-form-field>
           @if (lowError()) { <small class="field-error" role="alert">{{ lowError() | translate }}</small> }
@@ -44,7 +44,7 @@ const emptyPolicy = (): RefillPolicy => ({ lowLevelPercent: 20, hysteresisPercen
           <mat-form-field><mat-label>{{ 'equipment.product' | translate }}</mat-label><mat-select name="product" [ngModel]="policy.fuelProductId" (ngModelChange)="onProductChange($event)" [disabled]="!policyReady() || saving() || policy.providerId === null"><mat-option [value]="null">{{ 'equipment.not-set' | translate }}</mat-option>@for (product of products(); track product.id) { <mat-option [value]="product.id">{{ product.name }} ({{ 'fuel-type.' + product.fuelType.toLowerCase() | translate }})</mat-option> }</mat-select></mat-form-field>
           <label><input type="checkbox" name="auto" [(ngModel)]="policy.autoGenerateEnabled" [disabled]="policy.providerId === null || policy.fuelProductId === null"> {{ 'equipment.auto-generate' | translate }}</label>
           @if (policy.providerId === null || policy.fuelProductId === null) { <small>{{ 'equipment.auto-needs-both' | translate }}</small> }
-          <button mat-flat-button color="primary" [disabled]="!policyReady() || !tank() || policyForm.invalid || policyInvalid() || saving()">{{ 'equipment.save-policy' | translate }}</button>
+          <button mat-flat-button color="primary" [disabled]="!policyReady() || !tank() || saving()">{{ 'equipment.save-policy' | translate }}</button>
           @if (saved()) { <p role="status">{{ 'equipment.policy-saved' | translate }}</p> }
           </fieldset>
         </form>
@@ -59,6 +59,7 @@ const emptyPolicy = (): RefillPolicy => ({ lowLevelPercent: 20, hysteresisPercen
 export class TankDetail implements OnInit {
   private readonly api = inject(EquipmentApi);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private productsRequest?: Subscription;
   private productsSequence = 0;
   private readonly id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
@@ -74,13 +75,14 @@ export class TankDetail implements OnInit {
   protected levelPercent(): number { const tank = this.tank(); return tank ? Math.max(0, Math.min(100, tank.currentLevel / tank.capacity * 100)) : 0; }
 
   /** Reglas de RefillThresholds y RefillPolicy del backend: bajo (0,100), histéresis > 0, bajo + histéresis <= 100, objetivo (0,100]. */
-  protected lowError(): string { const v = this.policy.lowLevelPercent; return v != null && (v <= 0 || v >= 100) ? 'equipment.err-low-range' : ''; }
+  protected lowError(): string { const v = this.policy.lowLevelPercent; if (v == null) return 'validation.required'; return v <= 0 || v >= 100 ? 'equipment.err-low-range' : ''; }
   protected hysteresisError(): string {
     const { lowLevelPercent: low, hysteresisPercent: hyst } = this.policy;
-    if (hyst != null && hyst <= 0) return 'equipment.err-hysteresis-positive';
-    return low != null && hyst != null && low + hyst > 100 ? 'equipment.err-low-plus-hysteresis' : '';
+    if (hyst == null) return 'validation.required';
+    if (hyst <= 0) return 'equipment.err-hysteresis-positive';
+    return low != null && low + hyst > 100 ? 'equipment.err-low-plus-hysteresis' : '';
   }
-  protected targetError(): string { const v = this.policy.targetLevelPercent; return v != null && (v <= 0 || v > 100) ? 'equipment.err-target-range' : ''; }
+  protected targetError(): string { const v = this.policy.targetLevelPercent; if (v == null) return 'validation.required'; return v <= 0 || v > 100 ? 'equipment.err-target-range' : ''; }
   protected policyInvalid(): boolean { return [this.policy.lowLevelPercent, this.policy.hysteresisPercent, this.policy.targetLevelPercent].some((value) => value == null || !Number.isFinite(value)) || !!(this.lowError() || this.hysteresisError() || this.targetError()); }
   protected onProviderChange(providerId: number | null): void {
     if (!this.policyReady() || this.saving()) return;
@@ -108,8 +110,14 @@ export class TankDetail implements OnInit {
       if (e.status !== 404) this.error.set(apiError(e));
     } });
   }
-  protected savePolicy(): void {
-    if (!this.policyReady() || !this.tank() || this.policyInvalid() || this.saving()) return;
+  protected savePolicy(form: NgForm): void {
+    if (!this.policyReady() || !this.tank() || this.saving()) return;
+    if (this.policyInvalid()) {
+      form.control.markAllAsTouched();
+      const name = this.lowError() ? 'low' : this.hysteresisError() ? 'hysteresis' : 'target';
+      this.host.nativeElement.querySelector<HTMLElement>(`input[name="${name}"]`)?.focus();
+      return;
+    }
     this.saving.set(true); this.saved.set(false); this.error.set('');
     this.api.savePolicy(this.id, { ...this.policy }).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.saving.set(false))).subscribe({ next: (policy) => { this.policy = { ...policy }; this.saved.set(true); this.saving.set(false); }, error: (e) => { this.error.set(apiError(e)); this.saving.set(false); } });
   }
