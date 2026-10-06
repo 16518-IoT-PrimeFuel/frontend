@@ -106,6 +106,67 @@ describe('OrderDetail', () => {
     expect(confirm).not.toHaveBeenCalled();
   });
 
+  it('asks for confirmation before confirming or cancelling and re-checks the order after closing', () => {
+    const view = component as any;
+    let order = { id: 30, companyId: 4, status: 'PENDING' };
+    view.order = () => order;
+    view.isBuyer = true;
+    let closed = new Subject<unknown>();
+    const open = vi.spyOn(view.dialog, 'open').mockImplementation(() => { closed = new Subject(); return { afterClosed: () => closed, close: vi.fn() }; });
+    const cancel = vi.spyOn(view.store, 'cancelOrder').mockImplementation(() => {});
+    const confirm = vi.spyOn(view.store, 'confirmOrder').mockImplementation(() => {});
+    view.cancelOrder(30);
+    view.cancelOrder(30);
+    view.confirm(30);
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(open.mock.calls[0][1]).toMatchObject({ width: '480px', maxWidth: 'calc(100vw - 32px)', data: { titleKey: 'confirm.title', messageKey: 'order-detail.confirm-cancel' } });
+    closed.next(false);
+    view.cancelOrder(30);
+    closed.next(undefined);
+    expect(cancel).not.toHaveBeenCalled();
+    view.confirm(30);
+    expect(open.mock.calls[2][1]).toMatchObject({ data: { messageKey: 'order-detail.confirm-confirm' } });
+    order = { ...order, status: 'CANCELLED' };
+    closed.next(true);
+    expect(confirm).not.toHaveBeenCalled();
+    order = { ...order, status: 'PENDING' };
+    view.confirm(30);
+    closed.next(true);
+    expect(confirm).toHaveBeenCalledExactlyOnceWith(30);
+    view.cancelOrder(30);
+    closed.next(true);
+    expect(cancel).toHaveBeenCalledExactlyOnceWith(30);
+    view.isBuyer = false;
+    view.confirm(30);
+    expect(open).toHaveBeenCalledTimes(5);
+  });
+
+  it('shows the result of the order action inline', () => {
+    component.store.notice.set('order-detail.cancel-success');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="status"]').textContent).toContain('order-detail.cancel-success');
+  });
+
+  it('opens the new delivery with a success notice', () => {
+    const view = component as any;
+    prepareAssignment(view);
+    const navigate = vi.spyOn(view.router, 'navigate').mockResolvedValue(true);
+    vi.spyOn(view.fulfillment, 'assignDelivery').mockReturnValue(of({ deliveryId: 7 }));
+    view.reviewAssignment();
+    view.assign(30);
+    expect(navigate).toHaveBeenCalledWith(['/fulfillment/delivery-detail', 7], { state: { notice: 'fulfillment.assignment.success' } });
+  });
+
+  it('announces an assignment error', () => {
+    const view = component as any;
+    view.store.ordersState.set([{ id: 30, requestId: 4, companyId: 4, providerId: 2, fuelProductId: 1, status: 'CONFIRMED', requestedQuantity: 400, totalPrice: 100, deliveryAddress: 'Av. Lima' }]);
+    view.orderId.set(30);
+    view.assigning.set(true);
+    view.assignmentError = 'fulfillment.assignment-failed';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.assignment > [role="alert"]').textContent).toContain('fulfillment.assignment-failed');
+  });
+
   it('rejects reversed windows and retains the command id when retrying an ambiguous network failure', () => {
     const view = component as any;
     prepareAssignment(view);

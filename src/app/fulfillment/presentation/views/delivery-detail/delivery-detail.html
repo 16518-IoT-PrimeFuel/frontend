@@ -2,6 +2,7 @@
   @if (trackingError() || samplesError() || transitionsError() || timelineError() || tankLevelError()) { <button type="button" (click)="reload()">{{ 'analytics.retry' | translate }}</button> }
   <header><h1>{{ 'fulfillment.delivery' | translate }} #{{ d.id }}</h1><button (click)="print()">{{ 'fulfillment.dossier' | translate }}</button></header>
   @if (message()) { <p role="status">{{ message() | translate }}</p> }
+  @if (commandError()) { <p role="alert">{{ commandError() | translate }}</p> }
   <section><h2>{{ 'fulfillment.physical-state' | translate }}: {{ 'delivery-status.' + d.physicalState.toLowerCase() | translate }}</h2>
     <dl>
       <dt>{{ 'fulfillment.driver' | translate }}</dt><dd>{{ driverName() || ('#' + d.driverId) }}</dd>
@@ -18,12 +19,11 @@
       <dt>{{ 'fulfillment.delivering-at' | translate }}</dt><dd>{{ (d.deliveringAt | date:'medium') || '—' }}</dd>
       <dt>{{ 'fulfillment.delivered-at' | translate }}</dt><dd>{{ (d.deliveredAt | date:'medium') || '—' }}</dd>
     </dl>
-    @if (can('start')) { <button [disabled]="commandBusy()" (click)="command('start')">{{ 'fulfillment.start' | translate }}</button> }
-    @if (can('arrive')) { <button [disabled]="commandBusy()" (click)="command('arrive')">{{ 'fulfillment.arrive' | translate }}</button> }
-    @if (can('complete')) { <label>{{ 'fulfillment.delivered-volume' | translate }} <input type="number" min="0.001" step="any" [(ngModel)]="deliveredVolume"></label><button [disabled]="commandBusy() || !deliveredVolume || deliveredVolume <= 0" (click)="command('complete')">{{ 'fulfillment.complete' | translate }}</button> }
-    @if (can('fail') || can('cancel')) { <label>{{ 'fulfillment.reason' | translate }} <input [(ngModel)]="reason"></label> }
-    @if (can('fail')) { <button [disabled]="commandBusy() || !reason.trim()" (click)="command('fail')">{{ 'fulfillment.fail' | translate }}</button> }
-    @if (can('cancel')) { <button [disabled]="commandBusy() || !reason.trim()" (click)="command('cancel')">{{ 'fulfillment.cancel-delivery' | translate }}</button> }
+    @if (can('start')) { <button [disabled]="commandBusy()" [attr.aria-busy]="busyAction() === 'start'" (click)="command('start')">{{ (busyAction() === 'start' ? 'fulfillment.command-busy.start' : 'fulfillment.start') | translate }}</button> }
+    @if (can('arrive')) { <button [disabled]="commandBusy()" [attr.aria-busy]="busyAction() === 'arrive'" (click)="command('arrive')">{{ (busyAction() === 'arrive' ? 'fulfillment.command-busy.arrive' : 'fulfillment.arrive') | translate }}</button> }
+    @if (can('complete')) { <label>{{ 'fulfillment.delivered-volume' | translate }} <input type="number" min="0.001" step="any" [(ngModel)]="deliveredVolume"></label><button [disabled]="commandBusy() || !deliveredVolume || deliveredVolume <= 0" [attr.aria-busy]="busyAction() === 'complete'" (click)="command('complete')">{{ (busyAction() === 'complete' ? 'fulfillment.command-busy.complete' : 'fulfillment.complete') | translate }}</button> }
+    @if (can('fail')) { <button [disabled]="commandBusy()" [attr.aria-busy]="busyAction() === 'fail'" (click)="command('fail')">{{ (busyAction() === 'fail' ? 'fulfillment.command-busy.fail' : 'fulfillment.fail') | translate }}</button> }
+    @if (can('cancel')) { <button [disabled]="commandBusy()" [attr.aria-busy]="busyAction() === 'cancel'" (click)="command('cancel')">{{ (busyAction() === 'cancel' ? 'fulfillment.command-busy.cancel' : 'fulfillment.cancel-delivery') | translate }}</button> }
   </section>
   <section><h2>{{ 'fulfillment.tracking' | translate }}</h2>
     @if (tracking(); as t) {

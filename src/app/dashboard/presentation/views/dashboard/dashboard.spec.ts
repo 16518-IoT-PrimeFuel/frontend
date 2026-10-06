@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -14,6 +14,7 @@ const order = (id: number, status: string) => ({ id, status, totalPrice: 10, sch
 
 describe('Dashboard', () => {
   beforeEach(() => TestBed.resetTestingModule());
+  afterEach(() => history.replaceState(null, ''));
 
   it('provider: shows monthly indicators, operational cards and latest orders', () => {
     TestBed.configureTestingModule({ imports: [Dashboard, TranslateModule.forRoot()], providers: [provideRouter([]),
@@ -67,5 +68,28 @@ describe('Dashboard', () => {
     expect(fixture.componentInstance.error()).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('Planta');
     expect(fixture.nativeElement.textContent).toContain('#9');
+  });
+
+  it('shows the welcome notice only once, when arriving with the account-created mark', () => {
+    const create = () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ imports: [Dashboard, TranslateModule.forRoot()], providers: [provideRouter([]),
+        { provide: AnalyticsApi, useValue: { getBuyerAnalytics: () => of({ totalSpent: 0, pendingPayments: 0, totalOrders: 0, completedPayments: 0 }) } },
+        { provide: ProviderEquipmentApi, useValue: {} },
+        { provide: FulfillmentApi, useValue: {} },
+        { provide: OrderingApi, useValue: { orders: () => of([]) } },
+        { provide: IamStore, useValue: { isBuyer: () => true, companyId: () => 11, providerId: () => null } },
+      ] });
+      const fixture = TestBed.createComponent(Dashboard);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    };
+    expect(create().textContent).not.toContain('auth.register.created');
+
+    history.replaceState({ navigationId: 2, accountCreated: true }, '');
+    expect(create().querySelector('.welcome[role="status"]')?.textContent).toContain('auth.register.created');
+    expect(history.state).toEqual({ navigationId: 2 });
+    // Recarga o nueva visita al panel: la marca ya se consumió.
+    expect(create().textContent).not.toContain('auth.register.created');
   });
 });

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -28,6 +28,7 @@ export class Profile {
   private readonly iam = inject(IamStore);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
   @ViewChild('revokeDialog') private revokeDialog!: TemplateRef<unknown>;
   readonly invitationOrganizationId = signal<number | null>(null);
   readonly invitations = signal<OrganizationInvitation[]>([]);
@@ -61,6 +62,7 @@ export class Profile {
   readonly saving = signal(false);
   readonly error = signal('');
   readonly saved = signal(false);
+  readonly noChanges = signal(false);
   readonly tab = signal(inject(ActivatedRoute).snapshot.queryParamMap.get('tab') === 'organizations' ? 2 : 0);
   readonly isBuyer = this.iam.isBuyer();
   buyer: BuyerCompanyProfile = { id: 0, name: '', ruc: '', sector: '', address: '', contactEmail: '', phone: '' };
@@ -106,8 +108,9 @@ export class Profile {
   createOrganization(form: NgForm): void {
     const name = this.onboardingName.trim();
     const ruc = this.onboardingRuc.trim();
-    if (!form.valid || !name || name.length > 150 || !ruc || ruc.length > 11 || !['CUSTOMER', 'DISTRIBUTOR'].includes(this.onboardingType)
-      || this.onboarding() || this.onboardingRefreshing() || this.onboardingRefreshError()) return;
+    if (this.onboarding() || this.onboardingRefreshing() || this.onboardingRefreshError()) return;
+    form.control.markAllAsTouched();
+    if (form.invalid) { this.focusFirstInvalid('#onboardingForm'); return; }
     this.onboardingError.set('');
     this.createdOrganization.set(null);
     this.onboarding.set(true);
@@ -152,7 +155,10 @@ export class Profile {
 
   inviteMember(form: NgForm): void {
     const organizationId = this.invitationOrganizationId();
-    if (!form.valid || !organizationId || !this.invitationOrganization() || this.inviting() || this.revokingId() !== null) return;
+    if (this.inviting() || this.revokingId() !== null) return;
+    form.control.markAllAsTouched();
+    if (form.invalid) { this.focusFirstInvalid('#invitationForm'); return; }
+    if (!organizationId || !this.invitationOrganization()) return;
     this.clearInvitationMessages();
     this.inviting.set(true);
     this.api.inviteMember(organizationId, this.invitationEmail.trim(), this.invitationRole)
@@ -206,7 +212,9 @@ export class Profile {
   }
 
   role(value: string): string { return value.replace(/^ROLE_/, ''); }
-  get canSave(): boolean { return !this.companyLoading() && !this.companyError() && !!this.companyForm?.dirty && !!this.companyForm?.valid && (this.isBuyer || this.fuelTypes.length > 0) && !this.saving(); }
+  private focusFirstInvalid(form: string): void {
+    this.host.nativeElement.querySelector(form)?.querySelector<HTMLElement>('input.ng-invalid, textarea.ng-invalid, mat-select.ng-invalid')?.focus();
+  }
 
   toggleFuelType(type: string): void {
     this.fuelTypes = this.fuelTypes.includes(type) ? this.fuelTypes.filter((value) => value !== type) : [...this.fuelTypes, type];
@@ -215,9 +223,15 @@ export class Profile {
 
   save(): void {
     const id = this.isBuyer ? this.iam.companyId() : this.iam.providerId();
-    if (id === null || !this.canSave) return;
+    const form = this.companyForm;
+    if (id === null || !form || this.saving()) return;
     this.error.set('');
     this.saved.set(false);
+    this.noChanges.set(false);
+    form.control.markAllAsTouched();
+    if (form.invalid) { this.focusFirstInvalid('#companyForm'); return; }
+    if (!this.isBuyer && !this.fuelTypes.length) return;
+    if (!form.dirty) { this.noChanges.set(true); return; }
     this.saving.set(true);
     const request: Observable<BuyerCompanyProfile | ProviderCompanyProfile> = this.isBuyer
       ? this.api.updateBuyerCompany(id, this.buyer)

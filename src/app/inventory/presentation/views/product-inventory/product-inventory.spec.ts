@@ -4,7 +4,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
-import { afterEach, describe, expect, it } from 'vitest';
+import { Subject } from 'rxjs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IamStore } from '../../../../iam/application/iam.store';
 import { ProductInventory } from './product-inventory';
 import { environment } from '../../../../../environments/environment';
@@ -72,5 +73,27 @@ describe('global products and prices catalog', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Gasolina Sur');
     expect(fixture.nativeElement.querySelector('input[type="number"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelectorAll('.mat-column-actions').length).toBeGreaterThan(0);
+  });
+
+  it('opens the delete dialog once and blocks deleting again while the request is in flight', () => {
+    const { fixture, http } = setup('PROVIDER');
+    http.expectOne(`${environment.serverBasePath}/fuel-products/provider/10`).flush([products[0]]);
+    fixture.detectChanges();
+    const closed = new Subject<boolean>();
+    const open = vi.spyOn(fixture.componentInstance['dialog'], 'open').mockReturnValue({ afterClosed: () => closed } as never);
+    fixture.componentInstance['onDelete'](1);
+    fixture.componentInstance['onDelete'](1);
+    expect(open).toHaveBeenCalledTimes(1);
+    closed.next(true);
+    const request = http.expectOne(`${environment.serverBasePath}/fuel-products/1`);
+    expect(request.request.method).toBe('DELETE');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mat-column-actions button[color="warn"]').disabled).toBe(true);
+    fixture.componentInstance['onDelete'](1);
+    fixture.componentInstance['saveStock'](1);
+    expect(open).toHaveBeenCalledTimes(1);
+    request.flush(null);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Diesel Norte');
   });
 });

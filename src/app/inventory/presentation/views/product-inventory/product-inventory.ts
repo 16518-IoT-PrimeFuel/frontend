@@ -48,6 +48,7 @@ export class ProductInventory implements OnInit {
   private readonly api = inject(InventoryApi);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly providerNames = signal<Record<number, string>>({});
+  private confirming = false;
 
   protected readonly displayedColumns: string[] = [
     'name',
@@ -86,7 +87,8 @@ export class ProductInventory implements OnInit {
   }
 
   protected onDelete(productId: number): void {
-    if (!this.isProvider()) return;
-    this.dialog.open(this.confirmDialog).afterClosed().subscribe((ok) => ok && this.store.deleteProduct(productId));
+    if (!this.isProvider() || this.confirming || this.store.isLoading() || this.store.mutatingId() !== null) return;
+    this.confirming = true;
+    this.dialog.open(this.confirmDialog).afterClosed().subscribe((ok) => { this.confirming = false; if (ok) this.store.deleteProduct(productId); });
   }
 }

@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, expect, it, vi } from 'vitest';
-import { Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { OrderingStore } from './ordering.store';
 import { OrderingApi } from '../infrastructure/ordering-api';
 import { IamStore } from '../../iam/application/iam.store';
@@ -11,7 +11,8 @@ beforeEach(() => TestBed.resetTestingModule());
 function setup() {
   const role = signal('PROVIDER');
   const pending = new Subject<any>();
-  const api = { acceptRequest: vi.fn(() => pending), rejectRequest: vi.fn(() => pending), confirmOrder: vi.fn(() => pending), cancelOrder: vi.fn(() => pending) };
+  const api = { acceptRequest: vi.fn(() => pending), rejectRequest: vi.fn(() => pending), confirmOrder: vi.fn(() => pending), cancelOrder: vi.fn(() => pending),
+    createRequest: vi.fn(() => pending), cancelRequest: vi.fn(() => of({})), requests: vi.fn(() => of([])), requestInbox: vi.fn(() => of([])) };
   TestBed.configureTestingModule({ providers: [
     { provide: OrderingApi, useValue: api },
     { provide: IamStore, useValue: { role, isProvider: () => role() === 'PROVIDER', isBuyer: () => role() === 'BUYER', providerId: () => 2, companyId: () => 4 } },
@@ -52,4 +53,36 @@ it('checks current order ownership, role and state before confirmation or cancel
   store.cancelOrder(3);
   expect(api.confirmOrder).toHaveBeenCalledExactlyOnceWith(3);
   expect(api.cancelOrder).not.toHaveBeenCalled();
+});
+
+it('rejects a second createRequest while one is in flight and allows a new one once it settles', () => {
+  const { store, api } = setup();
+  const first = new Subject<any>();
+  api.createRequest.mockReturnValue(first);
+  const done = vi.fn();
+  store.createRequest({} as any, done);
+  store.createRequest({} as any, done);
+  expect(api.createRequest).toHaveBeenCalledTimes(1);
+  expect(store.creating()).toBe(true);
+  first.next({ id: 1 });
+  first.complete();
+  expect(done).toHaveBeenCalledTimes(1);
+  expect(store.creating()).toBe(false);
+  api.createRequest.mockReturnValue(throwError(() => ({ status: 500 })) as any);
+  store.createRequest({} as any, done);
+  expect(api.createRequest).toHaveBeenCalledTimes(2);
+  expect(done).toHaveBeenCalledTimes(1);
+  expect(store.creating()).toBe(false);
+});
+
+it('cancels only a pending request as buyer and reports the result', () => {
+  const { store, api, role } = setup();
+  (store as any).requestsState.set([{ id: 1, status: 'PENDING' }, { id: 2, status: 'ACCEPTED' }]);
+  store.cancelRequest(1);
+  role.set('BUYER');
+  store.cancelRequest(2);
+  expect(api.cancelRequest).not.toHaveBeenCalled();
+  store.cancelRequest(1);
+  expect(api.cancelRequest).toHaveBeenCalledExactlyOnceWith(1);
+  expect(store.notice()).toBe('request-list.cancelled');
 });

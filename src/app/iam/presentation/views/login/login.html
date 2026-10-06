@@ -4,7 +4,8 @@
       <h1>{{ 'auth.login.title' | translate }}</h1>
       <p class="iam-subtitle">{{ 'auth.login.subtitle' | translate }}</p>
     </div>
-    @if (sessionRequired() && !error()) { <p class="iam-note" role="status">{{ 'auth.login.session-required' | translate }}</p> }
+    @if (accountCreated && !error()) { <p class="iam-note" role="status">{{ 'auth.login.account-created' | translate }}</p> }
+    @else if (sessionRequired() && !error()) { <p class="iam-note" role="status">{{ 'auth.login.session-required' | translate }}</p> }
     <label>{{ 'auth.username' | translate }}
       <input #emailField="ngModel" name="username" type="email" email [(ngModel)]="username" (ngModelChange)="error.set('')" required maxlength="100" autofocus autocomplete="username" [attr.aria-invalid]="emailField.invalid && emailField.touched" aria-describedby="login-email-error">
       <small id="login-email-error" class="iam-error" aria-live="polite">@if (emailField.invalid && emailField.touched) { {{ (emailField.hasError('required') ? 'auth.validation.email-required' : emailField.hasError('maxlength') ? 'auth.validation.email-length' : 'auth.validation.email-invalid') | translate }} }</small>

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, effect, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -56,6 +56,7 @@ export class ProductForm implements OnInit {
   private readonly translate = inject(TranslateService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected productForm!: FormGroup;
   protected isEditMode = false;
@@ -101,6 +102,7 @@ export class ProductForm implements OnInit {
     if (this.store.isLoading()) return;
     if (this.productForm.invalid) {
       this.productForm.markAllAsTouched();
+      this.host.nativeElement.querySelector<HTMLElement>('[formControlName].ng-invalid')?.focus();
       return;
     }
 

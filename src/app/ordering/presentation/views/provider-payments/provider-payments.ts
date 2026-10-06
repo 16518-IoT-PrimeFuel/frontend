@@ -6,7 +6,7 @@ import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslatePipe } from '@ngx-translate/core';
 import { IamStore } from '../../../../iam/application/iam.store';
@@ -90,6 +90,12 @@ export class ProviderPayments {
       this.confirming = false;
       if (ok === true && this.reference.valid) this.run(p, this.api.completePayment(p.id, this.reference.value.trim()), 'provider-payments.complete-success');
     });
+  }
+
+  /** El botón queda activo: con la referencia vacía se muestra el error bajo el campo en vez de cerrar. */
+  protected submitReference(dialog: MatDialogRef<unknown>): void {
+    this.reference.markAsTouched();
+    if (this.reference.valid) dialog.close(true);
   }
 
   protected requestRefund(p: ProviderPayment): void {

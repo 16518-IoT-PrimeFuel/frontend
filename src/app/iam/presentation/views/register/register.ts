@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { IamStore } from '../../../application/iam.store';
+import { IamStore, SignInAfterSignUpError } from '../../../application/iam.store';
 import { displayAuthError } from '../../../infrastructure/auth-error';
 import { FUEL_TYPES } from '../../../../inventory/domain/model/fuel-product.entity';
 
@@ -24,6 +24,7 @@ export class Register {
   readonly showPassword = signal(false);
   username = '';
   password = '';
+  confirmPassword = '';
   name = '';
   ruc = '';
   address = '';
@@ -54,7 +55,7 @@ export class Register {
   submit(form: NgForm): void {
     if (this.submitting()) return;
     form.control.markAllAsTouched();
-    if (form.invalid) { this.error.set('auth.validation.form-invalid'); return; }
+    if (form.invalid || this.confirmPassword !== this.password) { this.error.set('auth.validation.form-invalid'); return; }
     if (this.role === 'PROVIDER' && !this.fuelTypes.length) { this.error.set('auth.fuel-types-required'); return; }
     this.error.set('');
     this.submitting.set(true);
@@ -64,8 +65,15 @@ export class Register {
       sector: this.sector, fuelTypesOffered: this.fuelTypes,
       description: this.description,
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => void this.router.navigateByUrl(this.returnUrl || '/dashboard'),
-      error: (error) => { this.error.set(displayAuthError(error, 'sign-up')); this.submitting.set(false); },
+      next: () => void this.router.navigateByUrl(this.returnUrl || '/dashboard', { state: { accountCreated: true } }),
+      error: (error) => {
+        if (error instanceof SignInAfterSignUpError) {
+          void this.router.navigate(['/login'], { queryParams: this.returnUrl ? { returnUrl: this.returnUrl } : {}, state: { accountCreated: true, username: this.username } });
+          return;
+        }
+        this.error.set(displayAuthError(error, 'sign-up'));
+        this.submitting.set(false);
+      },
     });
   }
 }

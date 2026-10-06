@@ -28,6 +28,7 @@ export class OrderingStore {
   readonly notice = signal('');
   readonly refundingId = signal<number | null>(null);
   readonly refundError = signal('');
+  readonly creating = signal(false);
   readonly isProvider = computed(() => this.iam.role() === 'PROVIDER');
 
   /** Nombres para mostrar en vez de ids; si una consulta falla se muestra el id (sin error visible). */
@@ -81,7 +82,11 @@ export class OrderingStore {
     if (!Number.isSafeInteger(id) || id < 1) { this.errorState.set('errors.http-404'); return; }
     this.orderRequest = this.run(this.api.order(id), order => this.ordersState.set([order]));
   }
-  createRequest(value: CreateRequest, done: () => void): void { this.mutate(this.api.createRequest(value), () => { this.loadRequests(); done(); }); }
+  createRequest(value: CreateRequest, done: () => void): void {
+    if (this.creating()) return;
+    this.creating.set(true);
+    this.mutate(this.api.createRequest(value).pipe(finalize(() => this.creating.set(false))), () => { this.loadRequests(); done(); });
+  }
   acceptRequest(id: number): void {
     if (!this.canDecideRequest(id)) return;
     this.mutate(this.api.acceptRequest(id), request => {
@@ -97,18 +102,18 @@ export class OrderingStore {
   }
   cancelRequest(id: number): void {
     if (!this.iam.isBuyer() || this.loading() || !this.requests().some(row => row.id === id && row.status === 'PENDING')) return;
-    this.mutate(this.api.cancelRequest(id), () => this.loadRequests());
+    this.mutate(this.api.cancelRequest(id), () => { this.loadRequests(); this.notice.set('request-list.cancelled'); });
   }
   confirmOrder(id: number): void {
     const order = this.orders().find(row => row.id === id);
     if (this.loading() || !this.iam.isBuyer() || order?.companyId !== this.iam.companyId() || order?.status !== 'PENDING') return;
-    this.mutate(this.api.confirmOrder(id), order => this.replaceOrder(order));
+    this.mutate(this.api.confirmOrder(id), order => { this.replaceOrder(order); this.notice.set('order-detail.confirm-success'); });
   }
   cancelOrder(id: number): void {
     const order = this.orders().find(row => row.id === id);
     const owns = this.iam.isBuyer() ? order?.companyId === this.iam.companyId() : this.iam.isProvider() && order?.providerId === this.iam.providerId();
     if (this.loading() || !order || !owns || !['PENDING', 'CONFIRMED'].includes(order.status)) return;
-    this.mutate(this.api.cancelOrder(id), order => this.replaceOrder(order));
+    this.mutate(this.api.cancelOrder(id), order => { this.replaceOrder(order); this.notice.set('order-detail.cancel-success'); });
   }
 
   private canDecideRequest(id: number): boolean {

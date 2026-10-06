@@ -13,6 +13,7 @@ import { MatChip, MatChipSet } from '@angular/material/chips';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatError } from '@angular/material/input';
 import { MatTooltip } from '@angular/material/tooltip';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FulfillmentApi } from '../../../../fulfillment/infrastructure/fulfillment-api';
@@ -21,6 +22,7 @@ import { Tanker } from '../../../../fulfillment/domain/model/tanker.entity';
 import { DeliveryRecommendation } from '../../../../fulfillment/domain/model/provider-delivery.entity';
 import { HttpErrorResponse } from '@angular/common/http';
 import { OrderingApi, Payment, PaymentMethod } from '../../../infrastructure/ordering-api';
+import { CONFIRM_DIALOG_CONFIG, ConfirmDialog } from '../../../../shared/presentation/component/confirm-dialog/confirm-dialog';
 
 @Component({ selector: 'app-order-detail', providers: [OrderingStore], imports: [CurrencyPipe, DatePipe, DecimalPipe, FormsModule, TranslatePipe, MatButton, MatIconButton, MatIcon, MatCard, MatCardContent, MatChip, MatChipSet, MatProgressSpinner, MatError, MatTooltip], templateUrl: './order-detail.html', styleUrl: './order-detail.css' })
 export class OrderDetail {
@@ -32,6 +34,8 @@ export class OrderDetail {
   private readonly fulfillment = inject(FulfillmentApi);
   private readonly api = inject(OrderingApi);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialog = inject(MatDialog);
+  private dialogRef?: MatDialogRef<unknown>;
   private recommendationRequest?: Subscription;
   private resourcesRequest?: Subscription;
   private readonly routeChanged = new Subject<void>();
@@ -76,6 +80,7 @@ export class OrderDetail {
       this.store.loadOrder(id);
     });
     this.store.loadNames();
+    this.destroyRef.onDestroy(() => this.dialogRef?.close());
     effect(() => {
       const order = this.order();
       if (order && this.isBuyer && this.companyName() === null) this.api.buyerCompany(order.companyId).pipe(takeUntil(this.routeChanged), takeUntilDestroyed(this.destroyRef)).subscribe({ next: company => this.companyName.set(company.name), error: () => undefined });
@@ -96,6 +101,7 @@ export class OrderDetail {
   }
   back(): void { this.router.navigate(['/ordering/order-list']).then(); }
   private resetOrderContext(): void {
+    this.dialogRef?.close();
     this.companyName.set(null);
     this.payment.set(null);
     this.paymentOrderLoaded = null;
@@ -120,8 +126,23 @@ export class OrderDetail {
     this.recommendationLoading.set(false);
     this.recommendationError.set(null);
   }
-  confirm(id: number): void { if (!this.assignmentSubmitting() && !this.paying()) this.store.confirmOrder(id); }
-  cancelOrder(id: number): void { if (!this.assignmentSubmitting() && !this.paying()) this.store.cancelOrder(id); }
+  confirm(id: number): void { this.confirmAction(id, 'confirm'); }
+  cancelOrder(id: number): void { this.confirmAction(id, 'cancel'); }
+  private canAct(id: number, action: 'confirm' | 'cancel'): boolean {
+    const order = this.order();
+    return order?.id === id && !this.store.loading() && !this.assignmentSubmitting() && !this.paying()
+      && (action === 'confirm' ? this.isBuyer && order.status === 'PENDING' : ['PENDING', 'CONFIRMED'].includes(order.status));
+  }
+  private confirmAction(id: number, action: 'confirm' | 'cancel'): void {
+    if (!this.canAct(id, action) || this.dialogRef) return;
+    this.dialogRef = this.dialog.open(ConfirmDialog, { ...CONFIRM_DIALOG_CONFIG, data: { titleKey: 'confirm.title', messageKey: `order-detail.confirm-${action}` } });
+    this.dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(confirmed => {
+      this.dialogRef = undefined;
+      if (confirmed !== true || !this.canAct(id, action)) return;
+      if (action === 'confirm') this.store.confirmOrder(id);
+      else this.store.cancelOrder(id);
+    });
+  }
   pay(order: Order): void {
     const companyId = this.iam.companyId();
     if (!this.isBuyer || !companyId || order.companyId !== companyId || this.order()?.id !== order.id || order.status !== 'PENDING_PAYMENT'
@@ -268,7 +289,7 @@ export class OrderDetail {
     this.fulfillment.assignDelivery({ commandId: this.assignmentCommandId!, orderId, driverId: this.driverId, tankerId: this.tankerId,
       windowStart: new Date(this.windowStart).toISOString(), windowEnd: new Date(this.windowEnd).toISOString(),
       scheduledDate: this.order()?.scheduledDate ?? undefined }).pipe(takeUntil(this.routeChanged), takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: result => { this.assignmentSubmitting.set(false); this.assigning.set(false); this.router.navigate(['/fulfillment/delivery-detail', result.deliveryId]); },
+      next: result => { this.assignmentSubmitting.set(false); this.assigning.set(false); this.router.navigate(['/fulfillment/delivery-detail', result.deliveryId], { state: { notice: 'fulfillment.assignment.success' } }); },
       error: error => {
         this.assignmentSubmitting.set(false);
         this.assignmentError = error?.status === 409 ? 'fulfillment.assignment.conflict' : 'fulfillment.assignment-failed';

@@ -22,14 +22,14 @@
       <ng-container matColumnDef="availableStock"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.available' | translate }}</th><td mat-cell *matCellDef="let p">
         @if (isProvider()) {
           <input type="number" min="0" [max]="p.capacity" [value]="p.availableStock" (input)="stockValues[p.id] = $any($event.target).valueAsNumber" [attr.aria-label]="'product-inventory.stock-input' | translate">
-          <button mat-button (click)="saveStock(p.id)" [disabled]="store.isLoading()">{{ 'product-inventory.update-stock' | translate }}</button>
+          <button mat-button (click)="saveStock(p.id)" [disabled]="store.isLoading() || store.mutatingId() !== null">{{ 'product-inventory.update-stock' | translate }}</button>
         } @else { {{ p.availableStock }} {{ p.unit }} }
       </td></ng-container>
       <ng-container matColumnDef="unit"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.unit' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.unit }}</td></ng-container>
       <ng-container matColumnDef="active"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.status' | translate }}</th><td mat-cell *matCellDef="let p">{{ (p.active ? 'status.active' : 'status.inactive') | translate }}</td></ng-container>
       <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let p">
         <button mat-icon-button [routerLink]="['/fuel-products/product-form', p.id]" color="primary" [matTooltip]="'product-inventory.edit-tooltip' | translate" [attr.aria-label]="'product-inventory.edit-tooltip' | translate"><mat-icon>edit</mat-icon></button>
-        <button mat-icon-button color="warn" (click)="onDelete(p.id)" [matTooltip]="'product-inventory.delete-tooltip' | translate" [attr.aria-label]="'product-inventory.delete-tooltip' | translate"><mat-icon>delete</mat-icon></button>
+        <button mat-icon-button color="warn" (click)="onDelete(p.id)" [disabled]="store.isLoading() || store.mutatingId() !== null" [matTooltip]="'product-inventory.delete-tooltip' | translate" [attr.aria-label]="'product-inventory.delete-tooltip' | translate"><mat-icon>delete</mat-icon></button>
       </td></ng-container>
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr><tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
       <tr class="mat-row" *matNoDataRow><td class="mat-cell" [attr.colspan]="displayedColumns.length" style="text-align:center;padding:2rem">{{ 'product-inventory.empty' | translate }}</td></tr>

@@ -29,6 +29,7 @@ export class AdminPanel {
   readonly deliveryId = signal('');
   readonly confirmId = signal('');
   readonly candidate = signal<AdminUser | null>(null);
+  private confirming = false;
   readonly users = computed(() => this.store.users().filter(user => user.username.toLowerCase().includes(this.search().trim().toLowerCase())));
   readonly statuses = computed(() => [...new Set(this.store.payments().map(payment => payment.status))]);
   readonly payments = computed(() => this.store.payments().filter(payment => !this.paymentStatus() || payment.status === this.paymentStatus()));
@@ -43,8 +44,10 @@ export class AdminPanel {
   setVersion(version: string): void { this.version.set(version); this.store.loadMetrics(version); }
 
   askPromote(user: AdminUser): void {
+    if (this.confirming || this.store.acting()) return;
+    this.confirming = true;
     this.candidate.set(user);
-    this.dialog.open(this.promoteDialog).afterClosed().subscribe(ok => ok && this.store.promote(user));
+    this.dialog.open(this.promoteDialog).afterClosed().subscribe(ok => { this.confirming = false; if (ok) this.store.promote(user); });
   }
 
   export(): void {
@@ -58,7 +61,9 @@ export class AdminPanel {
   }
 
   askDelete(): void {
+    if (this.confirming || this.store.acting()) return;
+    this.confirming = true;
     this.confirmId.set('');
-    this.dialog.open(this.deleteDialog).afterClosed().subscribe(ok => ok && this.store.deleteEvidence(Number(this.deliveryId())));
+    this.dialog.open(this.deleteDialog).afterClosed().subscribe(ok => { this.confirming = false; if (ok) this.store.deleteEvidence(Number(this.deliveryId())); });
   }
 }

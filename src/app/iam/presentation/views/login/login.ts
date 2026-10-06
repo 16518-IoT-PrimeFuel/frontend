@@ -21,7 +21,9 @@ export class Login {
   readonly showPassword = signal(false);
   readonly returnUrl = this.cleanInvitationReturnUrl();
   readonly sessionRequired = signal(!!this.route.snapshot.queryParamMap.get('returnUrl'));
-  username = '';
+  // Llega por estado de navegación desde el registro, nunca por la URL.
+  readonly accountCreated = history.state?.accountCreated === true;
+  username: string = history.state?.username ?? '';
   password = '';
 
   private cleanInvitationReturnUrl(): string | null {

@@ -24,6 +24,7 @@
     "saved": "Se actualizaron los datos de la empresa.",
     "load-error": "No se pudo cargar el perfil. Verifica el acceso e inténtalo de nuevo.",
     "save-error": "No se pudieron guardar los datos. Verifica los campos e inténtalo de nuevo.",
+    "no-changes": "No hay cambios por guardar.",
     "tab-account": "Cuenta",
     "tab-company": "Empresa",
     "tab-organizations": "Organizaciones",
@@ -88,6 +89,23 @@
     "fail": "Marcar como fallida",
     "cancel-delivery": "Cancelar entrega",
     "command-failed": "No se pudo actualizar la entrega",
+    "command-conflict": "El estado de la entrega ya cambió. Revisa el estado actual.",
+    "command-busy": {
+      "start": "Iniciando…",
+      "arrive": "Registrando llegada…",
+      "complete": "Completando…",
+      "fail": "Marcando como fallida…",
+      "cancel": "Cancelando…"
+    },
+    "command-success": {
+      "start": "Entrega iniciada",
+      "arrive": "Llegada registrada",
+      "complete": "Entrega completada",
+      "fail": "Entrega marcada como fallida",
+      "cancel": "Entrega cancelada"
+    },
+    "confirm-fail": "¿Marcar esta entrega como fallida? No se puede deshacer.",
+    "confirm-cancel": "¿Cancelar esta entrega? No se puede deshacer.",
     "delivery-load-failed": "No se pudo cargar la entrega.",
     "delivery-loading": "Cargando entrega…",
     "tracking": "Seguimiento",
@@ -166,7 +184,8 @@
       "no-drivers": "No hay conductores elegibles disponibles.",
       "submitting": "Creando entrega…",
       "unknown-capacity": "Capacidad o volumen sin unidad válida",
-      "invalid-window": "El fin de la ventana debe ser posterior al inicio."
+      "invalid-window": "El fin de la ventana debe ser posterior al inicio.",
+      "success": "Entrega asignada"
     },
     "section-error": "No se pudo cargar esta sección. Reintenta la consulta."
   },
@@ -611,6 +630,9 @@
     "order": "Orden",
     "accepted": "Solicitud aceptada.",
     "rejected": "Solicitud rechazada.",
+    "cancelled": "Solicitud cancelada.",
+    "created": "Solicitud creada.",
+    "cancel-request": "Cancelar solicitud",
     "no-match": "Ninguna solicitud coincide con el filtro.",
     "clear": "Quitar filtro",
     "filter-status": "Filtrar por estado",
@@ -667,9 +689,14 @@
     "products-loading": "Cargando productos…",
     "no-products": "Este distribuidor no tiene productos visibles. No puedes solicitar una entrega hasta que agregue o active productos. Selecciona otro distribuidor.",
     "products-error": "No se pudieron cargar los productos. Reintenta antes de continuar.",
-    "providers-error": "No se pudieron cargar los distribuidores. Recarga la página para reintentar.",
+    "providers-error": "No se pudieron cargar los distribuidores. Reintenta antes de continuar.",
+    "tanks-error": "No se pudieron cargar los tanques. Puedes reintentar o continuar sin tanque.",
+    "sites-error": "No se pudieron cargar las sedes. Puedes reintentar o escribir la dirección.",
+    "loading": "Cargando datos del formulario…",
+    "no-customer": "No se pudo identificar la cuenta de cliente de tu organización. Reintenta la carga antes de enviar.",
+    "creating": "Creando solicitud…",
     "provider-notified": "La organización recibió una alerta para agregar o activar productos (máximo una al día).",
-    "notification-error": "No se pudo confirmar el aviso a la organización. Vuelve a seleccionar el distribuidor para reintentar.",
+    "notification-error": "No se pudo confirmar el aviso a la organización.",
     "retry": "Reintentar",
     "create-title": "Nueva Solicitud",
     "edit-title": "Editar Solicitud",
@@ -737,7 +764,11 @@
     "method-debit_card": "Tarjeta de débito",
     "method-cash": "Efectivo",
     "payment-amount": "Monto",
-    "paid-at": "Pagado el"
+    "paid-at": "Pagado el",
+    "confirm-confirm": "¿Confirmar esta orden?",
+    "confirm-cancel": "¿Cancelar esta orden? No se puede deshacer.",
+    "confirm-success": "Orden confirmada.",
+    "cancel-success": "Orden cancelada."
   },
   "request-status": {
     "unknown": "Sin estado",
@@ -795,6 +826,7 @@
       "submit": "Iniciar sesión",
       "submitting": "Iniciando sesión…",
       "session-required": "Inicia sesión para continuar.",
+      "account-created": "Tu cuenta fue creada. Inicia sesión para continuar.",
       "no-account": "¿No tienes cuenta?",
       "link": "Volver al inicio de sesión"
     },
@@ -806,10 +838,12 @@
       "email-hint": "Usa un correo válido que no tenga una cuenta registrada. Si ya tienes cuenta, inicia sesión.",
       "password-hint": "Usa entre 8 y 120 caracteres. El icono del ojo permite mostrar u ocultar la contraseña.",
       "ruc-hint": "Ingresa exactamente 11 dígitos, sin espacios ni guiones. No se permite un RUC ya registrado.",
+      "created": "Tu cuenta fue creada. Bienvenido a FullTank",
       "submit": "Crear cuenta"
     },
     "username": "Correo electrónico",
     "password": "Contraseña",
+    "confirm-password": "Confirmar contraseña",
     "company": "Nombre de la empresa",
     "ruc": "RUC (11 dígitos)",
     "address": "Dirección",
@@ -855,6 +889,7 @@
       "email-length": "El correo no puede superar los 100 caracteres.",
       "password-required": "Ingresa tu contraseña; no puede estar vacía ni contener solo espacios.",
       "password-length": "La contraseña debe tener entre 8 y 120 caracteres.",
+      "password-mismatch": "Las contraseñas no coinciden.",
       "company-required": "Ingresa el nombre de la empresa; no se permiten solo espacios.",
       "ruc-required": "Ingresa el RUC de la empresa.",
       "ruc-invalid": "El RUC debe contener exactamente 11 dígitos, sin letras, espacios ni guiones.",
@@ -1026,6 +1061,7 @@
     "err-hysteresis-positive": "La histéresis debe ser mayor que 0.",
     "err-low-plus-hysteresis": "El nivel bajo más la histéresis no puede superar 100.",
     "err-target-range": "El nivel objetivo debe ser mayor que 0 y como máximo 100.",
+    "err-initial-level": "El nivel inicial no puede superar la capacidad.",
     "policy-saved": "Política guardada."
   },
   "notification-type": {

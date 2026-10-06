@@ -1,16 +1,18 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CurrencyPipe, DatePipe, registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { map, startWith } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { OrderingStore } from '../../../application/ordering.store';
 import { IamStore } from '../../../../iam/application/iam.store';
 import { Request } from '../../../domain/model/request.entity';
+import { CONFIRM_DIALOG_CONFIG, ConfirmDialog } from '../../../../shared/presentation/component/confirm-dialog/confirm-dialog';
 
 registerLocaleData(localeEs);
 
@@ -35,6 +37,9 @@ export class RequestList {
   readonly store = inject(OrderingStore);
   readonly iam = inject(IamStore);
   private readonly translate = inject(TranslateService);
+  private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
+  private dialogRef?: MatDialogRef<unknown>;
   readonly locale = toSignal(this.translate.onLangChange.pipe(map(event => event.lang), startWith(this.translate.getCurrentLang() || 'es')), { requireSync: true });
   readonly status = signal('');
   readonly search = signal('');
@@ -54,7 +59,12 @@ export class RequestList {
   });
   readonly missing = missingRequestFields;
   statusKey(row: Request): string { return this.statuses.includes(row.status) ? row.status.toLowerCase() : 'unknown'; }
-  constructor() { this.store.loadRequests(); this.store.loadNames(); }
+  constructor() {
+    this.store.loadRequests(); this.store.loadNames();
+    const notice = inject(Router).currentNavigation()?.extras.state?.['notice'];
+    if (typeof notice === 'string') this.store.notice.set(notice); // al final: run() limpia el aviso
+    this.destroyRef.onDestroy(() => this.dialogRef?.close());
+  }
   refresh(): void { if (!this.store.loading()) { this.store.loadRequests(); this.store.loadNames(); } }
   clearFilters(): void { this.search.set(''); this.status.set(''); this.incompleteOnly.set(false); }
   toggleTracking(id: number): void { this.expandedId.set(this.expandedId() === id ? null : id); this.decision.set(null); this.rejectionReason = ''; }
@@ -66,5 +76,16 @@ export class RequestList {
     else if (this.decision() === 'reject' && this.rejectionReason.trim() && this.rejectionReason.trim().length <= 240) this.store.rejectRequest(row.id, this.rejectionReason.trim());
     else return;
     this.decision.set(null); this.rejectionReason = '';
+  }
+  /** La lista del comprador solo trae sus propias solicitudes; el store vuelve a comprobar rol y estado. */
+  canCancel(row: Request): boolean { return this.iam.isBuyer() && row.status === 'PENDING' && !this.store.loading(); }
+  cancelRequest(row: Request): void {
+    if (!this.canCancel(row) || this.dialogRef) return;
+    this.dialogRef = this.dialog.open(ConfirmDialog, { ...CONFIRM_DIALOG_CONFIG, data: { titleKey: 'confirm.title', messageKey: 'request-detail.confirm-cancel' } });
+    this.dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(confirmed => {
+      this.dialogRef = undefined;
+      const current = this.store.requests().find(item => item.id === row.id);
+      if (confirmed === true && current && this.canCancel(current)) this.store.cancelRequest(row.id);
+    });
   }
 }

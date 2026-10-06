@@ -119,3 +119,4 @@ mat-chip.cancelled {
 .assignment-summary { grid-column:1/-1; padding:16px; border:1px solid #d1d5db; border-radius:8px; overflow-wrap:anywhere }
 .assignment-summary h4 { margin-top:0 }
 @media(max-width:600px){.assignment{grid-template-columns:1fr}}
+.notice { max-width:900px; margin:0 auto 16px; padding:10px 12px; border-radius:6px; background:#dff3e6; color:#14532d; box-sizing:border-box }

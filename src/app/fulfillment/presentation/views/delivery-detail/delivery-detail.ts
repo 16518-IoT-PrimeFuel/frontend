@@ -1,15 +1,17 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { of, Subscription, switchMap } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DatePipe, DecimalPipe } from '@angular/common';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { FulfillmentApi } from '../../../infrastructure/fulfillment-api';
 import { TranslatePipe } from '@ngx-translate/core';
 import { OrderingApi } from '../../../../ordering/infrastructure/ordering-api';
 import { ProviderEquipmentApi, unitKey } from '../../../../equipment/infrastructure/provider-equipment.api';
 import { ProviderTankReading } from '../../../../equipment/domain/model/provider-equipment.entity';
 import { ValveObservation } from '../../../domain/model/provider-delivery.entity';
+import { CONFIRM_DIALOG_CONFIG, ConfirmDialog, ConfirmDialogResult } from '../../../../shared/presentation/component/confirm-dialog/confirm-dialog';
 
 @Component({ selector: 'app-delivery-detail', standalone: true, imports: [FormsModule, DatePipe, DecimalPipe, TranslatePipe], templateUrl: './delivery-detail.html', styleUrl: './delivery-detail.css' })
 export class DeliveryDetail {
@@ -17,10 +19,14 @@ export class DeliveryDetail {
   private readonly ordering = inject(OrderingApi);
   private readonly equipment = inject(ProviderEquipmentApi);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialog = inject(MatDialog);
+  private dialogRef?: MatDialogRef<ConfirmDialog, ConfirmDialogResult>;
   private readonly now = signal(Date.now());
   private reloadRequests = new Subscription();
   private valveRequest?: Subscription;
-  readonly commandBusy = signal(false);
+  /** Acción de estado en curso; su botón muestra el texto de carga. */
+  readonly busyAction = signal<string | null>(null);
+  readonly commandBusy = computed(() => this.busyAction() !== null);
   readonly geofenceBusy = signal(false);
   readonly trackingError = signal(false);
   readonly samplesError = signal(false);
@@ -40,17 +46,20 @@ export class DeliveryDetail {
   /** Última lectura del tanque asociado; null oculta la sección (eslabón faltante de la cadena orden->solicitud->tanque). */
   readonly tankReading = signal<ProviderTankReading | null>(null);
   readonly message = signal('');
+  readonly commandError = signal('');
   readonly loadError = signal(false);
   readonly driverName = signal('');
   readonly tankerName = signal('');
   deliveredVolume: number | null = null;
-  reason = '';
   centerLatitude: number | null = null;
   centerLongitude: number | null = null;
   radiusMeters: number | null = null;
   constructor() {
     const timer = setInterval(() => this.now.set(Date.now()), 60_000);
     this.destroyRef.onDestroy(() => clearInterval(timer));
+    this.destroyRef.onDestroy(() => this.dialogRef?.close());
+    const notice = inject(Router).currentNavigation()?.extras.state?.['notice'];
+    if (typeof notice === 'string') this.message.set(notice);
     this.reload();
   }
   reload(): void {
@@ -102,10 +111,28 @@ export class DeliveryDetail {
   command(action: string): void {
     if (this.commandBusy() || !this.can(action)) return;
     if (action === 'complete' && (this.deliveredVolume === null || !Number.isFinite(this.deliveredVolume) || this.deliveredVolume <= 0)) return;
-    if (['fail', 'cancel'].includes(action) && !this.reason.trim()) return;
-    const body = action === 'complete' ? { deliveredVolume: this.deliveredVolume } : ['fail','cancel'].includes(action) ? { reason: this.reason } : {};
-    this.commandBusy.set(true);
-    this.api.deliveryCommand(this.id, action, body).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: () => { this.commandBusy.set(false); this.message.set(''); this.reason = ''; this.reload(); }, error: () => { this.commandBusy.set(false); this.message.set('fulfillment.command-failed'); } });
+    if (['fail', 'cancel'].includes(action)) this.confirmWithReason(action);
+    else this.send(action, action === 'complete' ? { deliveredVolume: this.deliveredVolume } : {});
+  }
+  private confirmWithReason(action: string): void {
+    if (this.dialogRef) return;
+    this.dialogRef = this.dialog.open(ConfirmDialog, { ...CONFIRM_DIALOG_CONFIG, data: { titleKey: 'confirm.title', messageKey: `fulfillment.confirm-${action}`, reason: { labelKey: 'fulfillment.reason', required: true } } });
+    this.dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
+      this.dialogRef = undefined;
+      const reason = typeof result === 'object' ? result.reason : '';
+      if (!reason || this.commandBusy() || !this.can(action)) return;
+      this.send(action, { reason });
+    });
+  }
+  private send(action: string, body: object): void {
+    this.busyAction.set(action);
+    this.message.set('');
+    this.commandError.set('');
+    this.api.deliveryCommand(this.id, action, body).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => { this.busyAction.set(null); this.message.set(`fulfillment.command-success.${action}`); this.reload(); },
+      // 409: el estado de la entrega ya cambió; se recarga para mostrar el vigente.
+      error: e => { this.busyAction.set(null); this.commandError.set(e?.status === 409 ? 'fulfillment.command-conflict' : 'fulfillment.command-failed'); if (e?.status === 409) this.reload(); },
+    });
   }
   /** Rangos del backend (GeofencePolicy): latitud [-90, 90], longitud [-180, 180], radio > 0. */
   get latitudeInvalid(): boolean { return this.centerLatitude != null && (!Number.isFinite(this.centerLatitude) || this.centerLatitude < -90 || this.centerLatitude > 90); }

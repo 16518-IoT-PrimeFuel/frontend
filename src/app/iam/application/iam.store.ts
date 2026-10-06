@@ -1,5 +1,5 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { Observable, filter, switchMap, tap } from 'rxjs';
+import { Observable, catchError, filter, switchMap, tap, throwError } from 'rxjs';
 import { NavigationStart, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { IamApi, OrganizationProfile } from '../infrastructure/iam-api';
@@ -16,6 +16,9 @@ function restoreSession(): Session | null {
     return null;
   }
 }
+
+/** La cuenta se creó, pero falló el ingreso encadenado: no es un error de registro. */
+export class SignInAfterSignUpError extends Error {}
 
 @Injectable({ providedIn: 'root' })
 export class IamStore {
@@ -47,7 +50,9 @@ export class IamStore {
   }
 
   signUp(form: SignUpForm): Observable<Session> {
-    return this.api.signUp(form).pipe(switchMap(() => this.signIn(form.username, form.password)));
+    return this.api.signUp(form).pipe(switchMap(() => this.signIn(form.username, form.password).pipe(
+      catchError(() => throwError(() => new SignInAfterSignUpError())),
+    )));
   }
 
   refreshMemberships(): Observable<OrganizationProfile[]> {

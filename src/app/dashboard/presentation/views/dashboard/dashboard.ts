@@ -46,6 +46,7 @@ export class Dashboard {
   private ordersRequest?: Subscription;
   private inboxRequest?: Subscription;
   readonly isBuyer = this.iam.isBuyer();
+  readonly accountCreated = history.state?.accountCreated === true;
   readonly loading = signal(true);
   readonly error = signal(false);
   readonly analytics = signal<BuyerAnalytics | ProviderAnalytics | null>(null);
@@ -99,7 +100,12 @@ export class Dashboard {
   }));
   readonly chartOptions: ChartOptions<'bar'> = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
 
-  constructor() { this.load(); if (!this.isBuyer) { this.loadCriticalTanks(); this.loadTodayDeliveries(); } }
+  constructor() {
+    // La marca se consume una vez: no debe reaparecer al recargar ni al volver al panel.
+    if (this.accountCreated) history.replaceState({ ...history.state, accountCreated: undefined }, '');
+    this.load();
+    if (!this.isBuyer) { this.loadCriticalTanks(); this.loadTodayDeliveries(); }
+  }
 
   loadCriticalTanks(): void {
     this.criticalTanks.set({ loading: true, error: false, data: [] });

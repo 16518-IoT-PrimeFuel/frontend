@@ -20,6 +20,10 @@
       <small id="register-password-hint" class="iam-hint"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>{{ 'auth.register.password-hint' | translate }}</small>
       <small id="register-password-error" class="iam-error" aria-live="polite">@if (passwordField.invalid && passwordField.touched) { {{ (passwordField.hasError('required') || passwordField.hasError('pattern') ? 'auth.validation.password-required' : 'auth.validation.password-length') | translate }} }</small>
     </label>
+    <label>{{ 'auth.confirm-password' | translate }}
+      <input #confirmField="ngModel" name="confirmPassword" [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="confirmPassword" (ngModelChange)="error.set('')" autocomplete="new-password" [attr.aria-invalid]="confirmField.touched && confirmPassword !== password" aria-describedby="register-confirm-error">
+      <small id="register-confirm-error" class="iam-error" aria-live="polite">@if (confirmField.touched && confirmPassword !== password) { {{ 'auth.validation.password-mismatch' | translate }} }</small>
+    </label>
     <label>{{ 'auth.company' | translate }}
       <input #companyField="ngModel" name="name" [(ngModel)]="name" (ngModelChange)="error.set('')" required pattern=".*\S.*" [attr.aria-invalid]="companyField.invalid && companyField.touched" aria-describedby="register-company-error">
       <small id="register-company-error" class="iam-error" aria-live="polite">@if (companyField.invalid && companyField.touched) { {{ 'auth.validation.company-required' | translate }} }</small>

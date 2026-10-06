@@ -11,6 +11,7 @@
     </nav>
   </header>
 
+  @if (accountCreated) { <p class="welcome" role="status">{{ 'auth.register.created' | translate }}</p> }
   @if (loading()) { <p role="status">{{ 'analytics.loading' | translate }}</p> }
   @if (error()) {
     <div class="state" role="alert">

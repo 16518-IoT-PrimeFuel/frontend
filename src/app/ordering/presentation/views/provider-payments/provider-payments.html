@@ -74,17 +74,18 @@
   </nav>
 }
 
-<ng-template #completeDialog>
+<ng-template #completeDialog let-dialogRef="dialogRef">
   <h2 mat-dialog-title>{{ 'provider-payments.complete-title' | translate }}</h2>
   <mat-dialog-content>
     <p>{{ 'provider-payments.order' | translate }} #{{ selected()?.orderId }} · {{ selected()?.amount | number:'1.2-2' }}</p>
     <label>{{ 'provider-payments.reference' | translate }}
-      <input [formControl]="reference" autocomplete="off" />
+      <input [formControl]="reference" autocomplete="off" [attr.aria-invalid]="reference.touched && reference.invalid" />
     </label>
+    @if (reference.touched && reference.invalid) { <p class="dl-error" role="alert">{{ 'provider-payments.reference-required' | translate }}</p> }
   </mat-dialog-content>
   <mat-dialog-actions align="end">
     <button mat-button [mat-dialog-close]="false">{{ 'confirm.cancel' | translate }}</button>
-    <button mat-flat-button [mat-dialog-close]="true" [disabled]="reference.invalid">{{ 'confirm.confirm' | translate }}</button>
+    <button mat-flat-button type="button" (click)="submitReference(dialogRef)">{{ 'confirm.confirm' | translate }}</button>
   </mat-dialog-actions>
 </ng-template>
 
