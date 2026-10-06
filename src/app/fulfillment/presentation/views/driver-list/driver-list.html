@@ -98,7 +98,7 @@
           >
             <mat-icon>edit</mat-icon>
           </button>
-          <button mat-icon-button (click)="onToggleActive(element.id, element.active)" [matTooltip]="element.active ? ('tanker-list.deactivate' | translate) : ('tanker-list.activate' | translate)"><mat-icon>{{ element.active ? 'block' : 'check_circle' }}</mat-icon></button>
+          <button mat-icon-button (click)="onToggleActive(element.id, element.active)" [disabled]="store.isLoading()" [matTooltip]="element.active ? ('tanker-list.deactivate' | translate) : ('tanker-list.activate' | translate)"><mat-icon>{{ element.active ? 'block' : 'check_circle' }}</mat-icon></button>
           <button mat-button (click)="onEligibility(element.id)" [disabled]="store.driverEligibilityLoading()[element.id]" [attr.aria-label]="'driver-list.eligibility-for' | translate:{ name: getFullName(element.firstName, element.lastName) }">
             {{ 'driver-list.eligibility' | translate }}
             @if (store.driverEligibilityLoading()[element.id]) { <mat-spinner diameter="16"></mat-spinner> }

@@ -17,6 +17,7 @@ type DriverRequest = Omit<Driver, 'id' | 'providerId' | 'createdAt'>;
 @Injectable({ providedIn: 'root' })
 export class FulfillmentStore {
   private deliveryRequest?: Subscription;
+  private mutating = false;
   private readonly _tankerList = signal<Tanker[]>([]);
   private readonly _selectedTanker = signal<Tanker | null>(null);
   private readonly _driverList = signal<Driver[]>([]);
@@ -99,8 +100,7 @@ export class FulfillmentStore {
   loadTankerById(id: number): void { this.run(this.api.getTankerById(id), 'errors.generic', (row) => this._selectedTanker.set(row)); }
 
   registerTanker(request: TankerRequest, onSuccess?: () => void): void {
-    this._successMsg.set('');
-    this.run(this.api.registerTanker(request), 'errors.generic', (row) => {
+    this.mutate(() => this.api.registerTanker(request), (row) => {
       this._tankerList.update((list) => [...list, row]);
       this._successMsg.set('tanker-form.saved-created');
       onSuccess?.();
@@ -108,8 +108,7 @@ export class FulfillmentStore {
   }
 
   updateTanker(id: number, request: Partial<TankerRequest>, onSuccess?: () => void): void {
-    this._successMsg.set('');
-    this.run(this.api.updateTanker(id, request), 'errors.generic', (row) => {
+    this.mutate(() => this.api.updateTanker(id, request), (row) => {
       this._tankerList.update((list) => list.map((t) => (t.id === id ? row : t)));
       this._selectedTanker.set(row);
       this._successMsg.set('tanker-form.saved');
@@ -118,8 +117,7 @@ export class FulfillmentStore {
   }
 
   updateTankerStatus(id: number, request: Pick<Tanker, 'status'>): void {
-    this._successMsg.set('');
-    this.run(this.api.updateTankerStatus(id, request), 'errors.generic', (row) => {
+    this.mutate(() => this.api.updateTankerStatus(id, request), (row) => {
       this._tankerList.update((list) => list.map((t) => (t.id === id ? row : t)));
       this.clearTankerEligibility(id);
       this._successMsg.set('tanker-form.saved');
@@ -132,8 +130,7 @@ export class FulfillmentStore {
   loadDriverById(id: number): void { this.run(this.api.getDriverById(id), 'errors.generic', (row) => this._selectedDriver.set(row)); }
 
   registerDriver(request: DriverRequest, onSuccess?: () => void): void {
-    this._successMsg.set('');
-    this.run(this.api.registerDriver(request), 'errors.generic', (row) => {
+    this.mutate(() => this.api.registerDriver(request), (row) => {
       this._driverList.update((list) => [...list, row]);
       this._successMsg.set('driver-form.saved-created');
       onSuccess?.();
@@ -141,8 +138,7 @@ export class FulfillmentStore {
   }
 
   updateDriver(id: number, request: Partial<DriverRequest>, onSuccess?: () => void): void {
-    this._successMsg.set('');
-    this.run(this.api.updateDriver(id, request), 'errors.generic', (row) => {
+    this.mutate(() => this.api.updateDriver(id, request), (row) => {
       this._driverList.update((list) => list.map((d) => (d.id === id ? row : d)));
       this._selectedDriver.set(row);
       this._successMsg.set('driver-form.saved');
@@ -151,8 +147,7 @@ export class FulfillmentStore {
   }
 
   updateDriverStatus(id: number, request: Pick<Driver, 'status'>): void {
-    this._successMsg.set('');
-    this.run(this.api.updateDriverStatus(id, request), 'errors.generic', (row) => {
+    this.mutate(() => this.api.updateDriverStatus(id, request), (row) => {
       this._driverList.update((list) => list.map((d) => (d.id === id ? row : d)));
       this.clearDriverEligibility(id);
       this._successMsg.set('driver-form.saved');
@@ -171,6 +166,14 @@ export class FulfillmentStore {
   }
 
   clearMessages(): void { this._error.set(''); this._successMsg.set(''); }
+
+  /** Las cargas pueden coincidir; las mutaciones no: una segunda se ignora hasta que termine la que está en curso. */
+  private mutate<T>(request: () => Observable<T>, done: (value: T) => void): void {
+    if (this.mutating) return;
+    this.mutating = true;
+    this._successMsg.set('');
+    this.run(request().pipe(finalize(() => { this.mutating = false; })), 'errors.generic', done);
+  }
 
   private run<T>(request: Observable<T>, fallback: string, done: (value: T) => void): void {
     this._isLoading.set(true);
