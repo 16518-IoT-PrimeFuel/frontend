@@ -1,7 +1,7 @@
 import { Component, computed, ElementRef, inject, signal } from '@angular/core';
 import { catchError, finalize, forkJoin, Observable, of, Subscription, switchMap, tap } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { MatButton } from '@angular/material/button';
 import { MatError, MatFormField, MatInput, MatLabel } from '@angular/material/input';
@@ -20,6 +20,8 @@ export class RequestForm {
   private readonly equipmentApi = inject(EquipmentApi);
   private readonly equipment = inject(EquipmentStore);
   private readonly router = inject(Router);
+  /** Tanque desde el que se abrió el formulario (`/tanks`); solo se preselecciona si pertenece a la cuenta. */
+  private readonly requestedTankId = Number(inject(ActivatedRoute).snapshot.queryParamMap.get('tankId'));
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
   readonly store = inject(OrderingStore);
   /** Cuenta interna de la organización activa, resuelta desde la identidad; el comprador no la elige. */
@@ -53,13 +55,16 @@ export class RequestForm {
         switchMap(customer => {
           this.customerAccountId.set(customer.id);
           return forkJoin([
-            this.part(this.api.tanks(), values => this.tanks.set(values.filter(t => t.customerAccountId === customer.id)), 'request-form.tanks-error'),
+            this.part(this.api.tanks(), values => { this.tanks.set(values.filter(t => t.customerAccountId === customer.id)); this.preselectTank(); }, 'request-form.tanks-error'),
             this.part(this.equipmentApi.sites(customer.id), values => this.sites.set(values), 'request-form.sites-error'),
           ]);
         }),
         catchError(e => { this.loadError.set(apiError(e)); return of(null); }),
       ),
     ]).pipe(finalize(() => this.loading.set(false))).subscribe();
+  }
+  private preselectTank(): void {
+    if (this.form.controls.tankId.pristine && this.tanks().some(t => t.id === this.requestedTankId)) this.form.controls.tankId.setValue(this.requestedTankId);
   }
   private part<T>(source: Observable<T>, save: (value: T) => void, errorKey: string): Observable<unknown> {
     return source.pipe(tap(save), catchError(() => { this.loadError.set(errorKey); return of(null); }));
