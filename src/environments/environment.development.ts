@@ -1,4 +1,6 @@
+import { mapbox } from './mapbox';
 export const environment = {
+  mapbox,
   production: false,
   // Base API URL
   serverBasePath: 'http://localhost:8080/api',

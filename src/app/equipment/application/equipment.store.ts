@@ -2,7 +2,7 @@ import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, finalize, forkJoin, map, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
 import { EquipmentApi, apiError } from '../infrastructure/equipment.api';
-import { Customer, RefillEpisode, RefillPolicy, Site, Tank } from '../domain/model/equipment.entity';
+import { Customer, NewSite, RefillEpisode, RefillPolicy, Site, Tank } from '../domain/model/equipment.entity';
 import { ProviderTankReading } from '../domain/model/provider-equipment.entity';
 import { IamStore } from '../../iam/application/iam.store';
 import { IamApi } from '../../iam/infrastructure/iam-api';
@@ -30,6 +30,7 @@ export class EquipmentStore {
   readonly error = signal('');
   readonly loading = signal(false);
   readonly tanksLoading = signal(false);
+  readonly sitesLoading = signal(false);
   private episodesRequest?: Subscription;
   readonly creatingSite = signal(false);
   readonly creatingTank = signal(false);
@@ -99,17 +100,24 @@ export class EquipmentStore {
     const sequence = ++this.sitesSequence;
     this.sitesRequest?.unsubscribe();
     this.sites.set([]);
-    this.sitesRequest = this.api.sites(customerId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.sitesLoading.set(true);
+    this.sitesRequest = this.api.sites(customerId).pipe(takeUntilDestroyed(this.destroyRef),
+      finalize(() => { if (sequence === this.sitesSequence) this.sitesLoading.set(false); })).subscribe({
       next: rows => { if (sequence === this.sitesSequence) this.sites.set(rows); },
       error: e => { if (sequence === this.sitesSequence) this.error.set(apiError(e)); },
     });
   }
-  createSite(value: { name: string; address: string }, done?: () => void): void {
+  createSite(value: NewSite, done?: () => void): void {
     const customer = this.customer();
     if (this.creatingSite() || !customer) return;
     this.error.set(''); this.creatingSite.set(true);
     this.api.createSite(customer.id, { ...value }).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.creatingSite.set(false))).subscribe({
-      next: () => { this.loadSites(customer.id); done?.(); },
+      next: site => {
+        if (site.latitude !== value.latitude || site.longitude !== value.longitude || site.siteType !== value.siteType) {
+          this.error.set('equipment.map.contract-pending'); return;
+        }
+        this.loadSites(customer.id); done?.();
+      },
       error: e => this.error.set(apiError(e)),
     });
   }

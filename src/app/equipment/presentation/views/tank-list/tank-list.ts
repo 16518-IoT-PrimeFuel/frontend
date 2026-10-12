@@ -1,9 +1,9 @@
-import { Component, ElementRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { map } from 'rxjs';
 import { FormsModule, NgForm } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -21,24 +21,29 @@ import { unitKey } from '../../../infrastructure/provider-equipment.api';
 import { REFILL_POLICY_DIALOG_CONFIG, RefillPolicyDialog } from '../refill-policy-dialog/refill-policy-dialog';
 import { FUEL_TYPES } from '../../../../inventory/domain/model/fuel-product.entity';
 
+import { TankMap } from './tank-map';
+import { SiteLocationDialog } from './site-location-dialog';
+import { lockMapDialogScroll } from './tank-map-canvas';
+
 type Filter = 'all' | 'low' | 'ok';
 
 const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: '', capacity: 0, unit: 'LITERS', initialLevel: 0 });
 
 @Component({
   selector: 'app-tank-list', standalone: true, providers: [EquipmentStore],
-  imports: [BaseChartDirective, DatePipe, DecimalPipe, FormsModule, RouterLink, TranslatePipe, MatIconModule, MatButtonModule, MatTabsModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, MatSelectModule],
+  imports: [TankMap, BaseChartDirective, DatePipe, DecimalPipe, FormsModule, RouterLink, TranslatePipe, MatIconModule, MatButtonModule, MatTabsModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, MatSelectModule],
   template: `
     <main class="tk">
       @if (store.error()) { <p class="dl-error tk-error" role="alert"><span>{{ store.error() | translate }}</span><button mat-button type="button" (click)="store.load()">{{ 'equipment.retry' | translate }}</button></p> }
       @if (store.loading() || store.tanksLoading()) { <mat-progress-bar mode="indeterminate" [attr.aria-label]="'equipment.loading' | translate"></mat-progress-bar> }
 
-      <div class="tk-split" [class.picked]="selectedId() !== null" [class.solo]="!store.tanks().length">
-        <section class="tk-list" aria-labelledby="tanks-heading">
           <header class="tk-head">
             <h1 id="tanks-heading">{{ 'equipment.title' | translate }}</h1>
             <button mat-flat-button color="primary" type="button" [disabled]="!store.customer()" [attr.aria-expanded]="formOpen()" aria-controls="tank-form" (click)="formOpen.set(!formOpen())"><mat-icon aria-hidden="true">add</mat-icon>{{ 'equipment.add-tank' | translate }}</button>
           </header>
+
+      <div class="tk-split" [class.picked]="selectedId() !== null" [class.solo]="!store.tanks().length">
+        <section class="tk-list" aria-labelledby="tanks-heading">
           @if (formOpen() && store.customer()) {
             <section id="tank-form" class="tk-panel"><h2>{{ 'equipment.add-tank' | translate }}</h2>
               <form #tankForm="ngForm" (ngSubmit)="addTank(tankForm)" class="tank-form">
@@ -123,6 +128,7 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
                   <div class="tk-tab">
                     <dl class="tk-facts">
                       <div><dt>{{ 'equipment.site' | translate }}</dt><dd>@if (siteOf(item); as place) { {{ place.name }} @if (place.address) { <small>{{ place.address }}</small> } } @else { {{ 'equipment.no-site' | translate }} }</dd></div>
+                      @if (siteOf(item); as place) { @if (place.latitude != null && place.longitude != null) { <div><dt>{{ 'equipment.map.coordinates' | translate }}</dt><dd>{{ place.latitude | number:'1.6-6' }}, {{ place.longitude | number:'1.6-6' }}</dd></div> } }
                       <div><dt>{{ 'equipment.fuel-type' | translate }}</dt><dd>{{ item.fuelType ? ('fuel-type.' + item.fuelType.toLowerCase() | translate) : ('equipment.no-fuel' | translate) }}</dd></div>
                       <div><dt>{{ 'equipment.unit' | translate }}</dt><dd>{{ unit(item.unit) | translate }}</dd></div>
                       <div><dt>{{ 'equipment.level-source' | translate }}</dt><dd>{{ item.levelSource }}</dd></div>
@@ -156,16 +162,12 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
         }
       </div>
 
-      <section class="tk-panel" aria-labelledby="sites-heading">
-        <h2 id="sites-heading">{{ 'equipment.sites' | translate }}</h2><p class="tk-muted">{{ 'equipment.sites-hint' | translate }}</p>
-        <ul class="site-list">@for (site of store.sites(); track site.id) { <li><mat-icon aria-hidden="true">location_on</mat-icon><span><b>{{ site.name }}</b>@if (site.address) { <small>{{ site.address }}</small> }</span></li> }</ul>
+      <section class="tk-panel tk-sites" [attr.aria-label]="'equipment.map.title' | translate">
+      <app-tank-map [sites]="store.sites()" [tanks]="store.tanks()" [visibleTanks]="visible()" [includeEmptySites]="filter() === 'all'" [selectedId]="shown()?.id ?? null" [policies]="store.policies()" [loading]="store.loading() || store.tanksLoading() || store.sitesLoading()" (selectTank)="selectTank($event)"></app-tank-map>
         @if (store.customer() && !store.sites().length) { <p class="tk-muted">{{ 'equipment.no-sites' | translate }}</p> }
         @if (store.customer()) {
-          <form #siteForm="ngForm" (ngSubmit)="addSite(siteForm)" class="site-form">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>{{ 'equipment.name' | translate }}</mat-label><input matInput name="siteName" [(ngModel)]="site.name" required maxlength="150"><mat-error>{{ 'validation.required' | translate }}</mat-error></mat-form-field>
-            <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>{{ 'equipment.address' | translate }}</mat-label><input matInput name="siteAddress" [(ngModel)]="site.address"></mat-form-field>
-            <button mat-stroked-button [disabled]="store.creatingSite()">{{ 'equipment.add-site' | translate }}</button>
-          </form>
+          <div class="site-form"><p class="site-help"><mat-icon aria-hidden="true">info</mat-icon>{{ 'equipment.map.create-help' | translate }}</p>
+            <button mat-stroked-button type="button" [disabled]="store.creatingSite()" (click)="addSite()"><mat-icon aria-hidden="true">add_location_alt</mat-icon>{{ 'equipment.add-site' | translate }}</button></div>
         }
       </section>
     </main>`,
@@ -199,6 +201,7 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
     .tk-bar.low span{background:#b45309}
     .tk-muted{margin:0;color:#4b5563;font-size:.875rem}
     .tk-detail,.tk-panel{display:grid;gap:16px;min-width:0;padding:24px;border:1px solid #e5e7eb;border-radius:16px;background:#fff}
+    .tk-sites{padding:0;overflow:hidden}.tk-sites>h2,.tk-sites>p,.tk-sites>.site-form,.tk-sites>.site-list{margin-left:24px;margin-right:24px}.tk-sites>h2{margin-top:24px!important}.tk-sites>.site-form{margin-bottom:24px}
     .tk-panel h2,.tk-tab h3{margin:0;font-size:1.0625rem;font-weight:600}
     .tk-title{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
     .tk-title h2{margin:0;font-size:1.5rem;line-height:1.2;overflow-wrap:anywhere}
@@ -236,6 +239,7 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
     .tk-timeline p{margin:0}.tk-timeline p+p{color:#4b5563;font-size:.875rem}
     .tk-tab a{color:#1e3a8a;font-weight:500}
     .tank-form,.site-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 16px;align-items:center}
+    .site-form{grid-template-columns:minmax(0,1fr) auto}.site-help{display:flex;align-items:flex-start;gap:10px;margin:0;font-size:.875rem;line-height:1.6;color:#4b5563}.site-help mat-icon{flex:none;color:#1e3a8a}
     .actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
     .site-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:12px 32px}
     .site-list li{display:flex;align-items:center;gap:10px}
@@ -246,6 +250,8 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
       .tk-split:not(.picked) .tk-card[aria-current]{border-color:#e5e7eb;box-shadow:none}
       .tk-back{display:inline-flex}
       .tk-detail,.tk-panel{padding:16px}
+      .tk-sites{padding:0}
+      .site-form{grid-template-columns:minmax(0,1fr)}
       .tk-detail-head .tk-actions,.tk-detail-head .tk-actions a,.tk-detail-head .tk-actions button{width:100%}
     }
     @media (prefers-reduced-motion:reduce){.tk-card,.tk-load .fuel{transition:none}}
@@ -255,8 +261,10 @@ export class TankList implements OnInit {
   protected readonly store = inject(EquipmentStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
+  protected selectTank(id: number): void { void this.router.navigate([], { queryParams: { tank: id }, queryParamsHandling: 'merge' }); }
   protected readonly formOpen = signal(false);
-  protected site = { name: '', address: '' };
   protected tank = emptyTank();
   protected readonly fuelTypes = FUEL_TYPES;
   /** Tanque elegido en la URL (`?tank=`); sin parámetro, el escritorio muestra el primero y el móvil solo el listado. */
@@ -291,7 +299,12 @@ export class TankList implements OnInit {
   }
   protected freeSpace(tank: Tank): number { return Math.max(0, tank.capacity - tank.currentLevel); }
   protected readonly unit = unitKey;
-  protected addSite(form: NgForm): void { if (form.invalid) { this.showErrors(form, '.site-form'); return; } this.store.createSite({ ...this.site }, () => { this.site = { name: '', address: '' }; form.resetForm(this.site); }); }
+  protected addSite(): void {
+    const ref = this.dialog.open(SiteLocationDialog, { data: { store: this.store }, width: '1200px', maxWidth: '96vw', maxHeight: '96dvh', autoFocus: 'first-heading', restoreFocus: true });
+    lockMapDialogScroll(this.host.nativeElement, ref);
+    const unregister = this.destroyRef.onDestroy(() => ref.close());
+    ref.afterClosed().subscribe(unregister);
+  }
   protected addTank(form: NgForm): void {
     if (form.invalid) { this.showErrors(form, '.tank-form'); return; }
     this.store.createTank({ ...this.tank }, () => { this.tank = emptyTank(); this.formOpen.set(false); });

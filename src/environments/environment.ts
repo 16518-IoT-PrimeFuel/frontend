@@ -1,4 +1,6 @@
+import { mapbox } from './mapbox';
 export const environment = {
+  mapbox,
   production: true,
 
   // Base API URL

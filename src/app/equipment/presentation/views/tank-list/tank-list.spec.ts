@@ -6,12 +6,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EquipmentStore } from '../../../application/equipment.store';
 import { RefillPolicy, Tank } from '../../../domain/model/equipment.entity';
 import { TankList } from './tank-list';
+import { MatDialog } from '@angular/material/dialog';
+import { SiteLocationDialog } from './site-location-dialog';
+import { of } from 'rxjs';
 
 describe('TankList', () => {
   let fixture: ComponentFixture<TankList>;
   let element: HTMLElement;
   const store = {
-    customer: signal({ id: 4, name: 'ACME', legacyCompanyId: 7, active: true }), sites: signal([]), tanks: signal<Tank[]>([]), policies: signal<Record<number, RefillPolicy | null>>({}), episodes: signal([]), readings: signal([]), readingsState: signal('ready'), error: signal(''), loading: signal(false), tanksLoading: signal(false),
+    customer: signal({ id: 4, name: 'ACME', legacyCompanyId: 7, active: true }), sites: signal([]), tanks: signal<Tank[]>([]), policies: signal<Record<number, RefillPolicy | null>>({}), episodes: signal([]), readings: signal([]), readingsState: signal('ready'), error: signal(''), loading: signal(false), tanksLoading: signal(false), sitesLoading: signal(false),
     creatingSite: signal(false), creatingTank: signal(false), load: vi.fn(), loadEpisodes: vi.fn(), loadReadings: vi.fn(), createSite: vi.fn(), createTank: vi.fn(),
   };
 
@@ -40,14 +43,15 @@ describe('TankList', () => {
     expect(store.createTank).not.toHaveBeenCalled();
   });
 
-  it('shows the site error and does not call the service on an invalid submit', () => {
+  it('opens the point selection dialog without creating a site immediately', () => {
+    const open = vi.spyOn(fixture.componentInstance['dialog'], 'open').mockReturnValue({ beforeClosed: () => of(undefined), afterClosed: () => of(undefined), close: vi.fn() } as any);
     const submit = element.querySelector<HTMLButtonElement>('.site-form button')!;
     expect(submit.disabled).toBe(false);
     submit.click();
     fixture.detectChanges();
-    expect(errors('.site-form')).toEqual(['validation.required']);
-    expect(document.activeElement).toBe(element.querySelector('input[name="siteName"]'));
+    expect(open).toHaveBeenCalledWith(SiteLocationDialog, expect.objectContaining({ data: { store }, restoreFocus: true }));
     expect(store.createSite).not.toHaveBeenCalled();
+    open.mockRestore();
   });
 
   it('disables the submit buttons only while a request is in flight', () => {

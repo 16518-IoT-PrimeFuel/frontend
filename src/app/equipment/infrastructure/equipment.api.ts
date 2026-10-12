@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { Customer, RefillEpisode, RefillPolicy, Site, Tank } from '../domain/model/equipment.entity';
+import { Customer, NewSite, RefillEpisode, RefillPolicy, Site, Tank } from '../domain/model/equipment.entity';
 import { ProviderTankReading } from '../domain/model/provider-equipment.entity';
 
 @Injectable({ providedIn: 'root' })
@@ -12,7 +12,7 @@ export class EquipmentApi {
   customers() { return this.http.get<Customer[]>(`${this.base}/customers`); }
   createCustomer(value: Partial<Customer>) { return this.http.post<Customer>(`${this.base}/customers`, value); }
   sites(customerId: number) { return this.http.get<Site[]>(`${this.base}/customers/${customerId}/sites`); }
-  createSite(customerId: number, value: Pick<Site, 'name' | 'address'>) { return this.http.post<Site>(`${this.base}/customers/${customerId}/sites`, value); }
+  createSite(customerId: number, value: NewSite) { return this.http.post<Site>(`${this.base}/customers/${customerId}/sites`, value); }
   tanks() { return this.http.get<Tank[]>(`${this.base}/tanks`); }
   createTank(value: { customerAccountId: number; siteId: number | null; name: string; fuelType: string; capacity: number; unit: string; initialLevel: number }) { return this.http.post<Tank>(`${this.base}/tanks`, value); }
   tank(id: number) { return this.http.get<Tank>(`${this.base}/tanks/${id}`); }

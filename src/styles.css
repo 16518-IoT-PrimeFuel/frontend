@@ -1,3 +1,4 @@
+@import 'mapbox-gl/dist/mapbox-gl.css';
 /* You can add global styles to this file, and also import other style files */
 /* Initial authentication screens */
 .iam-page { min-height: 75vh; display: grid; place-items: center; padding: 24px; }
