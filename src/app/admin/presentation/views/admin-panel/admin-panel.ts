@@ -7,13 +7,12 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormField, MatInput, MatLabel } from '@angular/material/input';
 import { MatOption, MatSelect } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
-import { MatTableModule } from '@angular/material/table';
 import { AdminStore } from '../../../application/admin.store';
 import { AdminUser } from '../../../infrastructure/admin-api';
 
 @Component({
   selector: 'app-admin-panel',
-  imports: [CurrencyPipe, DatePipe, FormsModule, TranslatePipe, MatButton, MatDialogModule, MatFormField, MatInput, MatLabel, MatSelect, MatOption, MatTabsModule, MatTableModule],
+  imports: [CurrencyPipe, DatePipe, FormsModule, TranslatePipe, MatButton, MatDialogModule, MatFormField, MatInput, MatLabel, MatSelect, MatOption, MatTabsModule],
   templateUrl: './admin-panel.html',
   styleUrl: './admin-panel.css',
 })
@@ -34,9 +33,6 @@ export class AdminPanel {
   readonly statuses = computed(() => [...new Set(this.store.payments().map(payment => payment.status))]);
   readonly payments = computed(() => this.store.payments().filter(payment => !this.paymentStatus() || payment.status === this.paymentStatus()));
   readonly validDelivery = computed(() => /^\d+$/.test(this.deliveryId().trim()));
-  readonly userColumns = ['id', 'username', 'roles', 'company', 'provider', 'actions'];
-  readonly metricColumns = ['routeKey', 'handler', 'count', 'lastSeen', 'distinctCallers'];
-  readonly paymentColumns = ['id', 'orderId', 'companyId', 'amount', 'status', 'paymentMethod', 'transactionReference', 'paidAt'];
 
   constructor() { this.store.loadUsers(); this.store.loadMetrics(this.version()); this.store.loadPayments(); }
 

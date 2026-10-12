@@ -1,4 +1,4 @@
-<h1 class="title">{{ 'admin.title' | translate }}</h1>
+<header class="dl-head"><h1>{{ 'admin.title' | translate }}</h1></header>
 @if (store.loading()) { <p>{{ 'common.loading' | translate }}</p> }
 @if (store.error()) { <p class="error" role="alert">{{ store.error() | translate }}</p> }
 @if (store.notice()) { <p class="notice" role="status">{{ store.notice() | translate }}</p> }
@@ -8,18 +8,14 @@
     <div class="filters">
       <mat-form-field appearance="outline"><mat-label>{{ 'admin.users.search' | translate }}</mat-label><input matInput [ngModel]="search()" (ngModelChange)="search.set($event)"></mat-form-field>
     </div>
-    <div class="table-wrap">
-      <table mat-table [dataSource]="users()">
-        <ng-container matColumnDef="id"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.id' | translate }}</th><td mat-cell *matCellDef="let u">{{ u.id }}</td></ng-container>
-        <ng-container matColumnDef="username"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.username' | translate }}</th><td mat-cell *matCellDef="let u">{{ u.username }}</td></ng-container>
-        <ng-container matColumnDef="roles"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.roles' | translate }}</th><td mat-cell *matCellDef="let u">{{ u.roles.join(', ') }}</td></ng-container>
-        <ng-container matColumnDef="company"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.company' | translate }}</th><td mat-cell *matCellDef="let u">{{ u.companyId ?? '—' }}</td></ng-container>
-        <ng-container matColumnDef="provider"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.provider' | translate }}</th><td mat-cell *matCellDef="let u">{{ u.providerId ?? '—' }}</td></ng-container>
-        <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>{{ 'admin.users.actions' | translate }}</th><td mat-cell *matCellDef="let u">
-          @if (isAdmin(u)) { {{ 'admin.users.is-admin' | translate }} } @else { <button mat-button [disabled]="store.acting()" (click)="askPromote(u)">{{ 'admin.users.promote' | translate }}</button> }
-        </td></ng-container>
-        <tr mat-header-row *matHeaderRowDef="userColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: userColumns"></tr>
+    <div class="dl-wrap">
+      <table class="dl-table" [attr.aria-label]="'admin.users.tab' | translate">
+        <thead><tr><th scope="col">{{ 'admin.users.id' | translate }}</th><th scope="col">{{ 'admin.users.username' | translate }}</th><th scope="col">{{ 'admin.users.roles' | translate }}</th><th scope="col">{{ 'admin.users.company' | translate }}</th><th scope="col">{{ 'admin.users.provider' | translate }}</th><th scope="col" class="row-actions">{{ 'admin.users.actions' | translate }}</th></tr></thead>
+        <tbody>
+          @for (r of users(); track $index) {
+            <tr><td [attr.data-label]="'admin.users.id' | translate">{{ r.id }}</td><td [attr.data-label]="'admin.users.username' | translate"><strong>{{ r.username }}</strong></td><td [attr.data-label]="'admin.users.roles' | translate">{{ r.roles.join(', ') }}</td><td [attr.data-label]="'admin.users.company' | translate">{{ r.companyId ?? '—' }}</td><td [attr.data-label]="'admin.users.provider' | translate">{{ r.providerId ?? '—' }}</td><td class="row-actions" [attr.data-label]="'admin.users.actions' | translate">@if (isAdmin(r)) { {{ 'admin.users.is-admin' | translate }} } @else { <button mat-button [disabled]="store.acting()" (click)="askPromote(r)">{{ 'admin.users.promote' | translate }}</button> }</td></tr>
+          }
+        </tbody>
       </table>
     </div>
     @if (!users().length && !store.loading()) { <p class="empty">{{ 'admin.users.empty' | translate }}</p> }
@@ -29,15 +25,14 @@
     <div class="filters">
       <mat-form-field appearance="outline"><mat-label>{{ 'admin.metrics.version' | translate }}</mat-label><mat-select [ngModel]="version()" (ngModelChange)="setVersion($event)"><mat-option value="v1">v1</mat-option><mat-option value="v2">v2</mat-option></mat-select></mat-form-field>
     </div>
-    <div class="table-wrap">
-      <table mat-table [dataSource]="store.metrics()">
-        <ng-container matColumnDef="routeKey"><th mat-header-cell *matHeaderCellDef>{{ 'admin.metrics.route' | translate }}</th><td mat-cell *matCellDef="let m" class="mono">{{ m.routeKey }}</td></ng-container>
-        <ng-container matColumnDef="handler"><th mat-header-cell *matHeaderCellDef>{{ 'admin.metrics.handler' | translate }}</th><td mat-cell *matCellDef="let m" class="mono">{{ m.handler }}</td></ng-container>
-        <ng-container matColumnDef="count"><th mat-header-cell *matHeaderCellDef>{{ 'admin.metrics.count' | translate }}</th><td mat-cell *matCellDef="let m">{{ m.count }}</td></ng-container>
-        <ng-container matColumnDef="lastSeen"><th mat-header-cell *matHeaderCellDef>{{ 'admin.metrics.last-seen' | translate }}</th><td mat-cell *matCellDef="let m">{{ m.lastSeen ? (m.lastSeen | date:'medium') : '—' }}</td></ng-container>
-        <ng-container matColumnDef="distinctCallers"><th mat-header-cell *matHeaderCellDef>{{ 'admin.metrics.callers' | translate }}</th><td mat-cell *matCellDef="let m">{{ m.distinctCallers }}</td></ng-container>
-        <tr mat-header-row *matHeaderRowDef="metricColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: metricColumns"></tr>
+    <div class="dl-wrap">
+      <table class="dl-table" [attr.aria-label]="'admin.metrics.tab' | translate">
+        <thead><tr><th scope="col">{{ 'admin.metrics.route' | translate }}</th><th scope="col">{{ 'admin.metrics.handler' | translate }}</th><th scope="col" class="num">{{ 'admin.metrics.count' | translate }}</th><th scope="col">{{ 'admin.metrics.last-seen' | translate }}</th><th scope="col" class="num">{{ 'admin.metrics.callers' | translate }}</th></tr></thead>
+        <tbody>
+          @for (r of store.metrics(); track $index) {
+            <tr><td class="mono" [attr.data-label]="'admin.metrics.route' | translate">{{ r.routeKey }}</td><td class="mono" [attr.data-label]="'admin.metrics.handler' | translate">{{ r.handler }}</td><td class="num" [attr.data-label]="'admin.metrics.count' | translate">{{ r.count }}</td><td class="nw" [attr.data-label]="'admin.metrics.last-seen' | translate">{{ r.lastSeen ? (r.lastSeen | date:'medium') : '—' }}</td><td class="num" [attr.data-label]="'admin.metrics.callers' | translate">{{ r.distinctCallers }}</td></tr>
+          }
+        </tbody>
       </table>
     </div>
     @if (!store.metrics().length && !store.loading()) { <p class="empty">{{ 'admin.metrics.empty' | translate }}</p> }
@@ -47,18 +42,14 @@
     <div class="filters">
       <mat-form-field appearance="outline"><mat-label>{{ 'admin.payments.status' | translate }}</mat-label><mat-select [ngModel]="paymentStatus()" (ngModelChange)="paymentStatus.set($event)"><mat-option value="">{{ 'admin.payments.all' | translate }}</mat-option>@for (s of statuses(); track s) { <mat-option [value]="s">{{ s }}</mat-option> }</mat-select></mat-form-field>
     </div>
-    <div class="table-wrap">
-      <table mat-table [dataSource]="payments()">
-        <ng-container matColumnDef="id"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.id' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.id }}</td></ng-container>
-        <ng-container matColumnDef="orderId"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.order' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.orderId }}</td></ng-container>
-        <ng-container matColumnDef="companyId"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.company' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.companyId }}</td></ng-container>
-        <ng-container matColumnDef="amount"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.amount' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.amount | currency:'PEN':'symbol':'1.2-2' }}</td></ng-container>
-        <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.status' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.status }}</td></ng-container>
-        <ng-container matColumnDef="paymentMethod"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.method' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.paymentMethod }}</td></ng-container>
-        <ng-container matColumnDef="transactionReference"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.reference' | translate }}</th><td mat-cell *matCellDef="let p" class="mono">{{ p.transactionReference ?? '—' }}</td></ng-container>
-        <ng-container matColumnDef="paidAt"><th mat-header-cell *matHeaderCellDef>{{ 'admin.payments.paid-at' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.paidAt ? (p.paidAt | date:'medium') : '—' }}</td></ng-container>
-        <tr mat-header-row *matHeaderRowDef="paymentColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: paymentColumns"></tr>
+    <div class="dl-wrap">
+      <table class="dl-table" [attr.aria-label]="'admin.payments.tab' | translate">
+        <thead><tr><th scope="col">{{ 'admin.payments.id' | translate }}</th><th scope="col">{{ 'admin.payments.order' | translate }}</th><th scope="col">{{ 'admin.payments.company' | translate }}</th><th scope="col" class="num">{{ 'admin.payments.amount' | translate }}</th><th scope="col">{{ 'admin.payments.status' | translate }}</th><th scope="col">{{ 'admin.payments.method' | translate }}</th><th scope="col">{{ 'admin.payments.reference' | translate }}</th><th scope="col">{{ 'admin.payments.paid-at' | translate }}</th></tr></thead>
+        <tbody>
+          @for (r of payments(); track $index) {
+            <tr><td [attr.data-label]="'admin.payments.id' | translate">{{ r.id }}</td><td [attr.data-label]="'admin.payments.order' | translate">{{ r.orderId }}</td><td [attr.data-label]="'admin.payments.company' | translate">{{ r.companyId }}</td><td class="num" [attr.data-label]="'admin.payments.amount' | translate">{{ r.amount | currency:'PEN':'symbol':'1.2-2' }}</td><td [attr.data-label]="'admin.payments.status' | translate"><span [class]="'dl-badge st-' + r.status.toLowerCase()">{{ r.status }}</span></td><td [attr.data-label]="'admin.payments.method' | translate">{{ r.paymentMethod }}</td><td class="mono" [attr.data-label]="'admin.payments.reference' | translate">{{ r.transactionReference ?? '—' }}</td><td class="nw" [attr.data-label]="'admin.payments.paid-at' | translate">{{ r.paidAt ? (r.paidAt | date:'medium') : '—' }}</td></tr>
+          }
+        </tbody>
       </table>
     </div>
     @if (!payments().length && !store.loading()) { <p class="empty">{{ 'admin.payments.empty' | translate }}</p> }
