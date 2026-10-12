@@ -26,12 +26,15 @@ export const adminGuard: CanActivateFn = () => {
   return iam.isAdmin() ? true : router.parseUrl(iam.isAuthenticated() ? '/access-denied' : '/login');
 };
 
-/** Analytics: comprador, proveedor o administrador (el admin solo ve el resumen de plataforma). */
-export const analyticsGuard: CanActivateFn = () => {
+/** Dashboard: comprador, proveedor o administrador (el admin solo ve el resumen de plataforma). */
+export const dashboardGuard: CanActivateFn = () => {
   const iam = inject(IamStore);
   const router = inject(Router);
   return iam.isBuyer() || iam.isProvider() || iam.isAdmin() ? true : router.parseUrl('/access-denied');
 };
+
+/** Portada pública: con sesión, el inicio es el dashboard. */
+export const guestGuard: CanActivateFn = () => inject(IamStore).isAuthenticated() ? inject(Router).parseUrl('/dashboard') : true;
 
 export const supportedRoleGuard: CanActivateFn = () => {
   const iam = inject(IamStore);

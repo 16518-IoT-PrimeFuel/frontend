@@ -1,122 +1,296 @@
-<main class="dashboard">
-  <header class="heading">
-    <div>
-      <h1>{{ (isBuyer ? 'analytics.buyer-title' : 'analytics.provider-title') | translate }}</h1>
-      <p>{{ (isBuyer ? 'analytics.buyer-subtitle' : 'analytics.provider-subtitle') | translate }}</p>
-    </div>
-    <nav class="actions" [attr.aria-label]="'analytics.quick-links' | translate">
-      @if (isBuyer) { <a class="primary" routerLink="/ordering/request-form">{{ 'analytics.new-request' | translate }}</a> }
-      @if (!isBuyer) { <a routerLink="/ordering/order-list">{{ 'analytics.all-orders' | translate }}</a> }
-      <a routerLink="/analytics">{{ 'analytics.open-analytics' | translate }}</a>
-    </nav>
+<!-- Estado de carga o error de una tarjeta; el contenido se pinta aparte cuando `ready(card)`. -->
+<ng-template #pending let-card>
+  @if (card().loading) { <p class="db-note" role="status">{{ 'dashboard.card-loading' | translate }}</p> }
+  @else if (card().error) {
+    <p class="db-note" role="alert">{{ 'dashboard.card-error' | translate }} <button type="button" class="db-retry" (click)="card.load()">{{ 'dashboard.retry' | translate }}</button></p>
+  }
+</ng-template>
+
+<main class="db">
+  <header class="db-head">
+    @if (kind === 'admin') {
+      <div class="db-org"><h1>{{ 'dashboard.platform-title' | translate }}</h1><p>{{ 'dashboard.subtitle-admin' | translate }}</p></div>
+    } @else if (noOrganization()) {
+      <div class="db-org">
+        <h1>{{ 'dashboard.no-org-title' | translate }}</h1>
+        <p>{{ 'dashboard.no-org-hint' | translate }}</p>
+      </div>
+      <a class="db-btn" routerLink="/profile" [queryParams]="{ tab: 'organizations' }"><mat-icon aria-hidden="true">domain_add</mat-icon>{{ 'dashboard.register-org' | translate }}</a>
+    } @else {
+      <div class="db-org">
+        <h1>{{ title() || ('dashboard.title' | translate) }}</h1>
+        <ul>
+          <li>{{ (isBuyer ? 'dashboard.kind-buyer' : 'dashboard.kind-provider') | translate }}</li>
+          @if (company().data?.ruc; as ruc) { <li>RUC {{ ruc }}</li> }
+          @if (organization(); as org) { <li>{{ 'invitations.role-' + org.role.toLowerCase() | translate }}</li> }
+        </ul>
+      </div>
+      <a class="db-btn" [routerLink]="isBuyer ? '/ordering/request-form' : '/ordering/request-list'">
+        <mat-icon aria-hidden="true">{{ isBuyer ? 'add' : 'inbox' }}</mat-icon>{{ (isBuyer ? 'dashboard.new-request' : 'dashboard.all-requests') | translate }}
+      </a>
+    }
   </header>
 
-  @if (accountCreated) { <p class="welcome" role="status">{{ 'auth.register.created' | translate }}</p> }
-  @if (loading()) { <p role="status">{{ 'analytics.loading' | translate }}</p> }
-  @if (error()) {
-    <div class="state" role="alert">
-      <p>{{ 'analytics.error' | translate }}</p>
-      <button type="button" (click)="load()">{{ 'analytics.retry' | translate }}</button>
+  @if (accountCreated) { <p class="db-welcome" role="status">{{ 'auth.register.created' | translate }}</p> }
+
+  @if (kind === 'admin') {
+    <section class="db-panel db-kpis" [attr.aria-label]="'dashboard.indicators' | translate">
+      <ng-container [ngTemplateOutlet]="pending" [ngTemplateOutletContext]="{ $implicit: summary }" />
+      @for (kpi of kpis(); track kpi.label) {
+        <a class="db-kpi" [routerLink]="kpi.link">
+          <span>{{ kpi.label | translate }}</span>
+          <strong>{{ kpi.money ? (kpi.value | money) : (kpi.value | number) }}</strong>
+          @if (kpi.hint) { <small>{{ kpi.hint | translate }}</small> }
+        </a>
+      }
+    </section>
+  } @else {
+    <section class="db-panel db-money" aria-labelledby="db-money-title">
+      <div class="db-money-figures">
+        <h2 id="db-money-title">{{ (isBuyer ? 'dashboard.total-spent' : 'dashboard.total-revenue') | translate }}</h2>
+        <ng-container [ngTemplateOutlet]="pending" [ngTemplateOutletContext]="{ $implicit: summary }" />
+        @if (kpis()[0]; as lead) {
+          <a class="db-money-lead" [routerLink]="lead.link"><strong>{{ lead.value | money }}</strong><small>{{ lead.hint! | translate }}</small></a>
+          <dl class="db-money-stats">
+            @for (kpi of kpis().slice(1); track kpi.label) {
+              <div><dt>{{ kpi.label | translate }}</dt><dd><a [routerLink]="kpi.link">{{ kpi.value | number }}</a></dd></div>
+            }
+          </dl>
+        }
+      </div>
+      <div class="db-money-chart">
+        <header class="db-panel-head">
+          <h3>{{ (range() === 'history' ? (isBuyer ? 'dashboard.monthly-spending' : 'dashboard.monthly-revenue') : isBuyer ? 'dashboard.spending-trend' : 'dashboard.sales-trend') | translate }}</h3>
+          @if (ranges.length) {
+            <div class="db-switch" role="group" [attr.aria-label]="'dashboard.range' | translate">
+              @for (option of ranges; track option) {
+                <button type="button" [attr.aria-pressed]="range() === option" (click)="range.set(option)">{{ 'dashboard.view-' + option | translate }}</button>
+              }
+            </div>
+          }
+          <a [routerLink]="isBuyer ? '/ordering/payment-history' : '/payments'">{{ (isBuyer ? 'payment-history.title' : 'nav.payments') | translate }}</a>
+        </header>
+        <!-- En histórico el estado de carga ya se muestra junto a la cifra principal. -->
+        @if (isProvider && range() !== 'history') { <ng-container [ngTemplateOutlet]="pending" [ngTemplateOutletContext]="{ $implicit: sales }" /> }
+        @if (ready(chartCard())) {
+          @if (hasChart()) {
+            <div class="db-chart"><canvas baseChart role="img" [attr.aria-label]="'dashboard.chart-label' | translate" [data]="chartData()" [options]="chartOptions" type="bar"></canvas></div>
+          } @else { <p class="dl-empty"><mat-icon aria-hidden="true">bar_chart</mat-icon>{{ (range() === 'history' ? 'dashboard.no-monthly-data' : isBuyer ? 'dashboard.no-spending' : 'dashboard.no-sales') | translate }}</p> }
+        }
+      </div>
+    </section>
+
+    <div class="db-donuts">
+      @for (donut of donuts(); track donut.id) {
+        <section class="db-panel" [attr.aria-labelledby]="'db-donut-' + donut.id">
+          <header class="db-panel-head"><h2 [id]="'db-donut-' + donut.id">{{ donut.title | translate }}</h2>
+            <a [routerLink]="donut.link">{{ donut.linkLabel | translate }}</a></header>
+          <ng-container [ngTemplateOutlet]="pending" [ngTemplateOutletContext]="{ $implicit: donut.card }" />
+          @if (ready(donut.card)) {
+            @if (donut.center) {
+              <div class="db-donut">
+                <div class="db-donut-chart">
+                  <canvas baseChart role="img" [attr.aria-label]="donut.title | translate" [data]="donut.chart" [options]="donutOptions" type="doughnut"></canvas>
+                  <p><strong>{{ donut.center | number }}</strong><span>{{ donut.caption | translate }}</span></p>
+                </div>
+                <ul class="db-legend">
+                  @for (slice of donut.slices; track slice.label) {
+                    <li><i [style.background]="slice.color" aria-hidden="true"></i><span>{{ slice.plain ? slice.label : (slice.label | translate) }}</span>
+                      <b>{{ slice.money ? (slice.value | money) : (slice.value | number) }}</b></li>
+                  }
+                </ul>
+              </div>
+            } @else { <p class="dl-empty"><mat-icon aria-hidden="true">donut_large</mat-icon>{{ 'dashboard.no-data' | translate }}</p> }
+          }
+        </section>
+      }
     </div>
   }
 
-  @if (analytics() || !isBuyer) {
-    <div class="layout">
-      <div class="main">
-        <section class="kpis" [attr.aria-label]="'analytics.indicators' | translate">
-          @for (kpi of kpis(); track kpi.label; let first = $first) {
-            <article [class.lead]="first">
-              <h2>{{ kpi.label | translate }}</h2>
-              <p class="value">{{ kpi.money ? (kpi.value | currency:'PEN':'S/ ':'1.2-2') : (kpi.value | number) }}</p>
-              @if (kpi.hint) { <small>{{ kpi.hint | translate }}</small> }
-            </article>
-          }
-        </section>
-        @if (!isBuyer) {
-          @if (analytics()) { <section class="panel">
-            <h2>{{ 'analytics.sales-trend' | translate }}</h2>
-            <div class="view-switch" role="group">
-              @for (g of granularities; track g) {
-                <button type="button" [class.active]="granularity() === g" [attr.aria-pressed]="granularity() === g" (click)="granularity.set(g)">{{ 'analytics.view-' + g | translate }}</button>
-              }
-            </div>
-            @if (hasSales()) {
-              <div class="chart"><canvas baseChart [data]="chartData()" [options]="chartOptions" type="bar"></canvas></div>
-            } @else { <p class="muted">{{ 'analytics.no-sales' | translate }}</p> }
-          </section> }
-          <section class="panel">
-            <h2>{{ 'analytics.pending-requests' | translate }} ({{ pendingRequests().length }})</h2>
-            @if (inboxLoading()) { <p role="status">{{ 'analytics.card-loading' | translate }}</p> }
-            @else if (inboxError()) { <p role="alert">{{ 'analytics.inbox-error' | translate }} <button type="button" (click)="loadInbox()">{{ 'analytics.retry' | translate }}</button></p> }
-            @else if (pendingRequests().length) {
-              <ul class="status-list">
-                @for (req of pendingRequests().slice(0, 5); track req.id) {
-                  <li><a [routerLink]="['/ordering/request-detail', req.id]">#{{ req.id }} · {{ req.quantity | number }} {{ req.unit }}</a><span>{{ req.deliveryDate | date:'mediumDate' }}</span></li>
-                }
-              </ul>
-              <a class="all" routerLink="/ordering/request-list">{{ 'analytics.all-requests' | translate }}</a>
-            } @else { <p class="muted">{{ 'analytics.no-pending-requests' | translate }}</p> }
-          </section>
-          <section class="panel">
-            <h2>{{ 'analytics.critical-tanks' | translate }}</h2>
-            @if (criticalTanks().loading) {
-              <p class="muted" role="status">{{ 'analytics.card-loading' | translate }}</p>
-            } @else if (criticalTanks().error) {
-              <p class="muted" role="alert">{{ 'analytics.critical-tanks-error' | translate }} <button type="button" (click)="loadCriticalTanks()">{{ 'analytics.card-retry' | translate }}</button></p>
-            } @else if (criticalTanks().data.length) {
-              <ul class="status-list">
-                @for (t of criticalTanks().data; track t.id) {
-                  <li><a [routerLink]="['/clients', 'tank', t.id]">{{ t.name }}</a><strong>{{ t.levelPercent | number:'1.0-0' }}%</strong></li>
-                }
-              </ul>
-            } @else { <p class="muted">{{ 'analytics.no-critical-tanks' | translate }}</p> }
-          </section>
-          <section class="panel">
-            <h2>{{ 'analytics.today-deliveries' | translate }} ({{ todayDeliveries().data.length }})</h2>
-            @if (todayDeliveries().loading) {
-              <p class="muted" role="status">{{ 'analytics.card-loading' | translate }}</p>
-            } @else if (todayDeliveries().error) {
-              <p class="muted" role="alert">{{ 'analytics.today-deliveries-error' | translate }} <button type="button" (click)="loadTodayDeliveries()">{{ 'analytics.card-retry' | translate }}</button></p>
-            } @else if (todayDeliveries().data.length) {
-              <ul class="status-list">
-                @for (d of todayDeliveries().data.slice(0, 5); track d.id) {
-                  <li><a [routerLink]="['/fulfillment/delivery-detail', d.id]">#{{ d.id }} · {{ d.buyerCompanyName ?? '-' }}</a><span>{{ 'delivery-status.' + d.physicalState.toLowerCase() | translate }}</span></li>
-                }
-              </ul>
-            } @else { <p class="muted">{{ 'analytics.no-today-deliveries' | translate }}</p> }
-            <a class="all" routerLink="/fulfillment/delivery-list">{{ 'analytics.all-deliveries' | translate }}</a>
-          </section>
-        }
-        <section class="panel">
-          <h2>{{ 'analytics.orders-by-status' | translate }}</h2>
-          @if (ordersLoading()) { <p role="status">{{ 'analytics.card-loading' | translate }}</p> }
-          @else if (ordersError()) { <p role="alert">{{ 'analytics.orders-error' | translate }} <button type="button" (click)="loadOrders()">{{ 'analytics.retry' | translate }}</button></p> }
-          @else {
-          <ul class="status-list">
-            @for (item of statusCounts(); track item.status) {
-              <li [class.zero]="!item.count"><span>{{ ('order-status.' + item.status.toLowerCase()) | translate }}</span><strong>{{ item.count }}</strong></li>
-            }
-          </ul>
-          }
-        </section>
-      </div>
-      <aside class="panel recent" [attr.aria-label]="'analytics.recent-orders' | translate">
-        <h2>{{ 'analytics.recent-orders' | translate }}</h2>
-        @if (ordersLoading()) { <p role="status">{{ 'analytics.card-loading' | translate }}</p> }
-        @else if (ordersError()) { <p role="alert">{{ 'analytics.orders-error' | translate }}</p> }
-        @else if (recent().length) {
-          <ul>
-            @for (order of recent(); track order.id) {
-              <li><a [routerLink]="['/ordering/order-detail', order.id]">
-                <span class="id">#{{ order.id }}</span>
-                <span class="status">{{ ('order-status.' + order.status.toLowerCase()) | translate }}</span>
-                <span class="meta">{{ order.totalPrice | currency:'PEN':'S/ ':'1.2-2' }}@if (order.scheduledDate) { · {{ order.scheduledDate | date:'mediumDate' }} }</span>
+  <nav class="db-shortcuts" [attr.aria-label]="'dashboard.quick-links' | translate">
+    @for (item of shortcuts(); track item.label) {
+      <a [routerLink]="item.link"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label | translate }}</span>
+        @if (item.value !== undefined) { <b class="db-pill">{{ item.value | number }}</b> }</a>
+    }
+  </nav>
+
+  @if (kind !== 'admin') {
+    <div class="db-split wide">
+      <section class="db-panel db-map" [attr.aria-label]="'equipment.map.title' | translate">
+        @defer (on viewport) {
+          <app-tank-map [sites]="mapSites()" [tanks]="mapTanks()" [visibleTanks]="mapTanks()" [selectedId]="mapTank()" [policies]="mapPolicies()" [loading]="mapLoading()" [deliverySites]="deliverySites()" (selectTank)="mapTank.set($event)" />
+        } @placeholder { <div class="db-map-placeholder" role="status">{{ 'dashboard.card-loading' | translate }}</div> }
+      </section>
+
+      <section class="db-panel" aria-labelledby="db-tanks-title">
+        <header class="db-panel-head"><h2 id="db-tanks-title">{{ 'dashboard.critical-tanks' | translate }}</h2>
+          <a [routerLink]="tanksLink">{{ (isBuyer ? 'nav.equipment' : 'nav.clients') | translate }}</a></header>
+        @if (tanksLoading()) { <p class="db-note" role="status">{{ 'dashboard.card-loading' | translate }}</p> }
+        @else if (tanksError()) {
+          <p class="db-note" role="alert">{{ 'dashboard.card-error' | translate }} <button type="button" class="db-retry" (click)="isBuyer ? equipment.load() : tanks.load()">{{ 'dashboard.retry' | translate }}</button></p>
+        } @else if (lowTanks().length) {
+          <ul class="db-list">
+            @for (tank of lowTanks(); track tank.id) {
+              <li><a [routerLink]="tank.link" [queryParams]="tank.query">
+                <span><b>{{ tank.name }}</b>@if (tank.place) { <small>{{ tank.place }}</small> }</span>
+                <span class="db-level"><b>{{ tank.percent | number:'1.0-0' }} %</b><span class="db-bar low" aria-hidden="true"><span [style.width.%]="tank.percent"></span></span></span>
               </a></li>
             }
           </ul>
-          <a class="all" routerLink="/ordering/order-list">{{ 'analytics.all-orders' | translate }}</a>
-        } @else { <p class="muted">{{ 'analytics.no-orders' | translate }}</p> }
-      </aside>
+        } @else { <p class="db-note">{{ 'dashboard.no-critical-tanks' | translate }}</p> }
+      </section>
     </div>
+
+    <div class="db-split wide">
+      @if (isProvider) {
+        <section class="db-panel" aria-labelledby="db-fleet-title">
+          <header class="db-panel-head"><h2 id="db-fleet-title">{{ 'dashboard.fleet' | translate }}</h2>
+            <a routerLink="/fulfillment/tanker-list">{{ 'fulfillment.vehicles' | translate }}</a></header>
+          <ng-container [ngTemplateOutlet]="pending" [ngTemplateOutletContext]="{ $implicit: tankers }" />
+          @if (ready(tankers)) {
+            @if (fleet().length) {
+              <ul class="db-cards">
+                @for (item of fleet(); track item.tanker.id) {
+                  <li><a class="db-card" [routerLink]="item.delivery ? ['/fulfillment/delivery-detail', item.delivery.id] : ['/fulfillment/tanker-form', item.tanker.id]">
+                    <img src="/fuel-truck.webp" alt="" width="320" height="140" loading="lazy">
+                    <span class="top"><strong>{{ item.tanker.licensePlate }}</strong>
+                      <span class="dl-badge" [class]="item.tanker.status === 'AVAILABLE' ? 'st-paid' : item.tanker.status === 'IN_ROUTE' ? 'st-confirmed' : 'st-pending'">{{ 'vehicle-status.' + item.tanker.status.toLowerCase() | translate }}</span></span>
+                    <small>{{ item.tanker.brand }} {{ item.tanker.model }} · {{ item.tanker.capacity | number:'1.0-0' }} {{ item.tanker.unit | fuelUnit }}</small>
+                    <span class="foot">
+                      @if (item.delivery; as delivery) { <mat-icon aria-hidden="true">route</mat-icon>{{ delivery.buyerCompanyName ?? ('#' + delivery.orderId) }} · {{ 'delivery-status.' + delivery.physicalState.toLowerCase() | translate }} }
+                      @else { {{ 'dashboard.no-delivery-today' | translate }} }
+                    </span>
+                  </a></li>
+                }
+              </ul>
+            } @else { <p class="db-note">{{ 'dashboard.no-tankers' | translate }}</p> }
+          }
+        </section>
+
+        <section class="db-panel" aria-labelledby="db-people-title">
+          <header class="db-panel-head"><h2 id="db-people-title">{{ 'dashboard.clients' | translate }}</h2>
+            <a routerLink="/clients">{{ 'nav.clients' | translate }}</a></header>
+          <ng-container [ngTemplateOutlet]="pending" [ngTemplateOutletContext]="{ $implicit: clients }" />
+          @if (ready(clients)) {
+            @if (topClients().length) {
+              <ul class="db-list">
+                @for (client of topClients(); track client.id) {
+                  <li><a [routerLink]="['/clients', client.id]">
+                    <span><b>{{ client.name }}</b><small>{{ 'dashboard.client-meta' | translate:{ tanks: client.tankCount, orders: client.activeOrderCount } }}</small></span>
+                    @if (client.criticalTankCount) { <span class="dl-badge st-pending">{{ 'dashboard.critical-count' | translate:{ n: client.criticalTankCount } }}</span> }
+                  </a></li>
+                }
+              </ul>
+            } @else { <p class="db-note">{{ 'dashboard.no-clients' | translate }}</p> }
+          }
+          <a class="db-foot" routerLink="/fulfillment/driver-list"><mat-icon aria-hidden="true">badge</mat-icon>
+            <span>{{ 'fulfillment.drivers' | translate }}</span>
+            @if (ready(drivers)) { <b>{{ 'dashboard.drivers-available' | translate:{ n: availableDrivers(), total: drivers().data.length } }}</b> }</a>
+        </section>
+      } @else {
+        <section class="db-panel" aria-labelledby="db-transit-title">
+          <header class="db-panel-head"><h2 id="db-transit-title">{{ 'dashboard.in-transit' | translate }}</h2>
+            <a routerLink="/ordering/order-list">{{ 'ordering.orders' | translate }}</a></header>
+          <ng-container [ngTemplateOutlet]="pending" [ngTemplateOutletContext]="{ $implicit: orders }" />
+          @if (ready(orders)) {
+            @if (inTransit().length) {
+              <ul class="db-cards">
+                @for (item of inTransit(); track item.order.id) {
+                  <li><a class="db-card" [routerLink]="['/ordering/order-detail', item.order.id]">
+                    <img src="/fuel-truck.webp" alt="" width="320" height="140" loading="lazy">
+                    <span class="top"><strong>#{{ item.order.id }} · {{ item.name }}</strong>
+                      <span class="dl-badge st-confirmed">{{ 'order-status.' + item.order.status.toLowerCase() | translate }}</span></span>
+                    <small>{{ item.order.requestedQuantity | number:'1.0-2' }} {{ item.unit | fuelUnit }}@if (item.order.scheduledDate) { · {{ item.order.scheduledDate | date:'mediumDate' }} }</small>
+                    <span class="foot"><mat-icon aria-hidden="true">location_on</mat-icon>{{ item.order.deliveryAddress }}</span>
+                  </a></li>
+                }
+              </ul>
+            } @else { <p class="db-note">{{ 'dashboard.no-in-transit' | translate }}</p> }
+          }
+        </section>
+
+        <section class="db-panel" aria-labelledby="db-people-title">
+          <header class="db-panel-head"><h2 id="db-people-title">{{ (members().data.length ? 'dashboard.members' : 'dashboard.my-organizations') | translate }} @if (members().data.length) { <span class="db-pill">{{ members().data.length }}</span> }</h2>
+            <a routerLink="/profile" [queryParams]="{ tab: 'organizations' }">{{ 'profile.title' | translate }}</a></header>
+          @if (members().data.length) {
+            <ul class="db-list">
+              @for (member of members().data; track member.userId) {
+                <li><a routerLink="/profile" [queryParams]="{ tab: 'organizations' }">
+                  <span><b>{{ member.username ?? ('#' + member.userId) }}</b></span><span class="dl-badge">{{ 'invitations.role-' + member.role.toLowerCase() | translate }}</span>
+                </a></li>
+              }
+            </ul>
+          } @else {
+            <ng-container [ngTemplateOutlet]="pending" [ngTemplateOutletContext]="{ $implicit: organizations }" />
+            @if (ready(organizations)) {
+              @if (organizations().data.length) {
+                <ul class="db-list">
+                  @for (org of organizations().data; track org.id) {
+                    <li><a routerLink="/profile" [queryParams]="{ tab: 'organizations' }">
+                      <span><b>{{ org.name }}</b></span><span class="dl-badge">{{ 'invitations.role-' + org.role.toLowerCase() | translate }}</span>
+                    </a></li>
+                  }
+                </ul>
+              } @else { <p class="db-note">{{ 'profile.no-organizations' | translate }}</p> }
+            }
+          }
+          <a class="db-foot" routerLink="/profile" [queryParams]="{ tab: 'organizations' }"><mat-icon aria-hidden="true">person_add</mat-icon><span>{{ 'invitations.title' | translate }}</span></a>
+        </section>
+      }
+    </div>
+
+    <section class="db-panel" aria-labelledby="db-recent-title">
+      <header class="db-panel-head"><h2 id="db-recent-title">{{ 'dashboard.recent-orders' | translate }}</h2>
+        <a routerLink="/ordering/order-list">{{ 'dashboard.all-orders' | translate }}</a></header>
+      <ng-container [ngTemplateOutlet]="pending" [ngTemplateOutletContext]="{ $implicit: orders }" />
+      @if (ready(orders)) {
+        @if (recent().length) {
+          <div class="dl-wrap">
+            <table class="dl-table">
+              <thead><tr>
+                <th scope="col">{{ 'dashboard.col-order' | translate }}</th><th scope="col">{{ 'dashboard.col-product' | translate }}</th>
+                <th scope="col" class="num">{{ 'dashboard.col-quantity' | translate }}</th><th scope="col" class="num">{{ 'dashboard.amount' | translate }}</th>
+                <th scope="col">{{ 'dashboard.col-date' | translate }}</th><th scope="col">{{ 'dashboard.col-status' | translate }}</th>
+              </tr></thead>
+              <tbody>
+                @for (item of recent(); track item.order.id) {
+                  <tr>
+                    <th scope="row"><a [routerLink]="['/ordering/order-detail', item.order.id]">#{{ item.order.id }}</a></th>
+                    <td [attr.data-label]="'dashboard.col-product' | translate">{{ item.name }}</td>
+                    <td class="num" [attr.data-label]="'dashboard.col-quantity' | translate">{{ item.order.requestedQuantity | number:'1.0-2' }} {{ item.unit | fuelUnit }}</td>
+                    <td class="num" [attr.data-label]="'dashboard.amount' | translate">{{ item.order.totalPrice | money }}</td>
+                    <td class="nw" [attr.data-label]="'dashboard.col-date' | translate">{{ item.order.scheduledDate ? (item.order.scheduledDate | date:'mediumDate') : '—' }}</td>
+                    <td [attr.data-label]="'dashboard.col-status' | translate"><span class="dl-badge" [class]="'st-' + item.order.status.toLowerCase()">{{ 'order-status.' + item.order.status.toLowerCase() | translate }}</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else { <p class="db-note">{{ 'dashboard.no-orders' | translate }}</p> }
+      }
+    </section>
+
+    <section class="db-panel" aria-labelledby="db-all-tanks-title">
+      <header class="db-panel-head"><h2 id="db-all-tanks-title">{{ 'dashboard.tanks-title' | translate }} @if (allTanks().length) { <span class="db-pill">{{ allTanks().length }}</span> }</h2>
+        <a [routerLink]="tanksLink">{{ (isBuyer ? 'nav.equipment' : 'nav.clients') | translate }}</a></header>
+      @if (tanksLoading()) { <p class="db-note" role="status">{{ 'dashboard.card-loading' | translate }}</p> }
+      @else if (tanksError()) {
+        <p class="db-note" role="alert">{{ 'dashboard.card-error' | translate }} <button type="button" class="db-retry" (click)="isBuyer ? equipment.load() : tanks.load()">{{ 'dashboard.retry' | translate }}</button></p>
+      } @else if (tankCards().length) {
+        <ul class="db-cards">
+          @for (tank of tankCards(); track tank.id) {
+            <li><a class="db-card" [routerLink]="tank.link" [queryParams]="tank.query">
+              <span class="top"><strong>{{ tank.name }}</strong><img src="/tank-placeholder.webp" alt="" width="1400" height="574" loading="lazy"></span>
+              <span><mat-icon aria-hidden="true">location_on</mat-icon>{{ tank.place ?? ('equipment.no-site' | translate) }}</span>
+              <span><mat-icon aria-hidden="true">local_gas_station</mat-icon>{{ tank.fuelType ? ('fuel-type.' + tank.fuelType.toLowerCase() | translate) : ('equipment.no-fuel' | translate) }} · {{ tank.capacity | number:'1.0-0' }} {{ tank.unit | fuelUnit }}</span>
+              <span class="foot"><b>{{ tank.percent | number:'1.0-0' }} %</b>
+                @if (tank.low !== null) { <span class="dl-badge" [class]="tank.low ? 'st-pending' : 'st-paid'">{{ (tank.low ? 'equipment.status-low' : 'equipment.status-ok') | translate }}</span> }</span>
+              <span class="db-bar" [class.low]="tank.low" aria-hidden="true"><span [style.width.%]="tank.percent"></span></span>
+            </a></li>
+          }
+        </ul>
+        @if (allTanks().length > tankCards().length) { <a class="db-foot" [routerLink]="tanksLink"><mat-icon aria-hidden="true">oil_barrel</mat-icon><span>{{ 'dashboard.all-tanks' | translate:{ n: allTanks().length } }}</span></a> }
+      } @else { <p class="dl-empty"><mat-icon aria-hidden="true">oil_barrel</mat-icon>{{ 'equipment.no-tanks' | translate }}</p> }
+    </section>
   }
 </main>

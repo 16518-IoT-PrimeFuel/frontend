@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { Home } from './shared/presentation/views/home/home';
-import { analyticsGuard, authGuard, adminGuard, buyerGuard, providerGuard, supportedRoleGuard } from './iam/infrastructure/auth.guard';
+import { authGuard, adminGuard, buyerGuard, dashboardGuard, guestGuard, providerGuard, supportedRoleGuard } from './iam/infrastructure/auth.guard';
 import { Login } from './iam/presentation/views/login/login';
 import { Register } from './iam/presentation/views/register/register';
 import { PasswordReset } from './iam/presentation/views/password-reset/password-reset';
@@ -16,9 +16,6 @@ const fuelProductRoutes = () =>
 
 const fulfillmentRoutes = () =>
   import('./fulfillment/presentation/fulfillment-routes').then((m) => m.fulfillmentRoutes);
-
-const analyticsRoutes = () =>
-  import('./analytics/presentation/analytics-routes').then((m) => m.analyticsRoutes);
 
 const orderingRoutes = () =>
   import('./ordering/presentation/ordering-routes').then((m) => m.orderingRoutes);
@@ -41,7 +38,7 @@ const providerPaymentRoutes = () =>
 const baseTitle = 'FullTank';
 
 export const routes: Routes = [
-  { path: 'home', component: Home, title: `Home - ${baseTitle}` },
+  { path: 'home', canActivate: [guestGuard], component: Home, title: `Home - ${baseTitle}` },
   { path: 'login', component: Login, title: `Sign in - ${baseTitle}` },
   { path: 'register/buyer', component: Register, data: { role: 'BUYER' }, title: `Buyer registration - ${baseTitle}` },
   { path: 'register/distributor', component: Register, data: { role: 'PROVIDER' }, title: `Distributor registration - ${baseTitle}` },
@@ -54,11 +51,11 @@ export const routes: Routes = [
   { path: 'about', loadComponent: about, title: `About - ${baseTitle}` },
   { path: 'fuel-products', canActivate: [authGuard, supportedRoleGuard], loadChildren: fuelProductRoutes },
   { path: 'fulfillment', canActivate: [authGuard, providerGuard], loadChildren: fulfillmentRoutes },
-  { path: 'dashboard', canActivate: [authGuard, supportedRoleGuard], loadChildren: dashboardRoutes },
+  { path: 'dashboard', canActivate: [authGuard, dashboardGuard], loadChildren: dashboardRoutes, title: `Dashboard - ${baseTitle}` },
   { path: 'ordering', canActivate: [authGuard, supportedRoleGuard], loadChildren: orderingRoutes },
-  { path: 'analytics', canActivate: [authGuard, analyticsGuard], loadChildren: analyticsRoutes, title: `Analytics - ${baseTitle}` },
-  { path: 'reporting', redirectTo: 'analytics', pathMatch: 'full' },
-  { path: 'reporting/report-main', redirectTo: 'analytics', pathMatch: 'full' },
+  { path: 'analytics', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'reporting', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'reporting/report-main', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'notification', canActivate: [authGuard, supportedRoleGuard], loadChildren: notificationRoutes },
   { path: 'admin', canActivate: [authGuard, adminGuard], loadChildren: adminRoutes, title: `Admin - ${baseTitle}` },
   { path: 'tanks', canActivate: [authGuard, buyerGuard], loadChildren: equipmentRoutes },

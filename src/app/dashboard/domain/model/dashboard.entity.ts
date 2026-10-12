@@ -9,7 +9,7 @@ export interface SalesTrendPoint {
   litres: number;
 }
 
-export interface ProviderAnalytics {
+export interface ProviderSummary {
   providerId: number;
   totalOrders: number;
   confirmedOrders: number;
@@ -30,10 +30,12 @@ export interface PlatformSummary {
   completedDeliveries: number;
 }
 
-export interface BuyerAnalytics {
+export interface BuyerSummary {
   totalOrders: number;
   totalSpent: number;
   completedPayments: number;
   pendingPayments: number;
   monthlySpending: MonthlyAmount[];
+  /** Pagos completados por día; ausente en backends anteriores. */
+  spendingTrend?: { date: string; amount: number }[];
 }

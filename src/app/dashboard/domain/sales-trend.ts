@@ -1,4 +1,4 @@
-import { SalesTrendPoint } from './model/analytics.entity';
+import { SalesTrendPoint } from './model/dashboard.entity';
 
 export type TrendGranularity = 'day' | 'week' | 'month';
 
