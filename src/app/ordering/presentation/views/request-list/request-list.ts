@@ -1,7 +1,10 @@
+import { PageGuide } from '../../../../shared/presentation/component/page-guide/page-guide';
+import { MoneyPipe } from '../../../../shared/presentation/pipe/money.pipe';
+import { FuelUnitPipe } from '../../../../shared/presentation/pipe/fuel-unit.pipe';
 import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { CurrencyPipe, DatePipe, registerLocaleData } from '@angular/common';
+import { DatePipe, registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -32,7 +35,7 @@ export function missingRequestFields(request: Request): string[] {
   return fields;
 }
 
-@Component({ selector: 'app-request-list', providers: [OrderingStore], imports: [CurrencyPipe, RouterLink, DatePipe, FormsModule, TranslatePipe, MatButtonModule, MatIconModule], templateUrl: './request-list.html', styleUrl: './request-list.css' })
+@Component({ selector: 'app-request-list', providers: [OrderingStore], imports: [PageGuide, MoneyPipe, FuelUnitPipe, RouterLink, DatePipe, FormsModule, TranslatePipe, MatButtonModule, MatIconModule], templateUrl: './request-list.html', styleUrl: './request-list.css' })
 export class RequestList {
   readonly store = inject(OrderingStore);
   readonly iam = inject(IamStore);

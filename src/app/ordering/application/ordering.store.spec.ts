@@ -12,7 +12,7 @@ function setup() {
   const role = signal('PROVIDER');
   const pending = new Subject<any>();
   const api = { acceptRequest: vi.fn(() => pending), rejectRequest: vi.fn(() => pending), confirmOrder: vi.fn(() => pending), cancelOrder: vi.fn(() => pending),
-    createRequest: vi.fn(() => pending), cancelRequest: vi.fn(() => of({})), requests: vi.fn(() => of([])), requestInbox: vi.fn(() => of([])) };
+    receiveOrder: vi.fn(() => pending), createRequest: vi.fn(() => pending), cancelRequest: vi.fn(() => of({})), requests: vi.fn(() => of([])), requestInbox: vi.fn(() => of([])) };
   TestBed.configureTestingModule({ providers: [
     { provide: OrderingApi, useValue: api },
     { provide: IamStore, useValue: { role, isProvider: () => role() === 'PROVIDER', isBuyer: () => role() === 'BUYER', providerId: () => 2, companyId: () => 4 } },
@@ -53,6 +53,22 @@ it('checks current order ownership, role and state before confirmation or cancel
   store.cancelOrder(3);
   expect(api.confirmOrder).toHaveBeenCalledExactlyOnceWith(3);
   expect(api.cancelOrder).not.toHaveBeenCalled();
+});
+
+it('receives only an owned dispatched order and shows the returned pending payment status', () => {
+  const { store, api, role } = setup();
+  (store as any).ordersState.set([{ id: 30, companyId: 4, status: 'DISPATCHED' }]);
+  store.receiveOrder(30);
+  expect(api.receiveOrder).not.toHaveBeenCalled();
+  role.set('BUYER');
+  store.receiveOrder(30);
+  store.receiveOrder(30);
+  expect(api.receiveOrder).toHaveBeenCalledExactlyOnceWith(30);
+  const response = api.receiveOrder.mock.results[0].value;
+  response.next({ id: 30, companyId: 4, status: 'PENDING_PAYMENT' });
+  response.complete();
+  expect(store.orders()[0].status).toBe('PENDING_PAYMENT');
+  expect(store.notice()).toBe('order-detail.receive-success');
 });
 
 it('rejects a second createRequest while one is in flight and allows a new one once it settles', () => {

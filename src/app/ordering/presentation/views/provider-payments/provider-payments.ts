@@ -1,5 +1,4 @@
 import { Component, computed, DestroyRef, TemplateRef, ViewChild, inject, signal } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -11,6 +10,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslatePipe } from '@ngx-translate/core';
 import { IamStore } from '../../../../iam/application/iam.store';
 import { OrderingApi, ProviderPayment } from '../../../infrastructure/ordering-api';
+import { apiErrorKey } from '../../../../shared/infrastructure/api-error';
+import { limaDateBoundary, limaToday } from '../../../../shared/infrastructure/lima-date-range';
+import { LimaDatePipe } from '../../../../shared/presentation/pipe/lima-date.pipe';
+import { MoneyPipe } from '../../../../shared/presentation/pipe/money.pipe';
 
 const STATUSES = ['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'];
 
@@ -18,7 +21,7 @@ const STATUSES = ['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'];
 @Component({
   selector: 'app-provider-payments',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink, MatButtonModule, MatDialogModule, MatProgressSpinnerModule, TranslatePipe],
+  imports: [LimaDatePipe, MoneyPipe, ReactiveFormsModule, RouterLink, MatButtonModule, MatDialogModule, MatProgressSpinnerModule, TranslatePipe],
   templateUrl: './provider-payments.html',
   styleUrl: '../payment-history/payment-history.css',
 })
@@ -47,10 +50,10 @@ export class ProviderPayments {
   protected readonly busyId = signal<number | null>(null);
   protected readonly selected = signal<ProviderPayment | null>(null);
   protected readonly status = signal('');
-  protected readonly from = signal('');
-  protected readonly to = signal('');
+  protected readonly to = signal(limaToday());
+  protected readonly from = signal(`${this.to().slice(0, 8)}01`);
   protected readonly reference = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] });
-  protected readonly rangeInvalid = () => !!this.from() && !!this.to() && this.from() > this.to();
+  protected readonly rangeInvalid = () => !!((this.from() && !limaDateBoundary(this.from())) || (this.to() && !limaDateBoundary(this.to())) || (this.from() && this.to() && this.from() > this.to()));
 
   constructor() { this.load(); }
 
@@ -65,9 +68,8 @@ export class ProviderPayments {
     }
     this.loading.set(true);
     this.error.set(null);
-    // Las fechas del negocio corresponden a Lima (UTC-5), independientemente de la zona del navegador.
-    const from = this.from() ? new Date(`${this.from()}T00:00:00-05:00`).toISOString() : undefined;
-    const to = this.to() ? new Date(`${this.to()}T23:59:59.999-05:00`).toISOString() : undefined;
+    const from = limaDateBoundary(this.from());
+    const to = limaDateBoundary(this.to(), true);
     this.listRequest = this.api.providerPayments(providerId, { status: this.status() || undefined, from, to }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (rows) => { this.payments.set(rows); this.page.set(Math.min(this.page(), this.pageCount() - 1)); this.loading.set(false); },
       error: (e) => { this.error.set(this.errorKey(e)); this.loading.set(false); },
@@ -127,9 +129,6 @@ export class ProviderPayments {
 
   /** HttpErrorResponse crudo o Error con clave i18n (OrderingApi.refundPayment) -> clave i18n. */
   private errorKey(e: unknown): string {
-    if (e instanceof HttpErrorResponse) {
-      return e.status === 0 ? 'errors.network' : e.status >= 500 ? 'errors.server' : [400, 401, 403, 404, 409, 422].includes(e.status) ? `errors.http-${e.status}` : 'errors.generic';
-    }
-    return (e as Error)?.message?.startsWith('errors.') ? (e as Error).message : 'provider-payments.action-error';
+    return apiErrorKey(e);
   }
 }

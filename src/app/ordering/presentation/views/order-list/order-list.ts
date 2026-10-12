@@ -1,5 +1,7 @@
+import { PageGuide } from '../../../../shared/presentation/component/page-guide/page-guide';
+import { MoneyPipe } from '../../../../shared/presentation/pipe/money.pipe';
 import { Component, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
+
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { MatButton } from '@angular/material/button';
@@ -7,7 +9,7 @@ import { FormsModule } from '@angular/forms';
 import { MatFormField, MatInput, MatLabel } from '@angular/material/input';
 import { OrderingStore } from '../../../application/ordering.store';
 
-@Component({ selector: 'app-order-list', providers: [OrderingStore], imports: [CurrencyPipe, RouterLink, FormsModule, TranslatePipe, MatButton, MatFormField, MatInput, MatLabel], templateUrl: './order-list.html', styleUrl: './order-list.css' })
+@Component({ selector: 'app-order-list', providers: [OrderingStore], imports: [PageGuide, MoneyPipe, RouterLink, FormsModule, TranslatePipe, MatButton, MatFormField, MatInput, MatLabel], templateUrl: './order-list.html', styleUrl: './order-list.css' })
 export class OrderList {
   readonly store = inject(OrderingStore);
   private readonly router = inject(Router);

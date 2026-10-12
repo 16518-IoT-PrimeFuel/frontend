@@ -48,7 +48,7 @@
         </div>
         <div class="item">
           <label>{{ 'order-detail.total' | translate }}</label>
-          <span class="strong">S/ {{ o.totalPrice | number:'1.2-2' }}</span>
+          <span class="strong">{{ o.totalPrice | money }}</span>
         </div>
         <div class="item full">
           <label>{{ 'order-detail.address' | translate }}</label>
@@ -57,9 +57,15 @@
         @if (o.scheduledDate) { <div class="item"><label>{{ 'order-detail.scheduled-date' | translate }}</label><span>{{ o.scheduledDate | date:'mediumDate' }}</span></div> }
       </div>
 
+      @if (!isBuyer && o.status === 'CONFIRMED') {
+        @if (deliveryLoading()) { <p role="status">{{ 'order-detail.delivery-loading' | translate }}</p> }
+        @if (deliveryReadError()) { <p class="delivery-notice" role="alert">{{ 'order-detail.delivery-error' | translate }} <button mat-button type="button" (click)="loadDeliveryHistory()">{{ 'dashboard.retry' | translate }}</button></p> }
+        @if (canReassign()) { <p class="delivery-notice" role="status">{{ (latestDelivery()?.physicalState === 'FAILED' ? 'order-detail.delivery-failed' : 'order-detail.delivery-cancelled') | translate }}</p> }
+      }
       <div class="actions">
+        @if (isBuyer && o.status === 'DISPATCHED') { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="receive(o.id)">{{ 'order-detail.receive' | translate }}</button> }
         @if (isBuyer && o.status === 'PENDING') { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="confirm(o.id)">{{ 'order-detail.confirm' | translate }}</button> }
-        @if (!isBuyer && (o.status === 'PENDING' || o.status === 'CONFIRMED')) { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="openAssignment()">{{ 'fulfillment.assign' | translate }}</button> }
+        @if (canAssign()) { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="openAssignment()">{{ (canReassign() ? 'order-detail.reassign' : 'fulfillment.assign') | translate }}</button> }
         @if (o.status === 'PENDING' || o.status === 'CONFIRMED') { <button mat-button color="warn" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="cancelOrder(o.id)">{{ 'order-detail.cancel' | translate }}</button> }
       </div>
       @if (['PENDING_PAYMENT', 'PAID', 'IN_PROGRESS', 'DELIVERED'].includes(o.status)) {
@@ -69,14 +75,16 @@
           @if (payment(); as p) {
             <p>{{ 'order-detail.payment-status' | translate }}: {{ 'payment-status.' + p.status.toLowerCase() | translate }}</p>
             <p>{{ 'order-detail.payment-method' | translate }}: {{ 'order-detail.method-' + p.paymentMethod.toLowerCase() | translate }}</p>
-            <p>{{ 'order-detail.payment-amount' | translate }}: {{ p.amount | currency:'PEN':'S/':'1.2-2' }}</p>
-            @if (p.paidAt) { <p>{{ 'order-detail.paid-at' | translate }}: {{ p.paidAt | date:'medium' }}</p> }
+            <p>{{ 'order-detail.payment-amount' | translate }}: {{ p.amount | money:p.currency }}</p>
+            @if (p.paidAt) { <p>{{ 'order-detail.paid-at' | translate }}: {{ p.paidAt | limaDate }}</p> }
             @if (p.transactionReference) { <p>{{ 'order-detail.transaction-reference' | translate }}: {{ p.transactionReference }}</p> }
+            @if (p.operationNumber) { <p>{{ 'order-detail.operation-number' | translate }}: {{ p.operationNumber }}</p> }
             @if (isBuyer && p.status === 'PENDING') {
               <label>{{ 'order-detail.transaction-reference' | translate }} <input [(ngModel)]="transactionReference" required></label>
               <button mat-raised-button color="primary" [disabled]="paying() || !transactionReference.trim()" (click)="completePayment(o.id)">{{ 'order-detail.complete-payment' | translate }}</button>
             }
-          } @else if (!paymentLoading() && isBuyer && o.status === 'PENDING_PAYMENT') {
+          }
+          @if ((!payment() || payment()?.status === 'FAILED') && !paymentLoading() && isBuyer && o.status === 'PENDING_PAYMENT') {
             <label>{{ 'order-detail.payment-method' | translate }}
               <select [(ngModel)]="paymentMethod">
                 <option value="BANK_TRANSFER">{{ 'order-detail.method-bank_transfer' | translate }}</option>
@@ -85,17 +93,22 @@
                 <option value="CASH">{{ 'order-detail.method-cash' | translate }}</option>
               </select>
             </label>
+            <label for="payment-operation">{{ 'order-detail.operation-number' | translate }}
+              <input id="payment-operation" [(ngModel)]="operationNumber" (ngModelChange)="operationError = ''" autocomplete="off" maxlength="20" [disabled]="paying()" [attr.aria-invalid]="!!operationError" aria-describedby="payment-operation-help payment-operation-error">
+            </label>
+            <small id="payment-operation-help">{{ 'order-detail.operation-help' | translate }}</small>
+            @if (operationError) { <p id="payment-operation-error" class="error" role="alert">{{ operationError | translate }}</p> }
             <button mat-raised-button color="primary" [disabled]="paying() || paymentReadError() || store.loading()" (click)="pay(o)">{{ 'order-detail.submit-payment' | translate }}</button>
           }
-          @if (paymentError) { <p class="error">{{ paymentError | translate }}</p> }
-          @if (paymentReadError()) { <button mat-stroked-button type="button" [disabled]="paying() || paymentLoading() || store.loading()" (click)="retryPayment()">{{ 'analytics.retry' | translate }}</button> }
+          @if (paymentError) { <p class="error" role="alert">{{ paymentError | translate }}</p> }
+          @if (paymentReadError()) { <button mat-stroked-button type="button" [disabled]="paying() || paymentLoading() || store.loading()" (click)="retryPayment()">{{ 'dashboard.retry' | translate }}</button> }
         </section>
       }
       @if (assigning()) {
         <section class="assignment">
-          <h3>{{ 'fulfillment.assign' | translate }}</h3>
+          <h3>{{ (canReassign() ? 'order-detail.reassign' : 'fulfillment.assign') | translate }}</h3>
           @if (resourcesLoading()) { <p role="status">{{ 'fulfillment.assignment.loading' | translate }}</p> }
-          @if (resourcesError()) { <p class="error" role="alert">{{ 'fulfillment.assignment.resources-error' | translate }} <button mat-button type="button" (click)="loadAssignmentResources()">{{ 'analytics.retry' | translate }}</button></p> }
+          @if (resourcesError()) { <p class="error" role="alert">{{ 'fulfillment.assignment.resources-error' | translate }} <button mat-button type="button" (click)="loadAssignmentResources()">{{ 'dashboard.retry' | translate }}</button></p> }
           @if (!assignmentReview()) {
           @if (recommendationLoading()) {
             <p role="status">{{ 'fulfillment.recommendation.loading' | translate }}</p>

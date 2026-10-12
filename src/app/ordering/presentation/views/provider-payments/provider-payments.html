@@ -47,11 +47,11 @@
         <tr>
           <td><a [routerLink]="['/ordering/order-detail', p.orderId]">#{{ p.orderId }}</a></td>
           <td>{{ p.buyerName ?? '—' }}</td>
-          <td class="num amount">{{ p.amount | number:'1.2-2' }} <small>({{ (p.currency ?? 'provider-payments.currency-unknown') | translate }})</small></td>
+          <td class="num amount">{{ p.amount | money:p.currency }} @if (!p.currency) { <small>{{ 'provider-payments.currency-unknown' | translate }}</small> }</td>
           <td>{{ 'order-detail.method-' + p.paymentMethod.toLowerCase() | translate }}</td>
           <td><span class="dl-badge st-{{ p.status.toLowerCase() }}">{{ 'payment-status.' + p.status.toLowerCase() | translate }}</span></td>
-          <td>{{ p.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>{{ p.paidAt ? (p.paidAt | date:'dd/MM/yyyy HH:mm') : ('provider-payments.no-date' | translate) }}</td>
+          <td>{{ p.createdAt | limaDate }}</td>
+          <td>{{ p.paidAt ? (p.paidAt | limaDate) : ('provider-payments.no-date' | translate) }}</td>
           <td class="refund-action">
             @if (p.status === 'PENDING') {
               <button mat-stroked-button type="button" [disabled]="busyId() !== null" [attr.aria-busy]="busyId() === p.id" (click)="requestComplete(p)">
@@ -77,7 +77,7 @@
 <ng-template #completeDialog let-dialogRef="dialogRef">
   <h2 mat-dialog-title>{{ 'provider-payments.complete-title' | translate }}</h2>
   <mat-dialog-content>
-    <p>{{ 'provider-payments.order' | translate }} #{{ selected()?.orderId }} · {{ selected()?.amount | number:'1.2-2' }}</p>
+    <p>{{ 'provider-payments.order' | translate }} #{{ selected()?.orderId }} · {{ selected()?.amount | money:selected()?.currency }}</p>
     <label>{{ 'provider-payments.reference' | translate }}
       <input [formControl]="reference" autocomplete="off" [attr.aria-invalid]="reference.touched && reference.invalid" />
     </label>
@@ -92,7 +92,7 @@
 <ng-template #refundDialog>
   <h2 mat-dialog-title>{{ 'provider-payments.refund' | translate }}</h2>
   <mat-dialog-content>
-    <p>{{ 'provider-payments.order' | translate }} #{{ selected()?.orderId }} · {{ selected()?.amount | number:'1.2-2' }}</p>
+    <p>{{ 'provider-payments.order' | translate }} #{{ selected()?.orderId }} · {{ selected()?.amount | money:selected()?.currency }}</p>
     <p>{{ 'provider-payments.refund-confirmation' | translate }}</p>
   </mat-dialog-content>
   <mat-dialog-actions align="end">

@@ -1,5 +1,4 @@
 import { Component, DestroyRef, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -8,8 +7,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Payment } from '../../../infrastructure/ordering-api';
 import { MatButton } from '@angular/material/button';
 import { OrderingStore } from '../../../application/ordering.store';
+import { LimaDatePipe } from '../../../../shared/presentation/pipe/lima-date.pipe';
+import { MoneyPipe } from '../../../../shared/presentation/pipe/money.pipe';
 
-@Component({ selector: 'app-payment-history', providers: [OrderingStore], imports: [CurrencyPipe, DatePipe, RouterLink, TranslatePipe, MatButton, MatDialogModule, MatProgressSpinnerModule], templateUrl: './payment-history.html', styleUrl: './payment-history.css' })
+@Component({ selector: 'app-payment-history', providers: [OrderingStore], imports: [MoneyPipe, LimaDatePipe, RouterLink, TranslatePipe, MatButton, MatDialogModule, MatProgressSpinnerModule], templateUrl: './payment-history.html', styleUrl: './payment-history.css' })
 export class PaymentHistory {
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);

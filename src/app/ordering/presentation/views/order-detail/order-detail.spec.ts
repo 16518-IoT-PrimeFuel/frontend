@@ -30,6 +30,54 @@ describe('OrderDetail', () => {
     expect(component).toBeTruthy();
   });
 
+  it('offers reassignment only for the latest failed or cancelled delivery of a confirmed order', async () => {
+    const view = component as any;
+    view.isBuyer = false;
+    view.store.ordersState.set([{ id: 30, companyId: 4, providerId: 2, fuelProductId: 1, status: 'CONFIRMED', requestedQuantity: 400, totalPrice: 100, deliveryAddress: 'Av. Lima' }]);
+    view.orderId.set(30);
+    const read = vi.spyOn(view.fulfillment, 'deliveries').mockReturnValue(of([
+      { id: 9, orderId: 99, physicalState: 'FAILED' },
+      { id: 2, orderId: 30, physicalState: 'FAILED' },
+      { id: 3, orderId: 30, physicalState: 'ASSIGNED' },
+    ]));
+    view.loadDeliveryHistory();
+    expect(view.latestDelivery()?.id).toBe(3);
+    expect(view.canReassign()).toBe(false);
+    expect(view.canAssign()).toBe(false);
+    read.mockReturnValue(of([{ id: 3, orderId: 30, physicalState: 'CANCELLED' }]));
+    view.loadDeliveryHistory();
+    expect(view.canReassign()).toBe(true);
+    expect(view.canAssign()).toBe(true);
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.actions').textContent).toContain('order-detail.reassign');
+    const resources = vi.spyOn(view, 'loadAssignmentResources').mockImplementation(() => {});
+    vi.spyOn(view, 'loadRecommendation').mockImplementation(() => {});
+    view.openAssignment();
+    expect(resources).toHaveBeenCalledOnce();
+    read.mockReturnValue(throwError(() => ({ status: 500 })));
+    view.loadDeliveryHistory();
+    expect(view.deliveryReadError()).toBe(true);
+    expect(view.canAssign()).toBe(false);
+  });
+
+  it('cancels the previous delivery history read and never queries provider deliveries for a buyer', () => {
+    const view = component as any;
+    view.order = () => ({ id: 30, status: 'CONFIRMED' });
+    const pending = new Subject();
+    const read = vi.spyOn(view.fulfillment, 'deliveries').mockReturnValue(pending);
+    view.isBuyer = false;
+    view.loadDeliveryHistory();
+    expect(pending.observed).toBe(true);
+    view.routeChanged.next();
+    view.resetOrderContext();
+    expect(pending.observed).toBe(false);
+    pending.next([{ id: 2, orderId: 30, physicalState: 'FAILED' }]);
+    expect(view.latestDelivery()).toBeNull();
+    view.isBuyer = true;
+    view.loadDeliveryHistory();
+    expect(read).toHaveBeenCalledOnce();
+  });
+
   it('uses a fresh store per view and cancels its pending order read on exit', () => {
     const view = component as any;
     view.store.ordersState.set([{ id: 30 }]);
@@ -67,7 +115,7 @@ describe('OrderDetail', () => {
   });
 
   const prepareAssignment = (view: any) => {
-    view.order = () => ({ id: 30, requestId: 4, scheduledDate: '2026-10-02' });
+    view.order = () => ({ id: 30, requestId: 4, status: 'CONFIRMED', scheduledDate: '2026-10-02' });
     vi.spyOn(view.fulfillment, 'getEligibleDrivers').mockReturnValue(of([{ id: 2, firstName: 'Ana', lastName: 'Diaz' }]));
     const tankers = [{ id: 1, licensePlate: 'SMALL', capacity: 100, unit: 'GALLONS' }, { id: 2, licensePlate: 'BIG', capacity: 500, unit: 'LITERS' }, { id: 3, licensePlate: 'INACTIVE', capacity: 1000, unit: 'LITERS' }];
     vi.spyOn(view.fulfillment, 'getTankers').mockReturnValue(of(tankers));
@@ -239,6 +287,57 @@ describe('OrderDetail', () => {
     expect(complete).toHaveBeenCalledExactlyOnceWith(8, 'TX-1');
     fixture.destroy();
     expect(pending.observed).toBe(false);
+  });
+
+  it('validates operation numbers, permits correction after a duplicate and allows a failed payment retry', () => {
+    const view = component as any;
+    const order = { id: 30, companyId: 4, status: 'PENDING_PAYMENT', totalPrice: 200 };
+    view.order = () => order;
+    view.isBuyer = true;
+    vi.spyOn(view.iam, 'companyId').mockReturnValue(4);
+    const create = vi.spyOn(view.api, 'createPayment').mockReturnValue(throwError(() => ({ status: 409, error: { code: 'PAYMENT_CONFLICT', details: 'Operation number ABC123 is already registered' } })));
+    view.operationNumber = '123';
+    view.pay(order);
+    expect(create).not.toHaveBeenCalled();
+    expect(view.operationError).toBe('errors.operation-format');
+    view.operationNumber = ' ABC123 ';
+    view.pay(order);
+    expect(create).toHaveBeenCalledExactlyOnceWith(30, 4, 'BANK_TRANSFER', 'ABC123');
+    expect(view.operationError).toBe('errors.operation-duplicate');
+    expect(view.paymentReadError()).toBe(false);
+    create.mockReturnValue(of({ id: 9, orderId: 30, status: 'PENDING' }));
+    view.payment.set({ id: 8, orderId: 30, status: 'FAILED' });
+    view.operationNumber = '';
+    view.pay(order);
+    expect(create).toHaveBeenLastCalledWith(30, 4, 'BANK_TRANSFER', undefined);
+    expect(view.payment()?.id).toBe(9);
+  });
+
+  it('requires confirmation and rechecks the order before receiving it', () => {
+    const view = component as any;
+    let order = { id: 30, companyId: 4, status: 'DISPATCHED' };
+    view.order = () => order;
+    view.isBuyer = true;
+    vi.spyOn(view.iam, 'companyId').mockReturnValue(4);
+    let closed = new Subject<boolean>();
+    const open = vi.spyOn(view.dialog, 'open').mockReturnValue({ afterClosed: () => closed, close: vi.fn() });
+    const receive = vi.spyOn(view.store, 'receiveOrder').mockImplementation(() => undefined);
+    view.receive(30);
+    expect(open.mock.calls[0][1]).toMatchObject({ data: { messageKey: 'order-detail.confirm-receive' } });
+    closed.next(false);
+    closed.complete();
+    expect(receive).not.toHaveBeenCalled();
+    closed = new Subject<boolean>();
+    view.receive(30);
+    order = { ...order, status: 'CANCELLED' };
+    closed.next(true);
+    closed.complete();
+    expect(receive).not.toHaveBeenCalled();
+    closed = new Subject<boolean>();
+    order = { ...order, status: 'DISPATCHED' };
+    view.receive(30);
+    closed.next(true);
+    expect(receive).toHaveBeenCalledExactlyOnceWith(30);
   });
 
   it('reloads reused route ids and discards the previous payment, assignment and pending completion', () => {

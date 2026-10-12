@@ -1,5 +1,6 @@
-import { Component, computed, ElementRef, inject, signal } from '@angular/core';
-import { catchError, finalize, forkJoin, Observable, of, Subscription, switchMap, tap } from 'rxjs';
+import { Component, computed, DestroyRef, ElementRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, finalize, forkJoin, merge, Observable, of, Subscription, switchMap, tap } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -12,8 +13,12 @@ import { EquipmentApi, apiError } from '../../../../equipment/infrastructure/equ
 import { EquipmentStore } from '../../../../equipment/application/equipment.store';
 import { Site, Tank } from '../../../../equipment/domain/model/equipment.entity';
 import { FuelProduct } from '../../../../inventory/domain/model/fuel-product.entity';
+import { litresPerUnit } from '../../../../shared/domain/model/fuel-unit';
+import { limaToday } from '../../../../shared/infrastructure/lima-date-range';
+import { FuelUnitPipe } from '../../../../shared/presentation/pipe/fuel-unit.pipe';
+import { DecimalPipe } from '@angular/common';
 
-@Component({ selector: 'app-request-form', providers: [OrderingStore], imports: [TranslatePipe, ReactiveFormsModule, MatFormField, MatLabel, MatError, MatInput, MatButton, MatSelect, MatOption], templateUrl: './request-form.html', styleUrl: './request-form.css' })
+@Component({ selector: 'app-request-form', providers: [OrderingStore], imports: [FuelUnitPipe, DecimalPipe, TranslatePipe, ReactiveFormsModule, MatFormField, MatLabel, MatError, MatInput, MatButton, MatSelect, MatOption], templateUrl: './request-form.html', styleUrl: './request-form.css' })
 export class RequestForm {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(OrderingApi);
@@ -23,6 +28,7 @@ export class RequestForm {
   /** Tanque desde el que se abrió el formulario (`/tanks`); solo se preselecciona si pertenece a la cuenta. */
   private readonly requestedTankId = Number(inject(ActivatedRoute).snapshot.queryParamMap.get('tankId'));
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
   readonly store = inject(OrderingStore);
   /** Cuenta interna de la organización activa, resuelta desde la identidad; el comprador no la elige. */
   readonly customerAccountId = signal<number | null>(null);
@@ -41,10 +47,30 @@ export class RequestForm {
     : this.productsLoading() ? 'request-form.products-loading' : this.productError());
   private loadRequest?: Subscription;
   private productsRequest?: Subscription;
-  readonly minDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-  readonly form = this.fb.nonNullable.group({ siteId: [0], tankId: [0], providerId: [0, Validators.min(1)], fuelProductId: [0, Validators.min(1)], quantity: [1, [Validators.required, Validators.min(1)]], unit: ['LITERS', Validators.required], deliveryDate: [this.minDate, Validators.required], deliveryAddress: ['', [Validators.required, Validators.maxLength(255)]] });
+  readonly minDate = limaToday();
+  readonly form = this.fb.nonNullable.group({ siteId: [0], tankId: [0, Validators.min(1)], providerId: [0, Validators.min(1)], fuelProductId: [0, Validators.min(1)], quantity: [1, [Validators.required, Validators.min(1)]], unit: ['LITRE', [Validators.required, Validators.pattern(/^(LITRE|GALLON)$/)]], deliveryDate: [this.minDate, Validators.required], deliveryAddress: ['', [Validators.required, Validators.maxLength(255)]] });
 
-  constructor() { this.load(); }
+  get selectedTank(): Tank | undefined { return this.tanks().find(tank => tank.id === this.form.controls.tankId.value); }
+  get freeQuantity(): number | null {
+    const tank = this.selectedTank;
+    const tankFactor = litresPerUnit(tank?.unit);
+    const requestFactor = litresPerUnit(this.form.controls.unit.value);
+    if (!tank || !tankFactor || !requestFactor || !Number.isFinite(tank.capacity) || !Number.isFinite(tank.currentLevel) || tank.capacity <= 0 || tank.currentLevel < 0) return null;
+    return Math.max(0, tank.capacity - tank.currentLevel) * tankFactor / requestFactor;
+  }
+
+  constructor() {
+    const { tankId, unit, quantity } = this.form.controls;
+    tankId.addValidators(control => this.tanks().some(tank => tank.id === control.value) ? null : { required: true });
+    quantity.addValidators(control => {
+      if (!Number.isFinite(control.value)) return { finite: true };
+      const free = this.freeQuantity;
+      if (this.selectedTank && free === null) return { capacityUnknown: true };
+      return free !== null && (control.value - free) * (litresPerUnit(unit.value) ?? 1) > 1e-6 ? { capacity: true } : null;
+    });
+    merge(tankId.valueChanges, unit.valueChanges).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => quantity.updateValueAndValidity());
+    this.load();
+  }
   /** Carga inicial; también es el reintento. Cada lista conserva lo que ya tenía si su consulta falla. */
   load(): void {
     this.loadRequest?.unsubscribe();
@@ -55,7 +81,7 @@ export class RequestForm {
         switchMap(customer => {
           this.customerAccountId.set(customer.id);
           return forkJoin([
-            this.part(this.api.tanks(), values => { this.tanks.set(values.filter(t => t.customerAccountId === customer.id)); this.preselectTank(); }, 'request-form.tanks-error'),
+            this.part(this.api.tanks(), values => { this.tanks.set(values.filter(t => t.customerAccountId === customer.id && t.active !== false)); this.preselectTank(); this.form.controls.tankId.updateValueAndValidity(); this.form.controls.quantity.updateValueAndValidity(); }, 'request-form.tanks-error'),
             this.part(this.equipmentApi.sites(customer.id), values => this.sites.set(values), 'request-form.sites-error'),
           ]);
         }),
@@ -102,6 +128,8 @@ export class RequestForm {
     if (this.store.creating()) return;
     // Un producto que ya no está en el catálogo cargado cuenta como campo vacío.
     if (!this.products().some(product => product.id === this.form.controls.fuelProductId.value)) this.form.controls.fuelProductId.setValue(0);
+    this.form.controls.tankId.updateValueAndValidity();
+    this.form.controls.quantity.updateValueAndValidity();
     this.form.markAllAsTouched();
     this.submitted.set(true);
     const customerAccountId = this.customerAccountId();

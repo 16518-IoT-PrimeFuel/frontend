@@ -153,7 +153,7 @@ describe('RequestForm', () => {
     fixture.detectChanges();
     expect(create).not.toHaveBeenCalled();
     expect(component.form.controls.providerId.touched && component.form.controls.deliveryAddress.touched).toBe(true);
-    expect(document.activeElement?.getAttribute('formControlName')).toBe('providerId');
+    expect(document.activeElement?.getAttribute('formControlName')).toBe('tankId');
     expect(fixture.nativeElement.querySelectorAll('mat-error').length).toBeGreaterThanOrEqual(2);
     const addressError = () => fixture.nativeElement.querySelector('textarea').closest('mat-form-field').querySelector('mat-error').textContent;
     expect(addressError()).toContain('validation.required');
@@ -167,7 +167,8 @@ describe('RequestForm', () => {
     const component = fixture.componentInstance;
     component.form.controls.providerId.setValue(2);
     component.onProviderChange();
-    component.form.patchValue({ fuelProductId: 8, deliveryAddress: 'Av. Lima' });
+    component.tanks.set([{ id: 3, customerAccountId: 4, name: 'T1', unit: 'LITRE', capacity: 1000, currentLevel: 200, active: true } as any]);
+    component.form.patchValue({ tankId: 3, fuelProductId: 8, deliveryAddress: 'Av. Lima' });
     return component;
   };
 
@@ -189,7 +190,7 @@ describe('RequestForm', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     const create = vi.spyOn(component.store, 'createRequest').mockImplementation((_value, done) => done());
     component.submit();
-    expect(create.mock.calls[0][0]).toMatchObject({ customerAccountId: 4, providerId: 2, fuelProductId: 8, tankId: null });
+    expect(create.mock.calls[0][0]).toMatchObject({ customerAccountId: 4, providerId: 2, fuelProductId: 8, tankId: 3, unit: 'LITRE' });
     expect(navigate).toHaveBeenCalledWith(['/ordering/request-list'], { state: { notice: 'request-list.created' } });
     component.store.creating.set(true);
     fixture.detectChanges();
@@ -198,5 +199,34 @@ describe('RequestForm', () => {
     expect(submit.disabled).toBe(true);
     component.submit();
     expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('requires an owned tank and revalidates free capacity when the tank or unit changes', () => {
+    const component = fillValid();
+    const create = vi.spyOn(component.store, 'createRequest');
+    component.form.controls.tankId.setValue(0);
+    component.submit();
+    expect(create).not.toHaveBeenCalled();
+    component.form.controls.tankId.setValue(99);
+    expect(component.form.controls.tankId.invalid).toBe(true);
+    component.tanks.set([{ id: 3, customerAccountId: 4, unit: 'LITRE', capacity: 100, currentLevel: 24.29176432, active: true } as any]);
+    component.form.patchValue({ tankId: 3, quantity: 30 });
+    expect(component.form.controls.quantity.valid).toBe(true);
+    component.form.controls.unit.setValue('GALLON');
+    expect(component.freeQuantity).toBeCloseTo(20);
+    expect(component.form.controls.quantity.hasError('capacity')).toBe(true);
+    component.form.controls.quantity.setValue(20);
+    expect(component.form.controls.quantity.valid).toBe(true);
+    component.form.controls.quantity.setValue(NaN);
+    expect(component.form.controls.quantity.invalid).toBe(true);
+    component.form.controls.quantity.setValue(21);
+    component.submit();
+    fixture.detectChanges();
+    expect(create).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('request-form.quantity-exceeds-capacity');
+    component.tanks.set([{ ...component.tanks()[0], currentLevel: 100 }]);
+    component.form.controls.quantity.setValue(1);
+    expect(component.freeQuantity).toBe(0);
+    expect(component.form.controls.quantity.hasError('capacity')).toBe(true);
   });
 });

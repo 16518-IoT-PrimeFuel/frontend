@@ -18,11 +18,15 @@
 .inbox-filters button[aria-pressed=true] { background:#1e3a8a; color:#fff; border-color:#1e3a8a; }
 .inbox button:focus-visible,.inbox a:focus-visible,.inbox textarea:focus-visible { outline:2px solid #1e3a8a; outline-offset:3px; }
 .inbox-count { font-size:13px; color:#536174; margin:18px 0 10px; }
-.inbox-table-wrap { overflow-x:auto; border:1px solid #d7dfe9; border-radius:10px; background:#fff; }
-.inbox-table { width:100%; border-collapse:collapse; text-align:left; font-size:14px; }
+.inbox-table-wrap { overflow-x:auto; scrollbar-width:thin; scrollbar-color:#b8c0cc transparent; }
+.inbox-table { width:100%; border-collapse:separate; border-spacing:0 8px; text-align:left; font-size:13px; }
 .inbox-table caption { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
-.inbox-table th { padding:14px 16px; background:#f4f7fb; color:#536174; font-weight:600; white-space:nowrap; }
-.inbox-table td { padding:18px 16px; border-top:1px solid #e4e9f0; vertical-align:top; }
+.inbox-table th { padding:12px 14px; background:#edf0f4; color:#4b5563; font-size:12px; font-weight:500; white-space:nowrap; }
+.inbox-table th:first-child { border-radius:8px 0 0 8px; }
+.inbox-table th:last-child { border-radius:0 8px 8px 0; }
+.inbox-table td { padding:14px; border-block:1px solid #e5e7eb; background:#fff; vertical-align:top; }
+.inbox-table td:first-child { border-left:1px solid #e5e7eb; border-radius:8px 0 0 8px; }
+.inbox-table td:last-child { border-right:1px solid #e5e7eb; border-radius:0 8px 8px 0; }
 .inbox-table strong { font-weight:600; }
 .inbox-table small { display:block; color:#536174; font-size:12px; line-height:1.5; margin-top:6px; max-width:36ch; }
 .inbox-status { display:inline-flex; padding:5px 9px; border-radius:5px; font-size:12px; font-weight:600; background:#eef1f6; color:#465469; white-space:nowrap; }

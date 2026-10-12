@@ -14,17 +14,20 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatError } from '@angular/material/input';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FulfillmentApi } from '../../../../fulfillment/infrastructure/fulfillment-api';
 import { Driver } from '../../../../fulfillment/domain/model/driver.entity';
 import { Tanker } from '../../../../fulfillment/domain/model/tanker.entity';
-import { DeliveryRecommendation } from '../../../../fulfillment/domain/model/provider-delivery.entity';
+import { DeliveryRecommendation, ProviderDelivery } from '../../../../fulfillment/domain/model/provider-delivery.entity';
 import { HttpErrorResponse } from '@angular/common/http';
 import { OrderingApi, Payment, PaymentMethod } from '../../../infrastructure/ordering-api';
 import { CONFIRM_DIALOG_CONFIG, ConfirmDialog } from '../../../../shared/presentation/component/confirm-dialog/confirm-dialog';
+import { apiErrorKey } from '../../../../shared/infrastructure/api-error';
+import { LimaDatePipe } from '../../../../shared/presentation/pipe/lima-date.pipe';
+import { MoneyPipe } from '../../../../shared/presentation/pipe/money.pipe';
 
-@Component({ selector: 'app-order-detail', providers: [OrderingStore], imports: [CurrencyPipe, DatePipe, DecimalPipe, FormsModule, TranslatePipe, MatButton, MatIconButton, MatIcon, MatCard, MatCardContent, MatChip, MatChipSet, MatProgressSpinner, MatError, MatTooltip], templateUrl: './order-detail.html', styleUrl: './order-detail.css' })
+@Component({ selector: 'app-order-detail', providers: [OrderingStore], imports: [MoneyPipe, LimaDatePipe, DatePipe, DecimalPipe, FormsModule, TranslatePipe, MatButton, MatIconButton, MatIcon, MatCard, MatCardContent, MatChip, MatChipSet, MatProgressSpinner, MatError, MatTooltip], templateUrl: './order-detail.html', styleUrl: './order-detail.css' })
 export class OrderDetail {
   readonly store = inject(OrderingStore);
   private readonly iam = inject(IamStore);
@@ -38,6 +41,15 @@ export class OrderDetail {
   private dialogRef?: MatDialogRef<unknown>;
   private recommendationRequest?: Subscription;
   private resourcesRequest?: Subscription;
+  private deliveryRequest?: Subscription;
+  private deliveryOrderLoaded: number | null = null;
+  readonly latestDelivery = signal<ProviderDelivery | null>(null);
+  readonly deliveryLoading = signal(false);
+  readonly deliveryReadError = signal(false);
+  readonly canReassign = computed(() => !this.isBuyer && this.order()?.status === 'CONFIRMED'
+    && ['FAILED', 'CANCELLED'].includes(this.latestDelivery()?.physicalState ?? ''));
+  readonly canAssign = computed(() => !this.isBuyer && ['PENDING', 'CONFIRMED'].includes(this.order()?.status ?? '')
+    && !this.deliveryLoading() && !this.deliveryReadError() && (!this.latestDelivery() || this.canReassign()));
   private readonly routeChanged = new Subject<void>();
   private readonly orderId = signal(0);
   readonly assigning = signal(false);
@@ -66,6 +78,8 @@ export class OrderDetail {
   readonly paying = signal(false);
   paymentMethod: PaymentMethod = 'BANK_TRANSFER';
   transactionReference = '';
+  operationNumber = '';
+  operationError = '';
   paymentError = '';
   private paymentOrderLoaded: number | null = null;
   order: Signal<Order | undefined> = computed(() => this.store.orders().find(item => item.id === this.orderId()));
@@ -83,6 +97,7 @@ export class OrderDetail {
     this.destroyRef.onDestroy(() => this.dialogRef?.close());
     effect(() => {
       const order = this.order();
+      if (order && !this.isBuyer && order.status === 'CONFIRMED' && this.deliveryOrderLoaded !== order.id) this.loadDeliveryHistory();
       if (order && this.isBuyer && this.companyName() === null) this.api.buyerCompany(order.companyId).pipe(takeUntil(this.routeChanged), takeUntilDestroyed(this.destroyRef)).subscribe({ next: company => this.companyName.set(company.name), error: () => undefined });
       if (!order || !['PENDING_PAYMENT', 'PAID', 'IN_PROGRESS', 'DELIVERED'].includes(order.status) || this.paymentOrderLoaded === order.id) return;
       this.paymentOrderLoaded = order.id;
@@ -102,6 +117,10 @@ export class OrderDetail {
   back(): void { this.router.navigate(['/ordering/order-list']).then(); }
   private resetOrderContext(): void {
     this.dialogRef?.close();
+    this.deliveryOrderLoaded = null;
+    this.latestDelivery.set(null);
+    this.deliveryLoading.set(false);
+    this.deliveryReadError.set(false);
     this.companyName.set(null);
     this.payment.set(null);
     this.paymentOrderLoaded = null;
@@ -110,6 +129,8 @@ export class OrderDetail {
     this.paying.set(false);
     this.paymentError = '';
     this.transactionReference = '';
+    this.operationNumber = '';
+    this.operationError = '';
     this.paymentMethod = 'BANK_TRANSFER';
     this.assigning.set(false);
     this.assignmentSubmitting.set(false);
@@ -128,31 +149,43 @@ export class OrderDetail {
   }
   confirm(id: number): void { this.confirmAction(id, 'confirm'); }
   cancelOrder(id: number): void { this.confirmAction(id, 'cancel'); }
-  private canAct(id: number, action: 'confirm' | 'cancel'): boolean {
+  receive(id: number): void { this.confirmAction(id, 'receive'); }
+  private canAct(id: number, action: 'confirm' | 'cancel' | 'receive'): boolean {
     const order = this.order();
     return order?.id === id && !this.store.loading() && !this.assignmentSubmitting() && !this.paying()
-      && (action === 'confirm' ? this.isBuyer && order.status === 'PENDING' : ['PENDING', 'CONFIRMED'].includes(order.status));
+      && (action === 'confirm' ? this.isBuyer && order.status === 'PENDING'
+        : action === 'receive' ? this.isBuyer && order.companyId === this.iam.companyId() && order.status === 'DISPATCHED'
+        : ['PENDING', 'CONFIRMED'].includes(order.status));
   }
-  private confirmAction(id: number, action: 'confirm' | 'cancel'): void {
+  private confirmAction(id: number, action: 'confirm' | 'cancel' | 'receive'): void {
     if (!this.canAct(id, action) || this.dialogRef) return;
     this.dialogRef = this.dialog.open(ConfirmDialog, { ...CONFIRM_DIALOG_CONFIG, data: { titleKey: 'confirm.title', messageKey: `order-detail.confirm-${action}` } });
     this.dialogRef.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(confirmed => {
       this.dialogRef = undefined;
       if (confirmed !== true || !this.canAct(id, action)) return;
       if (action === 'confirm') this.store.confirmOrder(id);
+      else if (action === 'receive') this.store.receiveOrder(id);
       else this.store.cancelOrder(id);
     });
   }
   pay(order: Order): void {
     const companyId = this.iam.companyId();
     if (!this.isBuyer || !companyId || order.companyId !== companyId || this.order()?.id !== order.id || order.status !== 'PENDING_PAYMENT'
-      || this.store.loading() || this.paying() || this.paymentLoading() || this.payment() || this.paymentReadError()
+      || this.store.loading() || this.paying() || this.paymentLoading() || (this.payment() && this.payment()?.status !== 'FAILED') || this.paymentReadError()
       || !Number.isFinite(order.totalPrice) || order.totalPrice <= 0 || !['BANK_TRANSFER', 'CREDIT_CARD', 'DEBIT_CARD', 'CASH'].includes(this.paymentMethod)) return;
+    const operationNumber = this.operationNumber.trim();
+    this.operationError = '';
+    if (operationNumber && !/^[A-Za-z0-9]{6,20}$/.test(operationNumber)) { this.operationError = 'errors.operation-format'; return; }
     this.paying.set(true);
     this.paymentError = '';
-    this.api.createPayment(order.id, companyId, order.totalPrice, this.paymentMethod).pipe(takeUntil(this.routeChanged), takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.createPayment(order.id, companyId, this.paymentMethod, operationNumber || undefined).pipe(takeUntil(this.routeChanged), takeUntilDestroyed(this.destroyRef)).subscribe({
       next: payment => { this.payment.set(payment); this.paying.set(false); },
-      error: (error: HttpErrorResponse) => { this.paymentReadError.set(true); this.paymentError = this.paymentErrorKey(error); this.paying.set(false); },
+      error: (error: HttpErrorResponse) => {
+        const key = apiErrorKey(error);
+        if (key === 'errors.operation-format' || key === 'errors.operation-duplicate') this.operationError = key;
+        else { this.paymentError = key; this.paymentReadError.set(error.status !== 400 && error.status !== 422); }
+        this.paying.set(false);
+      },
     });
   }
   completePayment(orderId: number): void {
@@ -169,8 +202,7 @@ export class OrderDetail {
     });
   }
   private paymentErrorKey(error: HttpErrorResponse): string {
-    return error.status === 0 ? 'errors.network' : error.status >= 500 ? 'errors.server'
-      : [400, 401, 403, 404, 409, 422].includes(error.status) ? `errors.http-${error.status}` : 'order-detail.payment-error';
+    return apiErrorKey(error);
   }
   retryPayment(): void {
     const order = this.order();
@@ -179,7 +211,25 @@ export class OrderDetail {
     this.store.loadOrder(order.id);
   }
   statusClass(status: string): string { return status.toLowerCase(); }
+  // shortcut: one provider-wide read per confirmed order; use an order-scoped endpoint when available.
+  loadDeliveryHistory(): void {
+    const order = this.order();
+    if (this.isBuyer || !order || order.status !== 'CONFIRMED') return;
+    this.deliveryOrderLoaded = order.id;
+    this.deliveryRequest?.unsubscribe();
+    this.latestDelivery.set(null);
+    this.deliveryLoading.set(true);
+    this.deliveryReadError.set(false);
+    this.deliveryRequest = this.fulfillment.deliveries().pipe(takeUntil(this.routeChanged), takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: deliveries => {
+        this.latestDelivery.set(deliveries.filter(delivery => delivery.orderId === order.id).sort((a, b) => b.id - a.id)[0] ?? null);
+        this.deliveryLoading.set(false);
+      },
+      error: () => { this.deliveryLoading.set(false); this.deliveryReadError.set(true); },
+    });
+  }
   openAssignment(): void {
+    if (!this.canAssign() || this.store.loading() || this.assignmentSubmitting()) return;
     this.assigning.set(true);
     this.assignmentReview.set(false);
     this.assignmentCommandId = null;
@@ -283,7 +333,7 @@ export class OrderDetail {
     return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
   }
   assign(orderId: number): void {
-    if (!this.assignmentReview() || !this.assignmentValid || this.assignmentSubmitting() || orderId !== this.order()?.id) return;
+    if (!this.canAssign() || this.store.loading() || !this.assignmentReview() || !this.assignmentValid || this.assignmentSubmitting() || orderId !== this.order()?.id) return;
     this.assignmentError = '';
     this.assignmentSubmitting.set(true);
     this.fulfillment.assignDelivery({ commandId: this.assignmentCommandId!, orderId, driverId: this.driverId, tankerId: this.tankerId,
@@ -293,7 +343,7 @@ export class OrderDetail {
       error: error => {
         this.assignmentSubmitting.set(false);
         this.assignmentError = error?.status === 409 ? 'fulfillment.assignment.conflict' : 'fulfillment.assignment-failed';
-        if (error?.status === 409) { this.editAssignment(); this.loadAssignmentResources(); }
+        if (error?.status === 409) { this.editAssignment(); this.loadAssignmentResources(); this.loadDeliveryHistory(); this.store.loadOrder(orderId); }
       },
     });
   }

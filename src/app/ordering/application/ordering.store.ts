@@ -5,6 +5,7 @@ import { Request, CreateRequest } from '../domain/model/request.entity';
 import { Order } from '../domain/model/order.entity';
 import { OrderingApi, Payment } from '../infrastructure/ordering-api';
 import { IamStore } from '../../iam/application/iam.store';
+import { apiErrorKey } from '../../shared/infrastructure/api-error';
 
 @Injectable({ providedIn: 'root' })
 export class OrderingStore {
@@ -73,7 +74,7 @@ export class OrderingStore {
         this.paymentsState.update(payments => payments.map(row => row.id === updated.id ? updated : row));
         this.notice.set('payment-history.refund-success');
       },
-      error: error => this.refundError.set(error?.message ?? 'errors.generic'),
+      error: error => this.refundError.set(apiErrorKey(error)),
     });
   }
   loadOrder(id: number): void {
@@ -116,6 +117,12 @@ export class OrderingStore {
     this.mutate(this.api.cancelOrder(id), order => { this.replaceOrder(order); this.notice.set('order-detail.cancel-success'); });
   }
 
+  receiveOrder(id: number): void {
+    const order = this.orders().find(row => row.id === id);
+    if (this.loading() || !this.iam.isBuyer() || order?.companyId !== this.iam.companyId() || order?.status !== 'DISPATCHED') return;
+    this.mutate(this.api.receiveOrder(id), order => { this.replaceOrder(order); this.notice.set('order-detail.receive-success'); });
+  }
+
   private canDecideRequest(id: number): boolean {
     return this.isProvider() && !this.loading() && this.requests().some(row => row.id === id && row.status === 'PENDING' && row.providerId === this.iam.providerId());
   }
@@ -127,7 +134,7 @@ export class OrderingStore {
     return request.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => {
       this.activeRequests--;
       this.loadingState.set(this.activeRequests > 0);
-    })).subscribe({ next: save, error: error => this.errorState.set(error?.error?.message ?? error?.error?.code ?? (error?.status == null ? error?.message : null) ?? 'ordering.request-failed') });
+    })).subscribe({ next: save, error: error => this.errorState.set(apiErrorKey(error)) });
   }
   private mutate<T>(request: import('rxjs').Observable<T>, done: (value: T) => void): void { this.run(request, done); }
 }

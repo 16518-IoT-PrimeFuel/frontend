@@ -120,3 +120,7 @@ mat-chip.cancelled {
 .assignment-summary h4 { margin-top:0 }
 @media(max-width:600px){.assignment{grid-template-columns:1fr}}
 .notice { max-width:900px; margin:0 auto 16px; padding:10px 12px; border-radius:6px; background:#dff3e6; color:#14532d; box-sizing:border-box }
+
+.delivery-notice{color:#7a4100;line-height:1.6}
+.actions{flex-wrap:wrap}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.actions{justify-content:flex-start}}

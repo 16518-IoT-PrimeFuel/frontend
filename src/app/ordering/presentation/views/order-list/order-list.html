@@ -1,4 +1,5 @@
 <header class="dl-head"><h1>{{ 'order-list.title' | translate }}</h1></header>
+<app-page-guide [key]="store.isProvider() ? 'guide.orders.provider' : 'guide.orders.buyer'" />
 @if (store.error()) { <p class="dl-error" role="alert">{{ store.error() | translate }}</p> }
 <div class="dl-toolbar">
   <mat-form-field appearance="outline" class="dl-search" subscriptSizing="dynamic"><mat-label>{{ 'order-list.search-id' | translate }}</mat-label><input matInput type="search" inputmode="numeric" [ngModel]="search()" (ngModelChange)="search.set($event)"></mat-form-field>
@@ -18,7 +19,7 @@
       <td [attr.data-label]="'order-list.provider' | translate">{{ store.providerNames()[order.providerId] ?? order.providerId }}</td>
       <td [attr.data-label]="'order-list.product' | translate">{{ store.productNames()[order.fuelProductId] ?? order.fuelProductId }}</td>
       <td class="num" [attr.data-label]="'order-list.quantity' | translate">{{ order.requestedQuantity }}</td>
-      <td class="num" [attr.data-label]="'order-list.total' | translate">{{ order.totalPrice | currency:'PEN':'S/':'1.2-2' }}</td>
+      <td class="num" [attr.data-label]="'order-list.total' | translate">{{ order.totalPrice | money }}</td>
       <td [attr.data-label]="'order-list.status' | translate"><span class="dl-badge st-{{ order.status.toLowerCase() }}">{{ 'order-status.' + order.status.toLowerCase() | translate }}</span></td>
     </tr> }</tbody></table></div>
 }

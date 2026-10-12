@@ -1,5 +1,7 @@
+import { MoneyPipe } from '../../../../shared/presentation/pipe/money.pipe';
+import { FuelUnitPipe } from '../../../../shared/presentation/pipe/fuel-unit.pipe';
 import { Component, DestroyRef, TemplateRef, ViewChild, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe, DecimalPipe, registerLocaleData } from '@angular/common';
+import { DatePipe, DecimalPipe, registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -13,6 +15,7 @@ import { OrderingApi } from '../../../infrastructure/ordering-api';
 import { OrderingStore } from '../../../application/ordering.store';
 import { Request } from '../../../domain/model/request.entity';
 import { IamStore } from '../../../../iam/application/iam.store';
+import { apiErrorKey } from '../../../../shared/infrastructure/api-error';
 
 registerLocaleData(localeEs);
 
@@ -21,7 +24,7 @@ type RequestAction = 'cancel' | 'accept' | 'reject';
 @Component({
   selector: 'app-request-detail',
   providers: [OrderingStore],
-  imports: [CurrencyPipe, DatePipe, DecimalPipe, FormsModule, RouterLink, TranslatePipe, MatButton, MatDialogModule],
+  imports: [MoneyPipe, FuelUnitPipe, DatePipe, DecimalPipe, FormsModule, RouterLink, TranslatePipe, MatButton, MatDialogModule],
   templateUrl: './request-detail.html',
   styleUrl: './request-detail.css',
 })
@@ -111,9 +114,5 @@ export class RequestDetail {
     });
   }
 
-  private errorKey(error: HttpErrorResponse): string {
-    if (error.status === 0) return 'errors.network';
-    if (error.status >= 500) return 'errors.server';
-    return [400, 401, 403, 404, 409, 422].includes(error.status) ? `errors.http-${error.status}` : 'errors.generic';
-  }
+  private errorKey(error: HttpErrorResponse): string { return apiErrorKey(error); }
 }

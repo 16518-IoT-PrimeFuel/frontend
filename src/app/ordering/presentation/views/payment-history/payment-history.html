@@ -16,8 +16,13 @@
   <p role="status">{{ 'common.loading' | translate }}</p>
 } @else if (store.error()) {
   <p class="dl-error" role="alert">{{ store.error() | translate }}</p>
+  <button mat-stroked-button type="button" (click)="store.loadPayments()">{{ 'dashboard.retry' | translate }}</button>
 } @else if (!filtered().length) {
-  <div class="dl-empty"><p>{{ (store.payments().length ? 'payment-history.no-match' : 'payment-history.empty') | translate }}</p></div>
+  <div class="dl-empty">
+    <p>{{ (store.payments().length ? 'payment-history.no-match' : 'payment-history.empty') | translate }}</p>
+    @if (store.payments().length) { <button mat-stroked-button type="button" (click)="status.set('')">{{ 'payment-history.all' | translate }}</button> }
+    @else { <a mat-stroked-button routerLink="/ordering/order-list">{{ 'payment-history.view-orders' | translate }}</a> }
+  </div>
 } @else {
   <p class="scroll-hint">{{ 'payment-history.scroll-hint' | translate }}</p>
   <div class="payment-wrap" role="region" tabindex="0" [attr.aria-label]="'payment-history.table-label' | translate">
@@ -29,16 +34,18 @@
         <th scope="col">{{ 'order-detail.payment-method' | translate }}</th>
         <th scope="col">{{ 'order-detail.paid-at' | translate }}</th>
         <th scope="col">{{ 'order-detail.transaction-reference' | translate }}</th>
+        <th scope="col">{{ 'order-detail.operation-number' | translate }}</th>
         <th scope="col">{{ 'payment-history.actions' | translate }}</th>
       </tr></thead>
       <tbody>@for (payment of filtered(); track payment.id) {
         <tr>
           <td><a [routerLink]="['/ordering/order-detail', payment.orderId]">#{{ payment.orderId }}</a></td>
-          <td class="num amount">{{ payment.amount | currency:'PEN':'S/':'1.2-2' }}</td>
+          <td class="num amount">{{ payment.amount | money:payment.currency }}</td>
           <td><span class="dl-badge st-{{ payment.status.toLowerCase() }}">{{ 'payment-status.' + payment.status.toLowerCase() | translate }}</span></td>
           <td>{{ 'order-detail.method-' + payment.paymentMethod.toLowerCase() | translate }}</td>
-          <td>{{ payment.paidAt ? (payment.paidAt | date:'dd/MM/yyyy HH:mm') : ('payment-history.no-date' | translate) }}</td>
+          <td>{{ payment.paidAt ? (payment.paidAt | limaDate) : ('payment-history.no-date' | translate) }}</td>
           <td class="reference">{{ payment.transactionReference || '—' }}</td>
+          <td class="reference">{{ payment.operationNumber || '—' }}</td>
           <td class="refund-action">
             @if (payment.status === 'COMPLETED') {
               <button mat-stroked-button type="button" [disabled]="store.refundingId() !== null" [attr.aria-busy]="store.refundingId() === payment.id" (click)="requestRefund(payment)">
@@ -56,7 +63,7 @@
 <ng-template #confirmDialog>
   <h2 mat-dialog-title>{{ 'payment-history.refund' | translate }}</h2>
   <mat-dialog-content>
-    <p>{{ 'fulfillment.order' | translate }} #{{ selectedPayment()?.orderId }} · {{ selectedPayment()?.amount | currency:'PEN':'S/':'1.2-2' }}</p>
+    <p>{{ 'fulfillment.order' | translate }} #{{ selectedPayment()?.orderId }} · {{ selectedPayment()?.amount | money:selectedPayment()?.currency }}</p>
     <p>{{ 'payment-history.refund-confirmation' | translate }}</p>
   </mat-dialog-content>
   <mat-dialog-actions align="end">
