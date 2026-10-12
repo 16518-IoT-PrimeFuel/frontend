@@ -1,3 +1,4 @@
+import { PageGuide } from '../../../../shared/presentation/component/page-guide/page-guide';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -18,7 +19,7 @@ const todayLima = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Amer
 @Component({
   selector: 'app-delivery-list',
   standalone: true,
-  imports: [DatePipe, RouterLink, MatIconModule, MatButtonModule, MatProgressSpinnerModule, TranslatePipe],
+  imports: [PageGuide, DatePipe, RouterLink, MatIconModule, MatButtonModule, MatProgressSpinnerModule, TranslatePipe],
   templateUrl: './delivery-list.html',
   styleUrl: './delivery-list.css',
 })

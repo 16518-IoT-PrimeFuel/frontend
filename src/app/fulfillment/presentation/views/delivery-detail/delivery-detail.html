@@ -1,5 +1,5 @@
 @if (delivery(); as d) {
-  @if (trackingError() || samplesError() || transitionsError() || timelineError() || tankLevelError()) { <button type="button" (click)="reload()">{{ 'analytics.retry' | translate }}</button> }
+  @if (trackingError() || samplesError() || transitionsError() || timelineError() || tankLevelError()) { <button type="button" (click)="reload()">{{ 'dashboard.retry' | translate }}</button> }
   <header><h1>{{ 'fulfillment.delivery' | translate }} #{{ d.id }}</h1><button (click)="print()">{{ 'fulfillment.dossier' | translate }}</button></header>
   @if (message()) { <p role="status">{{ message() | translate }}</p> }
   @if (commandError()) { <p role="alert">{{ commandError() | translate }}</p> }

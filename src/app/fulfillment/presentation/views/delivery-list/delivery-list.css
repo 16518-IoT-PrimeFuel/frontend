@@ -1,16 +1,7 @@
-.delivery-list-container { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; }
-.page-header h1 { margin: 0; font-size: 24px; font-weight: 600; color: #2c3e50; }
-.page-header p { margin: 4px 0 0; color: #7f8c8d; }
-.filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
-.filters label { display: flex; flex-direction: column; font-size: 12px; color: #7f8c8d; gap: 4px; }
-.filters input, .filters select { padding: 6px 8px; font-size: 14px; }
-.state { padding: 32px; text-align: center; color: #7f8c8d; }
-.state.error { color: #c0392b; }
-.deliveries { width: 100%; border-collapse: collapse; }
-.deliveries th, .deliveries td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ecf0f1; }
-.deliveries th { font-size: 12px; text-transform: uppercase; color: #7f8c8d; }
-.chip { padding: 2px 10px; border-radius: 12px; font-size: 12px; background: #ecf0f1; color: #2c3e50; }
-.chip.completed { background: #d5f5e3; color: #1e8449; }
-.chip.failed, .chip.cancelled { background: #fadbd8; color: #c0392b; }
-.chip.started, .chip.arrived, .chip.delivering { background: #d6eaf8; color: #21618c; }
+.deliveries-page{max-width:1480px;margin:auto;padding:24px;color:#1f2937}
+.filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:16px}
+.filters label{display:flex;flex-direction:column;gap:4px;color:#4b5563;font-size:12px}
+.filters :is(input,select){min-height:40px;padding:0 10px;border:1px solid #dfe3e8;border-radius:8px;background:#fff;color:#1f2937;font:inherit;font-size:14px}
+.filters :is(input,select,button):focus-visible,.deliveries-page a:focus-visible{outline:2px solid #1e3a8a;outline-offset:2px}
+.dl-error-state{color:#8a1c1c}
+.deliveries-page ::selection{background:#dbeafe;color:#172554}

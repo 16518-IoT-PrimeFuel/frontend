@@ -35,13 +35,13 @@ export class TankerForm implements OnInit {
   protected isEditMode = false;
   protected tankerId: number | null = null;
   protected readonly statuses: TankerStatus[] = ['AVAILABLE', 'IN_ROUTE', 'MAINTENANCE', 'SUSPENDED', 'INACTIVE'];
-  protected readonly units = [{ value: 'LITERS', label: 'unit.liters' }, { value: 'GALLONS', label: 'unit.gallons' }];
+  protected readonly units = [{ value: 'LITRE', label: 'unit.liters' }, { value: 'GALLON', label: 'unit.gallons' }];
   protected readonly tankerForm = this.fb.nonNullable.group({
     licensePlate: ['', [Validators.required, notBlank, Validators.maxLength(20)]],
     brand: ['', [Validators.required, notBlank, Validators.maxLength(80)]],
     model: ['', [Validators.required, notBlank, Validators.maxLength(80)]],
     capacity: [0, [Validators.required, positiveFinite]],
-    unit: ['LITERS', [Validators.required, notBlank, Validators.maxLength(20)]],
+    unit: ['LITRE', [Validators.required, notBlank, Validators.maxLength(20)]],
     status: ['AVAILABLE' as TankerStatus, [Validators.required, (control: AbstractControl) =>
       this.statuses.includes(control.value) ? null : { required: true }]],
   });

@@ -1,15 +1,14 @@
-import { Component, DestroyRef, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { FulfillmentStore } from '../../../application/fulfillment.store';
+import { PageGuide } from '../../../../shared/presentation/component/page-guide/page-guide';
 
 /**
  * @summary Vista de lista de conductores.
@@ -20,12 +19,11 @@ import { FulfillmentStore } from '../../../application/fulfillment.store';
   selector: 'app-driver-list',
   standalone: true,
   imports: [
+    PageGuide,
     MatDialogModule,
     CommonModule,
-    MatTableModule,
     MatButtonModule,
     MatIconModule,
-    MatChipsModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
     RouterModule,
@@ -42,28 +40,30 @@ export class DriverList implements OnInit {
 
 
 
-  protected readonly displayedColumns: string[] = [
-    'fullName',
-    'licenseNumber',
-    'phoneNumber',
-    'email',
-    'status',
-    'actions',
-  ];
+  protected readonly search = signal('');
+  /** 'available' = solo elegibles (consulta al backend); 'all' = toda la flota. */
+  protected readonly view = signal<'all' | 'available'>('all');
+  protected readonly rows = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    return this.store.driverList().filter((d) => !q || `${d.firstName} ${d.lastName} ${d.licenseNumber} ${d.phoneNumber ?? ''} ${d.email ?? ''}`.toLowerCase().includes(q));
+  });
+  protected clearSearch(): void { this.search.set(''); }
 
   ngOnInit(): void {
     this.store.loadDrivers();
   }
 
   protected onRefresh(): void {
-    this.store.loadDrivers();
+    if (this.view() === 'available') this.onShowAvailable(); else this.store.loadDrivers();
   }
 
   protected onShowAvailable(): void {
+    this.view.set('available');
     this.store.loadAvailableDrivers();
   }
 
   protected onShowAll(): void {
+    this.view.set('all');
     this.store.loadDrivers();
   }
 
@@ -86,8 +86,9 @@ export class DriverList implements OnInit {
     return ['ELIGIBLE', 'BUSY', 'INELIGIBLE'].includes(outcome) ? outcome.toLowerCase() : 'unknown';
   }
 
-  protected getStatusClass(status: string): string {
-    return status.toLowerCase().replace(/_/g, '-');
+  /** Clase de color del estado (reutiliza las del listado global). */
+  protected badge(status: string): string {
+    return ({ AVAILABLE: 'st-paid', IN_ROUTE: 'st-confirmed', ASSIGNED: 'st-confirmed', MAINTENANCE: 'st-pending', SUSPENDED: 'st-cancelled' } as Record<string, string>)[status] ?? '';
   }
 
   protected getFullName(firstName: string, lastName: string): string {

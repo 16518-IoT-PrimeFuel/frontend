@@ -1,15 +1,15 @@
-import { Component, DestroyRef, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterModule } from '@angular/router';
+import { FuelUnitPipe } from '../../../../shared/presentation/pipe/fuel-unit.pipe';
 import { TranslatePipe } from '@ngx-translate/core';
 import { FulfillmentStore } from '../../../application/fulfillment.store';
+import { PageGuide } from '../../../../shared/presentation/component/page-guide/page-guide';
 
 /**
  * @summary Vista de lista de vehículos.
@@ -20,12 +20,12 @@ import { FulfillmentStore } from '../../../application/fulfillment.store';
   selector: 'app-tanker-list',
   standalone: true,
   imports: [
+    PageGuide,
+    FuelUnitPipe,
     MatDialogModule,
     CommonModule,
-    MatTableModule,
     MatButtonModule,
     MatIconModule,
-    MatChipsModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
     RouterModule,
@@ -41,28 +41,30 @@ export class TankerList implements OnInit {
   protected readonly store = inject(FulfillmentStore);
 
 
-  protected readonly displayedColumns: string[] = [
-    'licensePlate',
-    'brand',
-    'model',
-    'capacity',
-    'status',
-    'actions',
-  ];
+  protected readonly search = signal('');
+  /** 'available' = solo elegibles (consulta al backend); 'all' = toda la flota. */
+  protected readonly view = signal<'all' | 'available'>('all');
+  protected readonly rows = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    return this.store.tankerList().filter((t) => !q || `${t.licensePlate} ${t.brand} ${t.model}`.toLowerCase().includes(q));
+  });
+  protected clearSearch(): void { this.search.set(''); }
 
   ngOnInit(): void {
     this.store.loadTankers();
   }
 
   protected onRefresh(): void {
-    this.store.loadTankers();
+    if (this.view() === 'available') this.onShowAvailable(); else this.store.loadTankers();
   }
 
   protected onShowAvailable(): void {
+    this.view.set('available');
     this.store.loadAvailableTankers();
   }
 
   protected onShowAll(): void {
+    this.view.set('all');
     this.store.loadTankers();
   }
 
@@ -84,7 +86,8 @@ export class TankerList implements OnInit {
     return ['ELIGIBLE', 'BUSY', 'INELIGIBLE'].includes(outcome) ? outcome.toLowerCase() : 'unknown';
   }
 
-  protected getStatusClass(status: string): string {
-    return status.toLowerCase().replace(/_/g, '-');
+  /** Clase de color del estado (reutiliza las del listado global). */
+  protected badge(status: string): string {
+    return ({ AVAILABLE: 'st-paid', IN_ROUTE: 'st-confirmed', ASSIGNED: 'st-confirmed', MAINTENANCE: 'st-pending', SUSPENDED: 'st-cancelled' } as Record<string, string>)[status] ?? '';
   }
 }

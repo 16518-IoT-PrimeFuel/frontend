@@ -7,8 +7,8 @@ import { TankerForm } from './tanker-form';
 import { FulfillmentApi } from '../../../infrastructure/fulfillment-api';
 import { Tanker } from '../../../domain/model/tanker.entity';
 
-const valid = { licensePlate: ' A ', brand: ' B ', model: ' C ', capacity: 0.5, unit: ' GALLONS ', status: 'MAINTENANCE' };
-const tanker = new Tanker({ id: 7, providerId: 3, active: false, licensePlate: 'ABC-123', brand: 'Volvo', model: 'FH16', capacity: 10000, unit: 'LITERS', status: 'SUSPENDED', createdAt: '' });
+const valid = { licensePlate: ' A ', brand: ' B ', model: ' C ', capacity: 0.5, unit: 'GALLON', status: 'MAINTENANCE' };
+const tanker = new Tanker({ id: 7, providerId: 3, active: false, licensePlate: 'ABC-123', brand: 'Volvo', model: 'FH16', capacity: 10000, unit: 'LITRE', status: 'SUSPENDED', createdAt: '' });
 
 async function setup(id?: string) {
   TestBed.resetTestingModule();
@@ -32,7 +32,7 @@ describe('Tanker form contract', () => {
     const { component, fixture, api, save, navigate } = await setup();
     component.tankerForm.setValue(valid);
     component.onSubmit(); component.onSubmit();
-    expect(api.registerTanker).toHaveBeenCalledExactlyOnceWith({ ...valid, licensePlate: 'A', brand: 'B', model: 'C', unit: 'GALLONS' });
+    expect(api.registerTanker).toHaveBeenCalledExactlyOnceWith({ ...valid, licensePlate: 'A', brand: 'B', model: 'C', unit: 'GALLON' });
     expect(component.tankerForm.disabled).toBe(true);
     save.next(tanker); save.complete();
     await fixture.whenStable();
@@ -58,7 +58,7 @@ describe('Tanker form contract', () => {
     expect(component.tankerForm.value.status).toBe('SUSPENDED');
     expect(fixture.nativeElement.textContent).toContain('tanker-form.inactive-record');
     component.tankerForm.patchValue({ capacity: 12.5, status: 'IN_ROUTE' }); component.onSubmit();
-    expect(api.updateTanker).toHaveBeenCalledExactlyOnceWith(7, { licensePlate: 'ABC-123', brand: 'Volvo', model: 'FH16', capacity: 12.5, unit: 'LITERS', status: 'IN_ROUTE' });
+    expect(api.updateTanker).toHaveBeenCalledExactlyOnceWith(7, { licensePlate: 'ABC-123', brand: 'Volvo', model: 'FH16', capacity: 12.5, unit: 'LITRE', status: 'IN_ROUTE' });
   });
 
   it('preserves data after a save failure so the user can retry', async () => {

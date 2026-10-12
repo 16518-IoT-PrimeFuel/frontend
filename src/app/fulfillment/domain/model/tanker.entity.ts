@@ -17,7 +17,7 @@ export class Tanker implements BaseEntity {
   model: string;
   brand: string;
   capacity: number; // Capacidad en litros
-  unit: string; // LITERS, GALLONS
+  unit: string; // LITRE, GALLON
   status: TankerStatus;
   createdAt: string;
 

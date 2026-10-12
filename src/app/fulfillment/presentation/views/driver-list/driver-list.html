@@ -1,134 +1,77 @@
-<div class="driver-list-container">
-  <header class="page-header">
-    <div class="header-content">
+<main class="fleet">
+  <header class="dl-head">
+    <div>
       <h1>{{ 'driver-list.title' | translate }}</h1>
       <p>{{ 'driver-list.subtitle' | translate }}</p>
     </div>
-
-    <div class="header-actions">
-      <button mat-button (click)="onShowAll()" [disabled]="store.isLoading()">
-        <mat-icon>list</mat-icon>
-        {{ 'driver-list.show-all' | translate }}
-      </button>
-      <button mat-button (click)="onShowAvailable()" [disabled]="store.isLoading()">
-        <mat-icon>check_circle</mat-icon>
-        {{ 'driver-list.show-available' | translate }}
-      </button>
-      <button mat-icon-button (click)="onRefresh()" [disabled]="store.isLoading()">
-        <mat-icon>refresh</mat-icon>
-      </button>
-      <button mat-raised-button color="primary" routerLink="../driver-form">
-        <mat-icon>add</mat-icon>
-        {{ 'driver-list.add-button' | translate }}
-      </button>
+    <div class="dl-actions">
+      <label class="dl-search-box"><mat-icon aria-hidden="true">search</mat-icon><input type="search" [value]="search()" (input)="search.set($any($event.target).value)" [placeholder]="'driver-list.search' | translate" [attr.aria-label]="'driver-list.search' | translate" /></label>
+      <button mat-icon-button type="button" (click)="onRefresh()" [disabled]="store.isLoading()" [attr.aria-label]="'driver-list.refresh' | translate"><mat-icon>refresh</mat-icon></button>
+      <button mat-flat-button type="button" routerLink="../driver-form"><mat-icon aria-hidden="true">add</mat-icon>{{ 'driver-list.add-button' | translate }}</button>
     </div>
   </header>
 
-  @if (store.isLoading()) {
-    <div class="loading-shade">
-      <mat-spinner diameter="50"></mat-spinner>
-    </div>
-  }
+  <app-page-guide key="guide.drivers" />
 
-  @if (store.error()) {
-    <div class="error-container">
-      <mat-icon>error_outline</mat-icon>
-      <p>{{ store.error() | translate }}</p>
-    </div>
-  }
+  @if (store.error()) { <p class="dl-error" role="alert">{{ store.error() | translate }}</p> }
+  @if (store.successMsg()) { <p class="dl-notice" role="status">{{ store.successMsg() | translate }}</p> }
 
-  @if (store.successMsg()) {
-    <div class="success-container" role="status">
-      <mat-icon>check_circle</mat-icon>
-      <p>{{ store.successMsg() | translate }}</p>
-    </div>
-  }
-
-  <div class="table-container mat-elevation-z2">
-    <table mat-table [dataSource]="store.driverList()">
-      <!-- Full Name Column -->
-      <ng-container matColumnDef="fullName">
-        <th mat-header-cell *matHeaderCellDef>{{ 'driver-list.fields.full-name' | translate }}</th>
-        <td mat-cell *matCellDef="let element" class="bold-text">
-          {{ getFullName(element.firstName, element.lastName) }}
-        </td>
-      </ng-container>
-
-      <!-- License Number Column -->
-      <ng-container matColumnDef="licenseNumber">
-        <th mat-header-cell *matHeaderCellDef>{{ 'driver-list.fields.license-number' | translate }}</th>
-        <td mat-cell *matCellDef="let element">
-          <code>{{ element.licenseNumber }}</code>
-        </td>
-      </ng-container>
-
-      <!-- Phone Number Column -->
-      <ng-container matColumnDef="phoneNumber">
-        <th mat-header-cell *matHeaderCellDef>{{ 'driver-list.fields.phone' | translate }}</th>
-        <td mat-cell *matCellDef="let element">{{ element.phoneNumber }}</td>
-      </ng-container>
-
-      <!-- Email Column -->
-      <ng-container matColumnDef="email">
-        <th mat-header-cell *matHeaderCellDef>{{ 'driver-list.fields.email' | translate }}</th>
-        <td mat-cell *matCellDef="let element" class="email-text">{{ element.email }}</td>
-      </ng-container>
-
-      <!-- Status Column -->
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>{{ 'driver-list.fields.status' | translate }}</th>
-        <td mat-cell *matCellDef="let element">
-          <mat-chip-set>
-            <mat-chip [class]="getStatusClass(element.status)">
-              {{ 'driver-status.' + element.status.toLowerCase() | translate }}
-            </mat-chip>
-          </mat-chip-set>
-        </td>
-      </ng-container>
-
-      <!-- Actions Column -->
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef></th>
-        <td mat-cell *matCellDef="let element">
-          <button
-            mat-icon-button
-            [routerLink]="['../driver-form', element.id]"
-            color="primary"
-            [matTooltip]="'driver-list.edit-tooltip' | translate"
-          >
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button (click)="onToggleActive(element.id, element.active)" [disabled]="store.isLoading()" [matTooltip]="element.active ? ('tanker-list.deactivate' | translate) : ('tanker-list.activate' | translate)"><mat-icon>{{ element.active ? 'block' : 'check_circle' }}</mat-icon></button>
-          <button mat-button (click)="onEligibility(element.id)" [disabled]="store.driverEligibilityLoading()[element.id]" [attr.aria-label]="'driver-list.eligibility-for' | translate:{ name: getFullName(element.firstName, element.lastName) }">
-            {{ 'driver-list.eligibility' | translate }}
-            @if (store.driverEligibilityLoading()[element.id]) { <mat-spinner diameter="16"></mat-spinner> }
-          </button>
-          @if (store.driverEligibility()[element.id]; as eligibility) {
-            <div class="eligibility-result" role="status">
-              <span class="eligibility-label" [ngClass]="eligibilityClass(eligibility.outcome)">
-                @if (eligibilityKey(eligibility.outcome); as key) { {{ key | translate }} } @else { {{ eligibility.outcome }} }
-              </span>
-              <span>{{ eligibility.reason }}</span>
-            </div>
-          }
-          @if (store.driverEligibilityError()[element.id]; as error) {
-            <p class="eligibility-error" role="alert">{{ error | translate }}</p>
-          }
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-
-      <!-- Row shown when there is no data -->
-      <tr class="mat-row" *matNoDataRow>
-        <td class="mat-cell" colspan="6" style="text-align: center; padding: 2rem">
-          {{ 'driver-list.empty' | translate }}
-        </td>
-      </tr>
-    </table>
+  <div class="dl-chips" role="group" [attr.aria-label]="'driver-list.filters' | translate">
+    <button type="button" class="dl-chip" [attr.aria-pressed]="view() === 'all'" [disabled]="store.isLoading()" (click)="onShowAll()">{{ 'driver-list.tab-all' | translate }}</button>
+    <button type="button" class="dl-chip" [attr.aria-pressed]="view() === 'available'" [disabled]="store.isLoading()" (click)="onShowAvailable()">{{ 'driver-list.tab-available' | translate }}</button>
   </div>
-</div>
+
+  @if (store.isLoading() && !store.driverList().length) {
+    <div class="dl-empty" role="status"><mat-spinner diameter="32" /></div>
+  } @else if (!store.driverList().length) {
+    <div class="dl-empty"><mat-icon aria-hidden="true">badge</mat-icon><p>{{ 'driver-list.empty' | translate }}</p><button mat-stroked-button type="button" routerLink="../driver-form">{{ 'driver-list.add-button' | translate }}</button></div>
+  } @else if (!rows().length) {
+    <div class="dl-empty"><mat-icon aria-hidden="true">search_off</mat-icon><p>{{ 'driver-list.no-match' | translate }}</p><button mat-stroked-button type="button" (click)="clearSearch()">{{ 'driver-list.clear' | translate }}</button></div>
+  } @else {
+    <div class="dl-wrap">
+      <table class="dl-table" [attr.aria-label]="'driver-list.title' | translate">
+        <thead><tr>
+          <th scope="col">{{ 'driver-list.fields.full-name' | translate }}</th>
+          <th scope="col">{{ 'driver-list.fields.license-number' | translate }}</th>
+          <th scope="col">{{ 'driver-list.fields.phone' | translate }}</th>
+          <th scope="col">{{ 'driver-list.fields.email' | translate }}</th>
+          <th scope="col">{{ 'driver-list.fields.status' | translate }}</th>
+          <th scope="col">{{ 'driver-list.fields.actions' | translate }}</th>
+        </tr></thead>
+        <tbody>
+          @for (e of rows(); track e.id) {
+            <tr>
+              <td [attr.data-label]="'driver-list.fields.full-name' | translate"><strong>{{ getFullName(e.firstName, e.lastName) }}</strong></td>
+              <td class="nw" [attr.data-label]="'driver-list.fields.license-number' | translate">{{ e.licenseNumber }}</td>
+              <td class="nw" [attr.data-label]="'driver-list.fields.phone' | translate">{{ e.phoneNumber || '—' }}</td>
+              <td [attr.data-label]="'driver-list.fields.email' | translate">{{ e.email || '—' }}</td>
+              <td [attr.data-label]="'driver-list.fields.status' | translate"><span class="dl-badge" [ngClass]="badge(e.status)">{{ 'driver-status.' + e.status.toLowerCase() | translate }}</span></td>
+              <td class="row-actions">
+                <button mat-icon-button type="button" [routerLink]="['../driver-form', e.id]" [matTooltip]="'driver-list.edit-tooltip' | translate" [attr.aria-label]="('driver-list.edit-tooltip' | translate) + ': ' + getFullName(e.firstName, e.lastName)"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button type="button" (click)="onToggleActive(e.id, e.active)" [disabled]="store.isLoading()" [matTooltip]="e.active ? ('tanker-list.deactivate' | translate) : ('tanker-list.activate' | translate)" [attr.aria-label]="(e.active ? 'tanker-list.deactivate' : 'tanker-list.activate') | translate"><mat-icon>{{ e.active ? 'block' : 'check_circle' }}</mat-icon></button>
+                <button mat-button type="button" (click)="onEligibility(e.id)" [disabled]="store.driverEligibilityLoading()[e.id]" [attr.aria-label]="'driver-list.eligibility-for' | translate:{ name: getFullName(e.firstName, e.lastName) }">
+                  {{ 'driver-list.eligibility' | translate }}
+                  @if (store.driverEligibilityLoading()[e.id]) { <mat-spinner diameter="16"></mat-spinner> }
+                </button>
+                @if (store.driverEligibility()[e.id]; as eligibility) {
+                  <div class="eligibility-result" role="status">
+                    <span class="eligibility-label" [ngClass]="eligibilityClass(eligibility.outcome)">
+                      @if (eligibilityKey(eligibility.outcome); as key) { {{ key | translate }} } @else { {{ eligibility.outcome }} }
+                    </span>
+                    <span>{{ eligibility.reason }}</span>
+                  </div>
+                }
+                @if (store.driverEligibilityError()[e.id]; as error) {
+                  <p class="eligibility-error" role="alert">{{ error | translate }}</p>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</main>
 
 <ng-template #confirmDialog>
   <h2 mat-dialog-title>{{ 'confirm.title' | translate }}</h2>
