@@ -1,6 +1,5 @@
-<div class="pv-container">
-  <a mat-button [routerLink]="tank().data ? ['/clients', tank()!.data!.buyerCompanyId] : '/clients'">{{ 'provider-equipment.tank-detail.back' | translate }}</a>
-
+<main class="tk"><section class="tk-detail">
+  <a class="tk-back" [routerLink]="tank().data ? ['/clients', tank().data!.buyerCompanyId] : '/clients'"><mat-icon aria-hidden="true">arrow_back</mat-icon>{{ 'provider-equipment.tank-detail.back' | translate }}</a>
   @if (tank().loading) {
     <div class="pv-state" role="status"><mat-spinner diameter="32" /></div>
   } @else if (tank().error) {
@@ -12,27 +11,32 @@
     <div class="pv-state">{{ 'provider-equipment.tank-detail.not-found' | translate }}</div>
   } @else {
     @let t = tank()!.data!;
-    <header class="pv-header">
-      <h1>{{ t.name }}</h1>
-      <a mat-stroked-button [routerLink]="['/clients', t.buyerCompanyId, 'tanks', t.id, 'edit']">{{ 'provider-equipment.detail.edit' | translate }}</a>
+
+    <header class="tk-detail-head">
+      <div class="tk-title"><h1>{{ t.name }}</h1><span class="tk-status" [class.low]="t.critical">{{ (t.critical ? 'equipment.status-low' : 'equipment.status-ok') | translate }}</span></div>
+      <div class="tk-actions"><a mat-stroked-button [routerLink]="['/clients', t.buyerCompanyId, 'tanks', t.id, 'edit']"><mat-icon aria-hidden="true">edit</mat-icon>{{ 'provider-equipment.detail.edit' | translate }}</a></div>
     </header>
+    <mat-tab-group animationDuration="0ms" mat-stretch-tabs="false" (selectedIndexChange)="changeTab()">
+      <mat-tab [label]="'equipment.tab-level' | translate">
+        <div class="tk-tab" [class.low]="t.critical">
+                    <h2>{{ 'equipment.fuel-level' | translate }}</h2>
+                    <div class="tk-stage"><div class="tk-gauge" role="img" [attr.aria-label]="'equipment.gauge-label' | translate:{ name: t.name, percent: percent(), level: t.currentLevel, capacity: t.capacity, unit: (unitKey(t.unit) | translate) }">
+                      <img src="/tank-placeholder.webp" alt="" width="1400" height="574">
+                      <div class="tk-load">
+                        <span class="fuel" [style.width.%]="percent()"></span>
+                        <span class="low-mark" [style.left.%]="t.lowLevelPercent"></span>
+                        <span class="pct" [class.out]="percent() < 22" [style.left.%]="percent() < 22 ? percent() : percent() / 2">{{ percent() }}%</span>
+                      </div>
+                    </div></div>
+                    <dl class="tk-tiles">
+                      <div><dt>{{ 'equipment.tile-fuel' | translate }}</dt><dd>{{ t.fuelType ? ('fuel-type.' + t.fuelType.toLowerCase() | translate) : ('equipment.no-fuel' | translate) }}</dd></div>
+                      <div><dt>{{ 'equipment.current-level' | translate }}</dt><dd>{{ t.currentLevel | number:'1.0-2' }} <small>{{ unitKey(t.unit) | translate }}</small></dd></div>
+                      <div><dt>{{ 'equipment.capacity' | translate }}</dt><dd>{{ t.capacity | number:'1.0-2' }} <small>{{ unitKey(t.unit) | translate }}</small></dd></div>
+                      <div><dt>{{ 'equipment.free-space' | translate }}</dt><dd>{{ freeSpace() | number:'1.0-2' }} <small>{{ unitKey(t.unit) | translate }}</small></dd></div>
+                      <div><dt>{{ 'equipment.tile-threshold' | translate }}</dt><dd>{{ t.lowLevelPercent }} %</dd></div>
+                    </dl>
 
-    <section class="ptd-level">
-      <div class="ptd-vbar" [class.critical]="t.critical" role="img" [attr.aria-label]="t.levelPercent + '%'">
-        <div class="fill" [style.height.%]="t.levelPercent"></div>
-        <div class="threshold" [style.bottom.%]="t.lowLevelPercent"></div>
-      </div>
-      <div class="pv-card">
-        <span>{{ t.siteName ?? '-' }} · {{ t.fuelType }}</span>
-        <span>{{ 'provider-equipment.detail.level' | translate }}: {{ t.currentLevel | number }} / {{ t.capacity | number }} {{ unitKey(t.unit) | translate }} ({{ t.levelPercent | number: '1.0-1' }}%)</span>
-        <span>{{ 'provider-equipment.detail.threshold' | translate }}: {{ t.lowLevelPercent }}%</span>
-        @if (t.critical) { <span class="pv-badge">{{ 'provider-equipment.detail.critical' | translate }}</span> }
-      </div>
-    </section>
-  }
-
-  <section>
-    <h2>{{ 'provider-equipment.tank-detail.readings' | translate }}</h2>
+          <h2>{{ 'equipment.history' | translate }}</h2>
     @if (readings().loading) {
       <div class="pv-state" role="status"><mat-spinner diameter="24" /></div>
     } @else if (readings().error) {
@@ -41,7 +45,7 @@
         <button mat-stroked-button type="button" (click)="loadReadings()">{{ 'provider-equipment.detail.retry' | translate }}</button>
       </div>
     } @else if (!readings().data.length) {
-      <p class="pv-note">{{ 'provider-equipment.tank-detail.no-readings' | translate }}</p>
+      <p class="tk-note">{{ 'provider-equipment.tank-detail.no-readings' | translate }}</p>
     } @else {
       <p [class.ptd-stale]="stale()">
         {{ 'provider-equipment.tank-detail.last-reading' | translate }}: {{ last()!.level | number }} {{ unitKey(last()!.unit) | translate }}
@@ -49,8 +53,8 @@
         · {{ 'provider-equipment.tank-detail.quality' | translate }}: {{ last()!.quality }}
         @if (stale()) { · {{ 'provider-equipment.tank-detail.stale' | translate }} }
       </p>
-      <div class="ptd-chart"><canvas baseChart [data]="chartData()" [options]="chartOptions" type="line"></canvas></div>
-      <table class="pv-table">
+      <div class="tk-chart"><canvas baseChart [data]="chartData()" [options]="chartOptions" type="line"></canvas></div>
+      <div class="tk-table-scroll"><table class="pv-table">
         <thead>
           <tr>
             <th>{{ 'provider-equipment.tank-detail.captured-at' | translate }}</th>
@@ -62,19 +66,70 @@
         <tbody>
           @for (r of reversed(); track r.id) {
             <tr>
-              <td>{{ r.capturedAt | date: 'short' }}</td>
+              <td>{{ r.capturedAt | limaDate }}</td>
               <td>{{ r.level | number }} {{ unitKey(r.unit) | translate }}</td>
               <td>{{ r.deviceId }} ({{ r.channel }})</td>
               <td>{{ r.quality }}</td>
             </tr>
           }
         </tbody>
-      </table>
+      </table></div>
     }
-  </section>
+        </div>
+      </mat-tab>
+      <mat-tab [label]="'equipment.tab-info' | translate">
+        <div class="tk-tab">
+          <dl class="tk-facts">
+            <div><dt>{{ 'equipment.site' | translate }}</dt><dd>{{ t.siteName ?? ('equipment.no-site' | translate) }} @if (t.deliveryAddress) { <small>{{ t.deliveryAddress }}</small> }</dd></div>
+            <div><dt>{{ 'equipment.fuel-type' | translate }}</dt><dd>{{ t.fuelType ? ('fuel-type.' + t.fuelType.toLowerCase() | translate) : ('equipment.no-fuel' | translate) }}</dd></div>
+            <div><dt>{{ 'equipment.unit' | translate }}</dt><dd>{{ unitKey(t.unit) | translate }}</dd></div>
+            <div><dt>{{ 'equipment.level-source' | translate }}</dt><dd>{{ t.levelSource }}</dd></div>
+          </dl>
+    <details class="device-credentials" [open]="credentialOpen" (toggle)="toggleCredential($event)">
+      <summary>{{ 'device.title' | translate }}</summary>
+      <p>{{ 'device.description' | translate }}</p>
+      @if (!t.devices.length) {
+        <p role="status">{{ 'device.no-device' | translate }}</p>
+        <a mat-stroked-button [routerLink]="['/clients', t.buyerCompanyId, 'tanks', t.id, 'edit']">{{ 'device.link-device' | translate }}</a>
+      } @else {
+        <p class="device-warning">{{ 'device.once-warning' | translate }}</p>
+        <label>{{ 'device.channel' | translate }}
+          <select [(ngModel)]="channel" (ngModelChange)="changeChannel()" [disabled]="credentialBusy()">
+            @for (binding of t.devices; track binding.channel) { <option [value]="binding.channel">{{ binding.deviceId }} · {{ binding.channel }}</option> }
+          </select>
+        </label>
+        <div class="device-actions" [attr.aria-busy]="credentialBusy()">
+          <button mat-stroked-button type="button" [disabled]="credentialBusy()" (click)="manageCredential('issue')">{{ 'device.issue' | translate }}</button>
+          <button mat-stroked-button type="button" [disabled]="credentialBusy()" (click)="manageCredential('rotate')">{{ 'device.rotate' | translate }}</button>
+          <button mat-stroked-button type="button" [disabled]="credentialBusy()" (click)="manageCredential('revoke')">{{ 'device.revoke' | translate }}</button>
+        </div>
+        @if (credentialBusy()) { <p role="status">{{ 'common.loading' | translate }}</p> }
+        @if (credentialNotice()) { <p role="status">{{ credentialNotice() | translate }}</p> }
+        @if (credentialError()) { <p class="device-error" role="alert">{{ credentialError() | translate }}</p> }
+        @if (credential(); as result) {
+          @if (result.tokenVersion) { <p>{{ 'device.version' | translate }}: {{ result.tokenVersion }}</p> }
+          @if (result.issuedAt) { <p>{{ 'device.issued-at' | translate }}: {{ result.issuedAt | limaDate }}</p> }
+          @if (result.revokedAt) { <p>{{ 'device.revoked-at' | translate }}: {{ result.revokedAt | limaDate }}</p> }
+        }
+        @if (deviceToken()) {
+          <label>{{ 'device.token' | translate }}
+            <textarea readonly rows="3" [value]="deviceToken()" autocomplete="off" spellcheck="false"></textarea>
+          </label>
+          <div class="device-actions">
+            <button mat-stroked-button type="button" (click)="copyToken()">{{ 'device.copy' | translate }}</button>
+            <button mat-button type="button" (click)="deviceToken.set('')">{{ 'device.hide' | translate }}</button>
+          </div>
+        }
+      }
+    </details>
 
-  <section>
-    <h2>{{ 'provider-equipment.tank-detail.episodes' | translate }}</h2>
+        </div>
+      </mat-tab>
+      <mat-tab [label]="'equipment.tab-refill' | translate">
+        <div class="tk-tab">
+          <h2>{{ 'equipment.policy' | translate }}</h2>
+          <dl class="tk-facts"><div><dt>{{ 'equipment.tile-threshold' | translate }}</dt><dd>{{ t.lowLevelPercent }} %</dd></div></dl>
+          <h2>{{ 'equipment.episodes' | translate }}</h2>
     @if (episodes().loading) {
       <div class="pv-state" role="status"><mat-spinner diameter="24" /></div>
     } @else if (episodes().error) {
@@ -83,34 +138,22 @@
         <button mat-stroked-button type="button" (click)="loadEpisodes()">{{ 'provider-equipment.detail.retry' | translate }}</button>
       </div>
     } @else if (!episodes().data.length) {
-      <p class="pv-note">{{ 'provider-equipment.tank-detail.no-episodes' | translate }}</p>
+      <p class="tk-muted">{{ 'provider-equipment.tank-detail.no-episodes' | translate }}</p>
     } @else {
-      <table class="pv-table">
-        <thead>
-          <tr>
-            <th>{{ 'provider-equipment.detail.status' | translate }}</th>
-            <th>{{ 'provider-equipment.tank-detail.opened-at' | translate }}</th>
-            <th>{{ 'provider-equipment.tank-detail.volume' | translate }}</th>
-            <th>{{ 'provider-equipment.tank-detail.request' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (e of episodes().data; track e.id) {
-            <tr>
-              <td>{{ e.status }}</td>
-              <td>{{ e.openedAt | date: 'short' }}</td>
-              <td>{{ e.requestedVolume | number }} {{ unitKey(e.unit) | translate }}</td>
-              <td>
-                @if (e.requestId) {
-                  <a [routerLink]="['/ordering/request-detail', e.requestId]">#{{ e.requestId }}</a>
-                } @else {
-                  {{ (e.requestEmitted ? 'provider-equipment.tank-detail.emitted' : 'provider-equipment.tank-detail.not-emitted') | translate }}
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+      <ol class="tk-timeline">
+        @for (e of episodes().data; track e.id) {
+          <li [class.open]="e.status === 'OPEN'">
+            <p><strong>{{ (e.status === 'OPEN' ? 'equipment.episode-open' : e.status === 'REARMED' ? 'equipment.episode-rearmed' : e.status === 'CLOSED' ? 'equipment.episode-closed' : 'equipment.not-set') | translate }}</strong> · <time [attr.datetime]="e.openedAt">{{ e.openedAt | limaDate }}</time></p>
+            <p>{{ 'equipment.episode-volume' | translate:{ volume: (e.requestedVolume | number:'1.0-2'), unit: (unitKey(e.unit) | translate) } }}
+              @if (e.requestId) { · <a [routerLink]="['/ordering/request-detail', e.requestId]">{{ 'equipment.view-request' | translate:{ id: e.requestId } }}</a> }
+              @else { · {{ (e.requestEmitted ? 'provider-equipment.tank-detail.emitted' : 'provider-equipment.tank-detail.not-emitted') | translate }} }
+            </p>
+          </li>
+        }
+      </ol>
     }
-  </section>
-</div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  }
+</section></main>

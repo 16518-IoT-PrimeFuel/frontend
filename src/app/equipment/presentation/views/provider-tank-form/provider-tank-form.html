@@ -1,4 +1,4 @@
-<div class="pv-container">
+<div class="pv-container tf-wide">
   <header class="pv-header">
     <div>
       <h1>{{ (editing ? 'provider-equipment.tank-form.edit-title' : 'provider-equipment.tank-form.create-title') | translate }}@if (buyer()) { · {{ buyer()!.name }} }</h1>
@@ -15,6 +15,7 @@
       <a mat-button [routerLink]="['/clients', buyerId]">{{ 'provider-equipment.tank-form.cancel' | translate }}</a>
     </div>
   } @else {
+    <div class="tf-layout">
     <form class="pv-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <label>{{ 'provider-equipment.tank-form.name' | translate }}
         <input formControlName="name" maxlength="150" autocomplete="off" />
@@ -84,5 +85,30 @@
         <a mat-button [routerLink]="['/clients', buyerId]">{{ 'provider-equipment.tank-form.cancel' | translate }}</a>
       </div>
     </form>
+
+    <aside class="tf-preview" [class.low]="preview().critical" [attr.aria-label]="'equipment.fuel-level' | translate">
+      <h2>{{ preview().name || ('provider-equipment.tank-form.name' | translate) }}</h2>
+      <div class="tk-stage"><div class="tk-gauge" role="img" [attr.aria-label]="'equipment.gauge-label' | translate:{ name: preview().name, percent: preview().percent, level: preview().level, capacity: preview().capacity, unit: (unitKey(preview().unit) | translate) }">
+        <img src="/tank-placeholder.webp" alt="" width="1400" height="574">
+        <div class="tk-load">
+          <span class="fuel" [style.width.%]="preview().percent"></span>
+          <span class="low-mark" [style.left.%]="preview().low"></span>
+          <span class="pct" [class.out]="preview().percent < 22" [style.left.%]="preview().percent < 22 ? preview().percent : preview().percent / 2">{{ preview().percent }}%</span>
+        </div>
+      </div></div>
+      <dl class="tk-tiles">
+        <div><dt>{{ 'equipment.tile-fuel' | translate }}</dt><dd>{{ preview().fuelType ? ('fuel-type.' + preview().fuelType!.toLowerCase() | translate) : (preview().product ?? '-') }}</dd></div>
+        <div><dt>{{ 'equipment.current-level' | translate }}</dt><dd>{{ preview().level | number:'1.0-2' }} <small>{{ unitKey(preview().unit) | translate }}</small></dd></div>
+        <div><dt>{{ 'equipment.capacity' | translate }}</dt><dd>{{ preview().capacity | number:'1.0-2' }} <small>{{ unitKey(preview().unit) | translate }}</small></dd></div>
+        <div><dt>{{ 'equipment.free-space' | translate }}</dt><dd>{{ preview().free | number:'1.0-2' }} <small>{{ unitKey(preview().unit) | translate }}</small></dd></div>
+        <div><dt>{{ 'equipment.tile-threshold' | translate }}</dt><dd>{{ preview().low }} %</dd></div>
+      </dl>
+      <dl class="tf-facts">
+        <div><dt>{{ 'provider-equipment.tank-form.site' | translate }}</dt><dd>{{ preview().site ?? '-' }}</dd></div>
+        <div><dt>{{ 'provider-equipment.tank-form.product' | translate }}</dt><dd>{{ preview().product ?? '-' }}</dd></div>
+        <div><dt>{{ 'provider-equipment.tank-form.device-id' | translate }}</dt><dd>{{ preview().device ?? '-' }}</dd></div>
+      </dl>
+    </aside>
+    </div>
   }
 </div>

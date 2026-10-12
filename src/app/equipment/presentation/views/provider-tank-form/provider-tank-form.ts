@@ -1,8 +1,9 @@
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DecimalPipe } from '@angular/common';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { forkJoin, Subscription } from 'rxjs';
+import { forkJoin, map, startWith, Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -25,9 +26,9 @@ const finiteNumber = (c: AbstractControl): ValidationErrors | null =>
 @Component({
   selector: 'app-provider-tank-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, MatProgressSpinnerModule, TranslatePipe],
+  imports: [DecimalPipe, ReactiveFormsModule, RouterLink, MatButtonModule, MatProgressSpinnerModule, TranslatePipe],
   templateUrl: './provider-tank-form.html',
-  styleUrl: '../provider-views.css',
+  styleUrls: ['../provider-views.css', './provider-tank-form.css'],
 })
 export class ProviderTankForm implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
@@ -62,6 +63,27 @@ export class ProviderTankForm implements OnInit {
     channel: ['level', [Validators.required, Validators.maxLength(60), Validators.pattern(/\S/)]],
     autoGenerateEnabled: [true],
   }, { validators: levelWithinCapacity });
+
+  private readonly values = toSignal(
+    this.form.valueChanges.pipe(startWith(null), map(() => this.form.getRawValue())), { initialValue: this.form.getRawValue() });
+
+  /** Maqueta en vivo: refleja el formulario mientras se edita (los campos bloqueados salen del tanque cargado). */
+  protected readonly preview = computed(() => {
+    const v = this.values();
+    const capacity = Number(v.capacity) || 0;
+    const level = Number(v.initialLevel) || 0;
+    const percent = capacity > 0 ? Math.min(100, Math.max(0, Math.round((level / capacity) * 100))) : 0;
+    const low = Math.min(100, Math.max(0, Number(v.lowLevelPercent) || 0));
+    const product = this.products().find((p) => p.id === Number(v.fuelProductId));
+    return {
+      name: v.name.trim(), capacity, level, percent, low, unit: v.unit,
+      free: Math.max(0, capacity - level), critical: capacity > 0 && percent <= low,
+      fuelType: product?.fuelType ?? this.original?.fuelType ?? null,
+      product: product?.name ?? null,
+      site: this.buyer()?.sites.find((s) => s.id === Number(v.siteId))?.name ?? null,
+      device: v.deviceId.trim() ? `${v.deviceId.trim()} (${v.channel.trim() || '-'})` : null,
+    };
+  });
 
   ngOnInit(): void { this.load(); }
 

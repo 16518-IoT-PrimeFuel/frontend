@@ -2,7 +2,8 @@ import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -14,20 +15,22 @@ import { ProviderEquipmentApi, unitKey } from '../../../infrastructure/provider-
 
 type Section<T> = { loading: boolean; error: boolean; data: T };
 
-/** Detalle de comprador (US-32): sitios, tanques con dispositivo y pedidos. Cada sección carga y falla por separado. */
+/** Detalle de comprador (US-32) en modal sobre /clients: sitios, tanques con dispositivo y pedidos. Cada sección carga y falla por separado. */
 @Component({
   selector: 'app-provider-client-detail',
   standalone: true,
   imports: [DatePipe, DecimalPipe, RouterLink, MatButtonModule, MatProgressSpinnerModule, TranslatePipe],
   templateUrl: './provider-client-detail.html',
   styleUrl: '../provider-views.css',
+  styles: [`.client-modal{max-height:calc(100dvh - 32px);overflow-y:auto;padding:24px;max-width:none;box-sizing:border-box}.client-close{align-self:flex-start}`],
 })
 export class ProviderClientDetail implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private buyerRequest?: Subscription;
   private tanksRequest?: Subscription;
   private ordersRequest?: Subscription;
-  readonly buyerId = inject(ActivatedRoute).snapshot.paramMap.get('buyerId')!;
+  protected readonly dialogRef = inject<MatDialogRef<ProviderClientDetail>>(MatDialogRef, { optional: true });
+  readonly buyerId = String(inject<{ buyerId: number | string }>(MAT_DIALOG_DATA).buyerId);
   private readonly api = inject(ProviderEquipmentApi);
   private readonly ordering = inject(OrderingApi);
   private readonly iam = inject(IamStore);

@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { RefillEpisode } from '../domain/model/equipment.entity';
 import {
-  BuyerLookup, NewBuyerCompany, NewProviderTank, ProviderBuyerCompany, ProviderTank, ProviderTankReading, ProviderTankUpdate,
+  BuyerLookup, DeviceCredential, NewBuyerCompany, NewProviderTank, ProviderBuyerCompany, ProviderTank, ProviderTankReading, ProviderTankUpdate,
 } from '../domain/model/provider-equipment.entity';
 
 /** Endpoints /provider/* (solo ROLE_PROVIDER). El distribuidor lo deriva el backend del token. */
@@ -22,6 +22,9 @@ export class ProviderEquipmentApi {
   tank(id: number) { return this.http.get<ProviderTank>(`${this.base}/tanks/${id}`); }
   registerTank(body: NewProviderTank) { return this.http.post<ProviderTank>(`${this.base}/tanks`, body); }
   updateTank(id: number, body: ProviderTankUpdate) { return this.http.put<ProviderTank>(`${this.base}/tanks/${id}`, body); }
+  issueDeviceCredential(id: number, channel: string) { return this.http.post<DeviceCredential>(`${this.base}/tanks/${id}/device-credential`, null, { params: { channel } }); }
+  rotateDeviceCredential(id: number, channel: string) { return this.http.post<DeviceCredential>(`${this.base}/tanks/${id}/device-credential/rotate`, null, { params: { channel } }); }
+  revokeDeviceCredential(id: number, channel: string) { return this.http.post<DeviceCredential>(`${this.base}/tanks/${id}/device-credential/revoke`, null, { params: { channel } }); }
   readings(id: number, from?: string, to?: string) {
     let params = new HttpParams();
     if (from) params = params.set('from', from);
@@ -31,20 +34,6 @@ export class ProviderEquipmentApi {
   episodes(id: number) { return this.http.get<RefillEpisode[]>(`${this.base}/tanks/${id}/refill-episodes`); }
 }
 
-/** LITRE|LITERS -> unit.liters, GALLON|GALLONS -> unit.gallons (clave i18n existente). */
-export const unitKey = (unit: string | null | undefined) => (unit?.startsWith('GALLON') ? 'unit.gallons' : 'unit.liters');
+export { unitKey } from '../../shared/domain/model/fuel-unit';
 
-const errorKeys: Record<string, string> = {
-  DEVICEBINDING_CONFLICT: 'provider-equipment.err-device-duplicate',
-  BUYERCOMPANY_CONFLICT: 'provider-equipment.err-ruc-duplicate',
-  PROVIDERBUYERLINK_CONFLICT: 'provider-equipment.err-already-linked',
-  BUYERCOMPANY_NOT_FOUND: 'provider-equipment.err-buyer-not-found',
-  FUELPRODUCT_NOT_FOUND: 'provider-equipment.err-product-not-found',
-  TANK_NOT_FOUND: 'provider-equipment.err-tank-not-found',
-  LOOKUP_RATE_LIMITED: 'provider-equipment.err-lookup-rate-limited',
-  VALIDATION_ERROR: 'errors.http-400',
-};
-
-/** HttpErrorResponse de /provider/* -> clave i18n; nunca expone `details` (viene en inglés fijo). */
-export const providerErrorKey = (e: any): string =>
-  errorKeys[e?.error?.code] ?? ([400, 401, 403, 404, 409, 422].includes(e?.status) ? `errors.http-${e.status}` : e?.status === 0 ? 'errors.network' : 'equipment.request-failed');
+export { apiErrorKey as providerErrorKey } from '../../shared/infrastructure/api-error';

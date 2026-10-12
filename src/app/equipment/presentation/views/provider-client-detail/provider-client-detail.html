@@ -1,5 +1,5 @@
-<div class="pv-container">
-  <a mat-button routerLink="/clients">{{ 'provider-equipment.detail.back' | translate }}</a>
+<div class="pv-container client-modal" role="dialog" aria-labelledby="client-detail-title">
+  <button mat-button type="button" class="client-close" (click)="dialogRef?.close()">{{ 'provider-equipment.detail.back' | translate }}</button>
 
   @if (buyer().loading) {
     <div class="pv-state" role="status"><mat-spinner diameter="32" /></div>
@@ -13,7 +13,7 @@
   } @else {
     <header class="pv-header">
       <div>
-        <h1>{{ buyer()!.data!.name }}</h1>
+        <h1 id="client-detail-title">{{ buyer()!.data!.name }}</h1>
         <p class="pv-note">{{ 'provider-equipment.clients.ruc' | translate }}: {{ buyer()!.data!.ruc ?? '-' }} · {{ 'provider-equipment.clients.sector' | translate }}: {{ buyer()!.data!.sector ?? '-' }}</p>
       </div>
       <a mat-flat-button [routerLink]="['/clients', buyerId, 'tanks', 'new']">{{ 'provider-equipment.detail.add-tank' | translate }}</a>

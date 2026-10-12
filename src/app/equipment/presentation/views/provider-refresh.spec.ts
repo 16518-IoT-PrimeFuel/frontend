@@ -1,6 +1,7 @@
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { TranslateModule } from '@ngx-translate/core';
 import { Subject } from 'rxjs';
 import { beforeEach, expect, it, vi } from 'vitest';
@@ -27,6 +28,7 @@ it.each(views)('$component.name cancels old reads on refresh and all pending rea
   TestBed.configureTestingModule({ imports: [TranslateModule.forRoot()], providers: [
     provideRouter([]),
     { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ buyerId: '4', id: '23' }) } } },
+    { provide: MAT_DIALOG_DATA, useValue: { buyerId: 4 } },
     { provide: ProviderEquipmentApi, useValue: { buyerCompanies: read, tanks: read, tank: read, readings: read, episodes: read } },
     { provide: OrderingApi, useValue: { orders: read } }, { provide: IamStore, useValue: { providerId: () => 2 } },
   ] });

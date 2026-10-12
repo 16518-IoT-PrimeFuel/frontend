@@ -17,6 +17,11 @@ export interface ProviderBuyerCompany {
 
 export interface ProviderTankDevice { deviceId: string; channel: string; validFrom: string; }
 
+export interface DeviceCredential {
+  tankId: number; deviceId: string; channel: string; credentialId: number;
+  tokenVersion?: number | null; token?: string; issuedAt?: string; revokedAt?: string;
+}
+
 export interface ProviderTank {
   id: number;
   buyerCompanyId: number;

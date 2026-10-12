@@ -1,6 +1,8 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import { MatDialogRef } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { ReactiveFormsModule, Validators, NonNullableFormBuilder } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,11 +19,14 @@ const DEFAULT_RETRY_AFTER_SECONDS = 60;
 @Component({
   selector: 'app-provider-buyer-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, TranslatePipe],
+  imports: [ReactiveFormsModule, MatIconModule, MatButtonModule, TranslatePipe],
   templateUrl: './provider-buyer-form.html',
   styleUrl: '../provider-views.css',
+  styles: [`.buyer-modal{max-height:calc(100dvh - 32px);overflow-y:auto;padding:24px;max-width:none;box-sizing:border-box}.buyer-modal .pv-form{max-width:none}.buyer-modal .pv-form input{border:1px solid #b8c0cc;border-radius:8px;font-size:16px;min-height:24px}.buyer-modal .pv-header h1{font-size:22px}.buyer-modal :is(input,button):focus-visible{outline:2px solid #1e3a8a;outline-offset:3px}.buyer-modal :is(.pv-note,.pv-hint){color:#4b5563}.buyer-modal .pv-actions{padding-top:8px}.ruc-help-button{align-self:flex-start}.ruc-help{padding:16px;background:#eff6ff;border-radius:12px;color:#243447;font-size:14px;line-height:1.6}.ruc-help p{margin:0}.ruc-help p:last-child{margin-top:12px}.ruc-help ul{padding-left:20px;margin:10px 0}.ruc-help a{display:inline-flex;align-items:center;gap:6px;color:#1e3a8a;min-height:44px}.ruc-help mat-icon{width:16px;height:16px;font-size:16px}`],
 })
 export class ProviderBuyerForm {
+  protected readonly dialogRef = inject<MatDialogRef<ProviderBuyerForm, boolean>>(MatDialogRef, { optional: true });
+  protected readonly rucHelpOpen = signal(false);
   private readonly api = inject(ProviderEquipmentApi);
   private readonly router = inject(Router);
   private readonly fb = inject(NonNullableFormBuilder);
@@ -49,6 +54,7 @@ export class ProviderBuyerForm {
   });
 
   constructor() {
+    effect(() => { if (this.dialogRef) this.dialogRef.disableClose = this.saving(); });
     this.destroyRef.onDestroy(() => clearInterval(this.timer));
     this.lookupForm.controls.ruc.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.lookupRequest?.unsubscribe();
@@ -86,7 +92,7 @@ export class ProviderBuyerForm {
     this.saving.set(true);
     this.error.set(null);
     this.api.registerBuyerCompany({ buyerCompanyId: buyer.buyerCompanyId }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (linked) => this.router.navigate(['/clients', linked.id]),
+      next: (linked) => this.complete(linked.id),
       error: (e) => {
         // Caso legacy: lookup 200 pero la empresa no tiene organización activa => POST 404.
         this.error.set(e?.error?.code === 'BUYERCOMPANY_NOT_FOUND' ? 'provider-equipment.err-buyer-no-org' : providerErrorKey(e));
@@ -106,9 +112,20 @@ export class ProviderBuyerForm {
     this.saving.set(true);
     this.error.set(null);
     this.api.registerBuyerCompany(body as unknown as NewBuyerCompany).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (buyer) => this.router.navigate(['/clients', buyer.id]),
+      next: (buyer) => this.complete(buyer.id),
       error: (e) => { this.error.set(providerErrorKey(e)); this.saving.set(false); },
     });
+  }
+
+  protected cancel(): void {
+    if (this.saving()) return;
+    if (this.dialogRef) this.dialogRef.close(false);
+    else this.router.navigate(['/clients']);
+  }
+
+  private complete(id: number): void {
+    if (this.dialogRef) this.dialogRef.close(true);
+    else this.router.navigate(['/clients', id]);
   }
 
   private startWait(seconds: number): void {

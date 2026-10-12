@@ -1,61 +1,54 @@
-<div class="pv-container">
-  <header class="pv-header">
+<main class="clients">
+  <header class="clients-header">
     <h1>{{ 'nav.clients' | translate }}</h1>
-    <a mat-flat-button routerLink="/clients/new">{{ 'provider-equipment.clients.register' | translate }}</a>
+    <div class="header-actions">
+      <label class="search-box"><mat-icon aria-hidden="true">search</mat-icon><input type="search" [value]="search()" (input)="search.set($any($event.target).value)" [placeholder]="'provider-equipment.clients.search' | translate" [attr.aria-label]="'provider-equipment.clients.search' | translate" [disabled]="loading()" /></label>
+      <button mat-flat-button type="button" (click)="registerBuyer()"><mat-icon aria-hidden="true">add</mat-icon>{{ 'provider-equipment.clients.register' | translate }}</button>
+    </div>
   </header>
 
+  <div class="client-filters" role="group" [attr.aria-label]="'provider-equipment.clients.filters' | translate">
+    @for (option of filters; track option.id) {
+      <button type="button" [attr.aria-pressed]="filter() === option.id" [disabled]="loading()" (click)="filter.set(option.id)">{{ 'provider-equipment.clients.' + option.label | translate }} <span>{{ count(option.id) }}</span></button>
+    }
+  </div>
+
   @if (loading()) {
-    <div class="pv-state" role="status"><mat-spinner diameter="32" /></div>
+    <div class="client-state" role="status"><mat-spinner diameter="32" /><p>{{ 'provider-equipment.detail.loading' | translate }}</p></div>
   } @else if (error()) {
-    <div class="pv-state error" role="alert">
-      <p>{{ 'provider-equipment.clients.error' | translate }}</p>
-      <button mat-stroked-button type="button" (click)="load()">{{ 'provider-equipment.clients.retry' | translate }}</button>
-    </div>
+    <div class="client-state error" role="alert"><mat-icon aria-hidden="true">error_outline</mat-icon><p>{{ 'provider-equipment.clients.error' | translate }}</p><button mat-stroked-button type="button" (click)="load()">{{ 'provider-equipment.clients.retry' | translate }}</button></div>
   } @else if (!buyers().length) {
-    <div class="pv-state">
-      <p>{{ 'provider-equipment.clients.empty' | translate }}</p>
-      <p class="pv-hint">{{ 'provider-equipment.clients.empty-hint' | translate }}</p>
-      <a mat-stroked-button routerLink="/clients/new">{{ 'provider-equipment.clients.register' | translate }}</a>
-    </div>
+    <div class="client-state"><mat-icon aria-hidden="true">business</mat-icon><h2>{{ 'provider-equipment.clients.empty' | translate }}</h2><p>{{ 'provider-equipment.clients.empty-hint' | translate }}</p><button mat-stroked-button type="button" (click)="registerBuyer()">{{ 'provider-equipment.clients.register' | translate }}</button></div>
+  } @else if (!rows().length) {
+    <div class="client-state"><mat-icon aria-hidden="true">search_off</mat-icon><h2>{{ 'provider-equipment.clients.search-none' | translate }}</h2><button mat-stroked-button type="button" (click)="clearFilters()">{{ 'provider-equipment.clients.clear-filters' | translate }}</button></div>
   } @else {
-    <div class="pv-form">
-      <label>{{ 'provider-equipment.clients.search' | translate }}
-        <input type="search" [value]="search()" (input)="search.set($any($event.target).value)" />
-      </label>
-    </div>
-    @if (!rows().length) {
-      <div class="pv-state">{{ 'provider-equipment.clients.search-none' | translate }}</div>
-    } @else {
-      <table class="pv-table">
-        <thead>
-          <tr>
-            <th>{{ 'provider-equipment.clients.name' | translate }}</th>
-            <th>{{ 'provider-equipment.clients.ruc' | translate }}</th>
-            <th>{{ 'provider-equipment.clients.sector' | translate }}</th>
-            <th>{{ 'provider-equipment.clients.active-orders' | translate }}</th>
-            <th>{{ 'provider-equipment.clients.historical-orders' | translate }}</th>
-            <th>{{ 'provider-equipment.clients.tanks' | translate }}</th>
-            <th>{{ 'provider-equipment.clients.critical' | translate }}</th>
-            <th>{{ 'provider-equipment.clients.sites' | translate }}</th>
-          </tr>
-        </thead>
+    <div class="client-table-wrap">
+      <table class="client-table" [attr.aria-label]="'nav.clients' | translate">
+        <thead><tr>
+          <th scope="col">{{ 'provider-equipment.clients.name' | translate }}</th>
+          <th scope="col">{{ 'provider-equipment.clients.ruc' | translate }}</th>
+          <th scope="col">{{ 'provider-equipment.clients.sector' | translate }}</th>
+          <th scope="col">{{ 'provider-equipment.detail.status' | translate }}</th>
+          <th scope="col">{{ 'provider-equipment.clients.orders' | translate }}</th>
+          <th scope="col">{{ 'provider-equipment.clients.tanks' | translate }}</th>
+          <th scope="col">{{ 'provider-equipment.clients.sites' | translate }}</th>
+          <th scope="col">{{ 'provider-equipment.clients.actions' | translate }}</th>
+        </tr></thead>
         <tbody>
           @for (b of rows(); track b.id) {
-            <tr class="clickable" tabindex="0" (click)="open(b.id)" (keydown.enter)="open(b.id)">
-              <td>{{ b.name }}</td>
-              <td>{{ b.ruc ?? '-' }}</td>
-              <td>{{ b.sector ?? '-' }}</td>
-              <td>{{ b.activeOrderCount }}</td>
-              <td>{{ b.historicalOrderCount }}</td>
-              <td>{{ b.tankCount }}</td>
-              <td>
-                @if (b.criticalTankCount) { <span class="pv-badge">{{ b.criticalTankCount }}</span> } @else { 0 }
-              </td>
-              <td>{{ b.sites.length }}</td>
+            <tr>
+              <th scope="row" class="company"><div><span class="company-icon"><mat-icon aria-hidden="true">business</mat-icon></span><a [routerLink]="['/clients', b.id]">{{ b.name }}</a></div></th>
+              <td [attr.data-label]="'provider-equipment.clients.ruc' | translate">{{ b.ruc || '—' }}</td>
+              <td [attr.data-label]="'provider-equipment.clients.sector' | translate">{{ b.sector || '—' }}</td>
+              <td class="status-cell" [attr.data-label]="'provider-equipment.detail.status' | translate"><span class="client-status" [class.critical]="b.criticalTankCount > 0" [class.no-tanks]="!b.tankCount">{{ (b.criticalTankCount > 0 ? 'provider-equipment.clients.critical-status' : b.tankCount > 0 ? 'equipment.status-ok' : 'provider-equipment.clients.no-tanks-status') | translate }}@if (b.criticalTankCount > 0) { <b>{{ b.criticalTankCount }}</b> }</span></td>
+              <td class="orders" [attr.data-label]="'provider-equipment.clients.orders' | translate"><strong>{{ b.activeOrderCount }}</strong> <span>{{ 'provider-equipment.clients.active-label' | translate }}</span><small>{{ b.historicalOrderCount }} {{ 'provider-equipment.clients.total-label' | translate }}</small></td>
+              <td class="numeric" [attr.data-label]="'provider-equipment.clients.tanks' | translate">{{ b.tankCount }}</td>
+              <td class="numeric" [attr.data-label]="'provider-equipment.clients.sites' | translate">{{ b.sites.length }}</td>
+              <td class="row-action"><a [routerLink]="['/clients', b.id]" [attr.aria-label]="('provider-equipment.clients.view-client' | translate) + ': ' + b.name">{{ 'provider-equipment.clients.view-client' | translate }}<mat-icon aria-hidden="true">chevron_right</mat-icon></a></td>
             </tr>
           }
         </tbody>
       </table>
-    }
+    </div>
   }
-</div>
+</main>

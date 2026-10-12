@@ -1,10 +1,20 @@
-<div class="pv-container">
+<div class="pv-container" [class.buyer-modal]="!!dialogRef">
   <header class="pv-header">
     <div>
-      <h1>{{ 'provider-equipment.buyer-form.title' | translate }}</h1>
+      <h1 id="buyer-form-title">{{ 'provider-equipment.buyer-form.title' | translate }}</h1>
       <p class="pv-note">{{ 'provider-equipment.buyer-form.subtitle' | translate }}</p>
     </div>
   </header>
+
+  <button class="ruc-help-button" mat-button type="button" [attr.aria-expanded]="rucHelpOpen()" aria-controls="ruc-help" (click)="rucHelpOpen.set(!rucHelpOpen())"><mat-icon aria-hidden="true">info_outline</mat-icon>{{ 'provider-equipment.buyer-form.ruc-help-title' | translate }}</button>
+  @if (rucHelpOpen()) {
+    <aside id="ruc-help" class="ruc-help" [attr.aria-label]="'provider-equipment.buyer-form.ruc-help-title' | translate">
+      <p>{{ 'provider-equipment.buyer-form.ruc-help-intro' | translate }}</p>
+      <ul><li>{{ 'provider-equipment.buyer-form.ruc-help-ficha' | translate }}</li><li>{{ 'provider-equipment.buyer-form.ruc-help-search' | translate }}</li></ul>
+      <a href="https://e-consultaruc.sunat.gob.pe/" target="_blank" rel="noopener noreferrer">{{ 'provider-equipment.buyer-form.ruc-help-link' | translate }}<mat-icon aria-hidden="true">open_in_new</mat-icon></a>
+      <p>{{ 'provider-equipment.buyer-form.ruc-help-enter' | translate }}</p>
+    </aside>
+  }
 
   @if (step() === 'lookup') {
     <form class="pv-form" [formGroup]="lookupForm" (ngSubmit)="search()" novalidate>
@@ -29,7 +39,7 @@
 
       <div class="pv-actions">
         <button mat-flat-button type="submit" [disabled]="searching() || saving() || waitSeconds() > 0">{{ 'provider-equipment.buyer-form.search' | translate }}</button>
-        <a mat-button routerLink="/clients">{{ 'provider-equipment.buyer-form.cancel' | translate }}</a>
+        <button mat-button type="button" [disabled]="saving()" (click)="cancel()">{{ 'provider-equipment.buyer-form.cancel' | translate }}</button>
       </div>
     </form>
   } @else {
@@ -65,8 +75,8 @@
 
       <div class="pv-actions">
         <button mat-flat-button type="submit" [disabled]="saving()">{{ 'provider-equipment.buyer-form.submit' | translate }}</button>
-        <button mat-stroked-button type="button" (click)="backToLookup()">{{ 'provider-equipment.buyer-form.back' | translate }}</button>
-        <a mat-button routerLink="/clients">{{ 'provider-equipment.buyer-form.cancel' | translate }}</a>
+        <button mat-stroked-button type="button" [disabled]="saving()" (click)="backToLookup()">{{ 'provider-equipment.buyer-form.back' | translate }}</button>
+        <button mat-button type="button" [disabled]="saving()" (click)="cancel()">{{ 'provider-equipment.buyer-form.cancel' | translate }}</button>
       </div>
     </form>
   }
