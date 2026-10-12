@@ -21,10 +21,12 @@ export class Login {
   readonly showPassword = signal(false);
   readonly returnUrl = this.cleanInvitationReturnUrl();
   readonly sessionRequired = signal(!!this.route.snapshot.queryParamMap.get('returnUrl'));
+  readonly sessionExpired = this.route.snapshot.queryParamMap.get('reason') === 'session-expired';
   // Llega por estado de navegación desde el registro, nunca por la URL.
   readonly accountCreated = history.state?.accountCreated === true;
   username: string = history.state?.username ?? '';
   password = '';
+  rememberMe = true;
 
   private cleanInvitationReturnUrl(): string | null {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
@@ -48,8 +50,8 @@ export class Login {
     if (form.invalid) { this.error.set('auth.validation.form-invalid'); return; }
     this.error.set('');
     this.sending.set(true);
-    this.iam.signIn(this.username, this.password).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => void this.router.navigateByUrl(this.returnUrl || (this.iam.role() === 'ADMIN' ? '/admin' : '/dashboard')),
+    this.iam.signIn(this.username, this.password, this.rememberMe).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => void this.router.navigateByUrl(this.returnUrl || '/dashboard'),
       error: (error) => { this.error.set(displayAuthError(error, 'sign-in')); this.sending.set(false); },
     });
   }

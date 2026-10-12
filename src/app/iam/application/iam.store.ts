@@ -1,5 +1,5 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { Observable, catchError, filter, switchMap, tap, throwError } from 'rxjs';
+import { Observable, catchError, filter, finalize, switchMap, tap, throwError, timeout } from 'rxjs';
 import { NavigationStart, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { IamApi, OrganizationProfile } from '../infrastructure/iam-api';
@@ -8,13 +8,30 @@ import { Session, SignUpForm, sessionRole } from '../domain/model/session.entity
 const STORAGE_KEY = 'fulltank.session';
 const ORGANIZATION_KEY = 'fulltank.organization';
 
-function restoreSession(): Session | null {
+// "Permanecer con sesión iniciada": localStorage (el token dura 7 días); si no, sessionStorage (se pierde al cerrar la pestaña).
+let persistent = true;
+const storage = (): Storage => persistent ? localStorage : sessionStorage;
+
+function tokenExpired(token: string): boolean {
   try {
-    const session = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null') as Session | null;
-    return session?.token && Array.isArray(session.roles) ? session : null;
+    const { exp } = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof exp === 'number' && exp * 1000 <= Date.now();
   } catch {
-    return null;
+    return false;
   }
+}
+
+function restoreSession(): Session | null {
+  for (const candidate of [true, false]) {
+    persistent = candidate;
+    try {
+      const session = JSON.parse(storage().getItem(STORAGE_KEY) ?? 'null') as Session | null;
+      if (session?.token && Array.isArray(session.roles) && !tokenExpired(session.token)) return session;
+      if (session) storage().removeItem(STORAGE_KEY);
+    } catch { /* Probar el siguiente almacenamiento. */ }
+  }
+  persistent = true;
+  return null;
 }
 
 /** La cuenta se creó, pero falló el ingreso encadenado: no es un error de registro. */
@@ -23,6 +40,7 @@ export class SignInAfterSignUpError extends Error {}
 @Injectable({ providedIn: 'root' })
 export class IamStore {
   private readonly api = inject(IamApi);
+  private signingOut = false;
   private readonly current = signal<Session | null>(restoreSession());
 
   // Solo memoria: nunca persistir el token de una invitación en la sesión.
@@ -45,8 +63,15 @@ export class IamStore {
     });
   }
 
-  signIn(username: string, password: string): Observable<Session> {
-    return this.api.signIn(username, password).pipe(tap((session) => this.save(session)));
+  signIn(username: string, password: string, rememberMe = true): Observable<Session> {
+    return this.api.signIn(username, password, rememberMe).pipe(tap((session) => {
+      // Limpiar ambos almacenamientos antes de elegir el nuevo.
+      for (const area of [localStorage, sessionStorage]) {
+        try { area.removeItem(STORAGE_KEY); area.removeItem(ORGANIZATION_KEY); } catch { /* Sin acceso a storage. */ }
+      }
+      persistent = rememberMe;
+      this.save(session);
+    }));
   }
 
   signUp(form: SignUpForm): Observable<Session> {
@@ -77,12 +102,28 @@ export class IamStore {
 
   /** Recarga completa hacia /login: descarta el estado en memoria de todos los stores `root` del usuario anterior. */
   logout(returnUrl?: string, invitationToken?: string): void {
+    if (this.signingOut) return;
+    const token = this.current()?.token;
+    if (!token) { this.clearSession(returnUrl, invitationToken); return; }
+    this.signingOut = true;
+    this.api.signOut().pipe(timeout(10_000), finalize(() => {
+      this.signingOut = false;
+      if (this.current()?.token === token) this.clearSession(returnUrl, invitationToken);
+    })).subscribe({ error: () => undefined });
+  }
+
+  expireSession(): void {
+    this.clearSession(undefined, undefined, true);
+  }
+
+  private clearSession(returnUrl?: string, invitationToken?: string, expired = false): void {
     this.pendingInvitationToken.set('');
     this.current.set(null);
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* Sesión en memoria ya descartada. */ }
     this.selectedOrganization.set(null);
-    try { localStorage.removeItem(ORGANIZATION_KEY); } catch { /* Contexto solo en memoria si storage no está disponible. */ }
-    const target = returnUrl ? `/login?returnUrl=${encodeURIComponent(returnUrl)}` : '/login';
+    for (const area of [localStorage, sessionStorage]) {
+      try { area.removeItem(STORAGE_KEY); area.removeItem(ORGANIZATION_KEY); } catch { /* Sesión en memoria ya descartada. */ }
+    }
+    const target = expired ? '/login?reason=session-expired' : returnUrl ? `/login?returnUrl=${encodeURIComponent(returnUrl)}` : '/login';
     location.replace(invitationToken ? `${target}#${encodeURIComponent(invitationToken)}` : target);
   }
 
@@ -90,25 +131,25 @@ export class IamStore {
     const session = this.current();
     if (!session || (organizationId !== null && !session.memberships?.some(value => value.organizationId === organizationId))) return false;
     this.selectedOrganization.set(organizationId);
-    if (organizationId === null) try { localStorage.removeItem(ORGANIZATION_KEY); } catch { /* Contexto solo en memoria si storage no está disponible. */ }
-    else { try { localStorage.setItem(ORGANIZATION_KEY, JSON.stringify({ userId: session.id, organizationId })); } catch { /* Contexto solo en memoria. */ } }
+    if (organizationId === null) try { storage().removeItem(ORGANIZATION_KEY); } catch { /* Contexto solo en memoria si storage no está disponible. */ }
+    else { try { storage().setItem(ORGANIZATION_KEY, JSON.stringify({ userId: session.id, organizationId })); } catch { /* Contexto solo en memoria. */ } }
     return true;
   }
 
   private restoreOrganization(): number | null {
     const session = this.current();
     try {
-      const saved = JSON.parse(localStorage.getItem(ORGANIZATION_KEY) ?? 'null');
+      const saved = JSON.parse(storage().getItem(ORGANIZATION_KEY) ?? 'null');
       if (saved?.userId === session?.id && session?.memberships?.some(value => value.organizationId === saved.organizationId)) return saved.organizationId;
     } catch { /* Descartar un contexto local inválido. */ }
-    try { localStorage.removeItem(ORGANIZATION_KEY); } catch { /* Contexto solo en memoria si storage no está disponible. */ }
+    try { storage().removeItem(ORGANIZATION_KEY); } catch { /* Contexto solo en memoria si storage no está disponible. */ }
     return session?.memberships?.[0]?.organizationId ?? null;
   }
 
   private save(session: Session): void {
     const previousUserId = this.current()?.id;
     this.current.set(session);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(session)); } catch { /* Sesión solo en memoria. */ }
+    try { storage().setItem(STORAGE_KEY, JSON.stringify(session)); } catch { /* Sesión solo en memoria. */ }
     const selected = previousUserId === session.id ? this.selectedOrganization() : null;
     this.selectOrganization(session.memberships?.some(value => value.organizationId === selected) ? selected : session.memberships?.[0]?.organizationId ?? null);
   }

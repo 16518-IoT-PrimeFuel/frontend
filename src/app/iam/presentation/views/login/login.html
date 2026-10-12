@@ -5,6 +5,7 @@
       <p class="iam-subtitle">{{ 'auth.login.subtitle' | translate }}</p>
     </div>
     @if (accountCreated && !error()) { <p class="iam-note" role="status">{{ 'auth.login.account-created' | translate }}</p> }
+    @else if (sessionExpired && !error()) { <p class="iam-note" role="status">{{ 'auth.login.session-expired' | translate }}</p> }
     @else if (sessionRequired() && !error()) { <p class="iam-note" role="status">{{ 'auth.login.session-required' | translate }}</p> }
     <label>{{ 'auth.username' | translate }}
       <input #emailField="ngModel" name="username" type="email" email [(ngModel)]="username" (ngModelChange)="error.set('')" required maxlength="100" autofocus autocomplete="username" [attr.aria-invalid]="emailField.invalid && emailField.touched" aria-describedby="login-email-error">
@@ -26,6 +27,7 @@
       </label>
       <a class="iam-forgot" routerLink="/forgot-password">{{ 'auth.forgot' | translate }}</a>
     </div>
+    <label class="iam-remember"><input name="rememberMe" type="checkbox" [(ngModel)]="rememberMe"> {{ 'auth.login.remember' | translate }}</label>
     @if (error()) { <p id="login-error" class="iam-error" role="alert">{{ error() | translate }}</p> }
     <button type="submit" [disabled]="sending()">{{ (sending() ? 'auth.login.submitting' : 'auth.login.submit') | translate }}</button>
     <nav class="iam-alt" [attr.aria-label]="'auth.login.no-account' | translate">

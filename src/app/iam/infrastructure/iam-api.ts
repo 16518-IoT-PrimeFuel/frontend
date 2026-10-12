@@ -37,6 +37,10 @@ export class IamApi extends ErrorHandlingEnabledBaseType {
     return this.http.get<OrganizationProfile[]>(`${environment.serverBasePath}/me/organizations`);
   }
 
+  getMembers(organizationId: number): Observable<OrganizationMember[]> {
+    return this.http.get<OrganizationMember[]>(`${environment.serverBasePath}/organizations/${organizationId}/members`);
+  }
+
   onboardOrganization(name: string, ruc: string, type: 'CUSTOMER' | 'DISTRIBUTOR'): Observable<OrganizationProfile> {
     return this.http.post<OrganizationProfile>(`${environment.serverBasePath}/onboarding`, { name, ruc, type })
       .pipe(catchError(this.handleError('onboardOrganization', true)));
@@ -60,8 +64,12 @@ export class IamApi extends ErrorHandlingEnabledBaseType {
       )));
   }
 
-  signIn(username: string, password: string): Observable<Session> {
-    return this.http.post<Session>(`${this.base}/sign-in`, { username, password });
+  signIn(username: string, password: string, rememberMe = true): Observable<Session> {
+    return this.http.post<Session>(`${this.base}/sign-in`, { username, password, rememberMe });
+  }
+
+  signOut(): Observable<void> {
+    return this.http.post<void>(`${this.base}/sign-out`, null);
   }
 
   signUp(form: SignUpForm): Observable<unknown> {
@@ -108,6 +116,7 @@ export interface UserProfile { id: number; username: string; roles: string[]; co
 export interface BuyerCompanyProfile { id: number; name: string; ruc: string; sector: string; address: string; contactEmail: string; phone: string; }
 export interface ProviderCompanyProfile { id: number; name: string; ruc: string; rating: number | null; address: string; phone: string; fuelTypesOffered: string[]; description: string; }
 export interface OrganizationProfile { id: number; name: string; type: string; role: string; }
+export interface OrganizationMember { userId: number; username: string | null; role: string; }
 
 export type MembershipRole = 'OWNER' | 'ADMIN' | 'MEMBER';
 export interface OrganizationInvitation { id: number; organizationId: number; email: string; token: string; role: MembershipRole; status: 'PENDING' | 'ACCEPTED' | 'REVOKED'; expiresAt: string | null; }

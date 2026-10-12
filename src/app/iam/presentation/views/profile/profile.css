@@ -76,5 +76,4 @@
 .invitation-form { padding: 0; }
 .invitation-table-wrap { overflow-x: auto; }
 .invitation-table { min-width: 660px; }
-.invitation-table th, .invitation-table td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; }
 .revoke-email { overflow-wrap: anywhere; }

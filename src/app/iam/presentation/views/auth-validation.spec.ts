@@ -158,7 +158,7 @@ describe('authentication form validation', () => {
 
   it('rejects invalid login email and explains incorrect credentials', async () => {
     const { fixture, form, iam, response } = await setup(Login);
-    form.control.setValue({ username: 'invalid', password: 'existing-password' });
+    form.control.setValue({ username: 'invalid', password: 'existing-password', rememberMe: true });
     fixture.componentInstance.submit(form);
     expect(iam.signIn).not.toHaveBeenCalled();
     form.controls['username'].setValue('buyer@example.com');

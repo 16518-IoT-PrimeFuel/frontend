@@ -5,16 +5,6 @@ import { TranslateService } from '@ngx-translate/core';
 import { environment } from '../../../environments/environment';
 import { IamStore } from '../application/iam.store';
 
-/** Un 401 no implica sesión caducada (el backend también lo usa en denegaciones de permiso): solo se cierra si el `exp` del JWT ya pasó. */
-function isExpired(token: string | undefined): boolean {
-  try {
-    const { exp } = JSON.parse(atob(token!.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return typeof exp === 'number' && exp * 1000 <= Date.now();
-  } catch {
-    return false;
-  }
-}
-
 /** Punto único de log de errores HTTP. Nunca registra cabeceras, cuerpo de la petición ni tokens de la URL. */
 function logHttpError(method: string, url: string, error: HttpErrorResponse): void {
   const invitationToken = /\/invitations\/[^/]+\/accept/.test(url);
@@ -43,14 +33,16 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     const basePath = api.pathname.replace(/\/$/, '');
     isApiRequest = destination.origin === api.origin && (destination.pathname === basePath || destination.pathname.startsWith(`${basePath}/`));
   } catch { /* Una URL de API aún sin configurar no debe recibir el Bearer. */ }
-  const authenticatedRequest = token && isApiRequest && !request.url.includes('/authentication/')
+  const isAuthentication = request.url.includes('/authentication/');
+  const isSignOut = request.url.split(/[?#]/)[0].endsWith('/authentication/sign-out');
+  const authenticatedRequest = token && isApiRequest && (!isAuthentication || isSignOut)
     ? withLanguage.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
     : withLanguage;
 
   return next(authenticatedRequest).pipe(catchError((error: unknown) => {
     if (error instanceof HttpErrorResponse && !request.url.includes('/i18n/')) logHttpError(request.method, request.url, error);
-    if (error instanceof HttpErrorResponse && error.status === 401 && iam.session()?.token === token && isExpired(token)) {
-      iam.logout();
+    if (error instanceof HttpErrorResponse && error.status === 401 && token && isApiRequest && !isAuthentication && iam.session()?.token === token) {
+      iam.expireSession();
     }
     return throwError(() => error);
   }));
