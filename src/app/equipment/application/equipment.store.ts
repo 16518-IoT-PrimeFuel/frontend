@@ -1,8 +1,9 @@
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, finalize, map, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
+import { catchError, finalize, forkJoin, map, Observable, of, Subscription, switchMap, throwError } from 'rxjs';
 import { EquipmentApi, apiError } from '../infrastructure/equipment.api';
-import { Customer, Site, Tank } from '../domain/model/equipment.entity';
+import { Customer, RefillEpisode, RefillPolicy, Site, Tank } from '../domain/model/equipment.entity';
+import { ProviderTankReading } from '../domain/model/provider-equipment.entity';
 import { IamStore } from '../../iam/application/iam.store';
 import { IamApi } from '../../iam/infrastructure/iam-api';
 
@@ -20,8 +21,16 @@ export class EquipmentStore {
   readonly customer = signal<Customer | null>(null);
   readonly sites = signal<Site[]>([]);
   readonly tanks = signal<Tank[]>([]);
+  /** Política de reposición por tanque; `null` si el tanque no tiene una o no se pudo leer. */
+  readonly policies = signal<Record<number, RefillPolicy | null>>({});
+  readonly episodes = signal<RefillEpisode[]>([]);
+  readonly readings = signal<ProviderTankReading[]>([]);
+  readonly readingsState = signal<'loading' | 'ready' | 'error'>('loading');
+  private readingsRequest?: Subscription;
   readonly error = signal('');
   readonly loading = signal(false);
+  readonly tanksLoading = signal(false);
+  private episodesRequest?: Subscription;
   readonly creatingSite = signal(false);
   readonly creatingTank = signal(false);
 
@@ -52,8 +61,39 @@ export class EquipmentStore {
     this.customer.set(null);
     this.sites.set([]);
     this.loading.set(true);
-    this.api.tanks().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (rows) => this.tanks.set(rows), error: (e) => this.error.set(apiError(e)) });
+    this.loadTanks();
     this.resolveCustomer().pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.loading.set(false))).subscribe({ next: (value) => this.loadSites(value.id), error: (e) => this.error.set(apiError(e)) });
+  }
+  private loadTanks(): void {
+    this.tanksLoading.set(true);
+    this.api.tanks().pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.tanksLoading.set(false))).subscribe({
+      next: rows => { this.tanks.set(rows); this.loadPolicies(rows); },
+      error: e => this.error.set(apiError(e)),
+    });
+  }
+  // ponytail: una consulta de política por tanque (N+1); pasar a un endpoint de lote si un comprador llega a tener decenas de tanques.
+  private loadPolicies(rows: Tank[]): void {
+    if (!rows.length) { this.policies.set({}); return; }
+    forkJoin(rows.map(tank => this.api.policy(tank.id).pipe(catchError(() => of(null))))).pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(list => this.policies.set(Object.fromEntries(rows.map((tank, index) => [tank.id, list[index]]))));
+  }
+  /** Episodios del tanque mostrado; cambiar de tanque cancela la consulta anterior. Un 404 equivale a no tener episodios. */
+  loadEpisodes(tankId: number): void {
+    this.episodesRequest?.unsubscribe();
+    this.episodes.set([]);
+    this.episodesRequest = this.api.episodes(tankId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: rows => this.episodes.set(rows),
+      error: e => { if (e?.status !== 404) this.error.set(apiError(e)); },
+    });
+  }
+  /** Lecturas aceptadas del tanque mostrado, en orden ascendente; su fallo no bloquea el resto de la pantalla. */
+  loadReadings(tankId: number): void {
+    this.readingsRequest?.unsubscribe();
+    this.readings.set([]); this.readingsState.set('loading');
+    this.readingsRequest = this.api.readings(tankId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: rows => { this.readings.set(rows); this.readingsState.set('ready'); },
+      error: () => this.readingsState.set('error'),
+    });
   }
   loadSites(customerId: number): void {
     const sequence = ++this.sitesSequence;
@@ -78,7 +118,7 @@ export class EquipmentStore {
     if (this.creatingTank() || !customer) return;
     this.error.set(''); this.creatingTank.set(true);
     this.api.createTank({ customerAccountId: customer.id, ...value }).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.creatingTank.set(false))).subscribe({
-      next: () => { this.api.tanks().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: rows => this.tanks.set(rows), error: e => this.error.set(apiError(e)) }); done?.(); },
+      next: () => { this.loadTanks(); done?.(); },
       error: e => this.error.set(apiError(e)),
     });
   }

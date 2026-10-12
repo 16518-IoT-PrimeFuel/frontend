@@ -1,17 +1,18 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EquipmentStore } from '../../../application/equipment.store';
+import { RefillPolicy, Tank } from '../../../domain/model/equipment.entity';
 import { TankList } from './tank-list';
 
 describe('TankList', () => {
   let fixture: ComponentFixture<TankList>;
   let element: HTMLElement;
   const store = {
-    customer: signal({ id: 4, name: 'ACME', legacyCompanyId: 7, active: true }), sites: signal([]), tanks: signal([]), error: signal(''), loading: signal(false),
-    creatingSite: signal(false), creatingTank: signal(false), load: vi.fn(), createSite: vi.fn(), createTank: vi.fn(),
+    customer: signal({ id: 4, name: 'ACME', legacyCompanyId: 7, active: true }), sites: signal([]), tanks: signal<Tank[]>([]), policies: signal<Record<number, RefillPolicy | null>>({}), episodes: signal([]), readings: signal([]), readingsState: signal('ready'), error: signal(''), loading: signal(false), tanksLoading: signal(false),
+    creatingSite: signal(false), creatingTank: signal(false), load: vi.fn(), loadEpisodes: vi.fn(), loadReadings: vi.fn(), createSite: vi.fn(), createTank: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -55,5 +56,42 @@ describe('TankList', () => {
     expect(element.querySelector<HTMLButtonElement>('.tank-form .actions button:not([type="button"])')!.disabled).toBe(true);
     expect(element.querySelector<HTMLButtonElement>('.site-form button')!.disabled).toBe(true);
     store.creatingTank.set(false); store.creatingSite.set(false);
+  });
+
+  describe('selection', () => {
+    const tank = (id: number, currentLevel: number): Tank => ({ id, customerAccountId: 4, siteId: null, name: `T${id}`, capacity: 100, currentLevel, levelSource: 'MANUAL', active: true });
+    const show = async (url: string) => {
+      store.tanks.set([tank(1, 80), tank(2, 10)]);
+      store.policies.set({ 2: { lowLevelPercent: 20, hysteresisPercent: 10, targetLevelPercent: 100, providerId: null, fuelProductId: null, autoGenerateEnabled: false } });
+      await TestBed.inject(Router).navigateByUrl(url);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it('announces the tank chosen in the URL, flags it as low per its policy and links the request to it', async () => {
+      await show('/?tank=2');
+      expect(element.querySelector('.tk-card[aria-current="true"] strong')!.textContent).toBe('T2');
+      expect(element.querySelector('.tk-detail h2')!.textContent).toBe('T2');
+      expect(element.querySelector('.tk-detail .tk-status.low')!.textContent).toContain('equipment.status-low');
+      expect(element.querySelector('.tk-card:not([aria-current]) .dl-badge')).toBeNull();
+      expect(element.querySelector('.tk-load .pct')!.textContent).toBe('10%');
+      expect(element.querySelector('.tk-detail a[href*="request-form"]')!.getAttribute('href')).toContain('tankId=2');
+      expect(store.loadEpisodes).toHaveBeenLastCalledWith(2);
+      expect(store.loadReadings).toHaveBeenLastCalledWith(2);
+      element.querySelectorAll<HTMLButtonElement>('.dl-chip')[2].click();
+      fixture.detectChanges();
+      expect(element.querySelectorAll('.tk-card').length).toBe(0);
+      fixture.componentInstance['filter'].set('all');
+      store.tanks.set([]); store.policies.set({});
+    });
+
+    it('explains a tank that is not in the list instead of choosing another one', async () => {
+      await show('/?tank=99');
+      expect(element.querySelector('.tk-card[aria-current]')).toBeNull();
+      expect(element.querySelector('.tk-detail')!.textContent).toContain('equipment.not-found');
+      expect(element.querySelector('.tk-detail a[href*="request-form"]')).toBeNull();
+      store.tanks.set([]); store.policies.set({});
+    });
   });
 });

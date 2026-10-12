@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Customer, RefillEpisode, RefillPolicy, Site, Tank } from '../domain/model/equipment.entity';
+import { ProviderTankReading } from '../domain/model/provider-equipment.entity';
 
 @Injectable({ providedIn: 'root' })
 export class EquipmentApi {
@@ -19,6 +20,7 @@ export class EquipmentApi {
   savePolicy(id: number, value: RefillPolicy) { return this.http.put<RefillPolicy>(`${this.base}/tanks/${id}/refill-policy`, value); }
   providers() { return this.http.get<{ id: number; name: string }[]>(`${this.base}/provider-companies`); }
   products(providerId: number) { return this.http.get<{ id: number; name: string; fuelType: string }[]>(`${this.base}/fuel-products/provider/${providerId}`); }
+  readings(id: number) { return this.http.get<ProviderTankReading[]>(`${this.base}/tanks/${id}/readings`); }
   episodes(id: number) { return this.http.get<RefillEpisode[]>(`${this.base}/tanks/${id}/refill-episodes`); }
 }
 
