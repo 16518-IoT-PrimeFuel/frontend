@@ -42,9 +42,8 @@ describe('global products and prices catalog', () => {
       fixture.detectChanges();
       const element: HTMLElement = fixture.nativeElement;
       for (const text of ['Diesel Norte', 'Gasolina Sur', 'Proveedor Norte', 'Proveedor Sur', '12.50', '15.00']) expect(element.textContent).toContain(text);
-      expect(element.querySelector('input')).toBeNull();
-      expect(element.querySelector('a[href*="product-form"], button[ng-reflect-router-link*="product-form"]')).toBeNull();
-      expect(element.querySelectorAll('.mat-column-actions').length).toBe(0);
+      expect(element.querySelector('input[type="number"]')).toBeNull();
+      expect(element.querySelectorAll('.row-actions').length).toBe(0);
       fixture.componentInstance['saveStock'](1);
       fixture.componentInstance['onDelete'](1);
       http.expectNone(request => request.method !== 'GET');
@@ -72,7 +71,7 @@ describe('global products and prices catalog', () => {
     expect(fixture.nativeElement.textContent).toContain('Diesel Norte');
     expect(fixture.nativeElement.textContent).not.toContain('Gasolina Sur');
     expect(fixture.nativeElement.querySelector('input[type="number"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('.mat-column-actions').length).toBeGreaterThan(0);
+    expect(fixture.nativeElement.querySelectorAll('.row-actions').length).toBeGreaterThan(0);
   });
 
   it('opens the delete dialog once and blocks deleting again while the request is in flight', () => {
@@ -88,7 +87,7 @@ describe('global products and prices catalog', () => {
     const request = http.expectOne(`${environment.serverBasePath}/fuel-products/1`);
     expect(request.request.method).toBe('DELETE');
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.mat-column-actions button[color="warn"]').disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('.row-actions button[color="warn"]').disabled).toBe(true);
     fixture.componentInstance['onDelete'](1);
     fixture.componentInstance['saveStock'](1);
     expect(open).toHaveBeenCalledTimes(1);

@@ -47,3 +47,25 @@ describe('ProductForm', () => {
     expect(element.querySelector('mat-error')!.textContent).toContain('validation.min-length');
   });
 });
+
+describe('ProductForm as an edit modal', () => {
+  it('prefills from the dialog data, saves with the product id and closes the dialog', async () => {
+    const { MAT_DIALOG_DATA, MatDialogRef } = await import('@angular/material/dialog');
+    const close = vi.fn();
+    const product = { id: 7, name: 'Diesel Norte', fuelType: 'DIESEL', providerId: 10, pricePerUnit: 12.5, unit: 'LITRE', availableStock: 100, capacity: 1000, active: true };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [ProductForm],
+      providers: [provideRouter([]), provideTranslateService(), provideHttpClient(), provideHttpClientTesting(),
+        { provide: IamStore, useValue: { providerId: signal(10) } },
+        { provide: MAT_DIALOG_DATA, useValue: { product } }, { provide: MatDialogRef, useValue: { close, disableClose: false } }],
+    });
+    const fixture = TestBed.createComponent(ProductForm);
+    fixture.detectChanges();
+    const update = vi.spyOn(TestBed.inject(InventoryStore), 'updateProduct').mockImplementation((_id, _payload, done) => done?.());
+    expect(fixture.componentInstance['productForm'].value.name).toBe('Diesel Norte');
+    fixture.nativeElement.querySelector('button[type="submit"]').click();
+    expect(update).toHaveBeenCalledWith(7, expect.objectContaining({ name: 'Diesel Norte', active: true }), expect.any(Function));
+    expect(close).toHaveBeenCalledWith(true);
+  });
+});

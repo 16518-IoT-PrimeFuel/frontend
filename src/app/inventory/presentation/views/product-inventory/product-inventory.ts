@@ -1,39 +1,31 @@
-import { Component, DestroyRef, OnInit, TemplateRef, ViewChild, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, TemplateRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { RouterModule } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { InventoryStore } from '../../../application/inventory.store';
 import { IamStore } from '../../../../iam/application/iam.store';
 import { InventoryApi } from '../../../infrastructure/inventory-api';
+import { FuelProduct } from '../../../domain/model/fuel-product.entity';
+import { MoneyPipe } from '../../../../shared/presentation/pipe/money.pipe';
+import { FuelUnitPipe } from '../../../../shared/presentation/pipe/fuel-unit.pipe';
+import { ProductForm } from '../product-form/product-form';
+
+type StatusFilter = 'all' | 'active' | 'inactive';
 
 /**
  * @summary Vista de catálogo de productos de combustible.
- * @remarks Muestra tabla de productos con filtros por tipo y estado activo.
- * Permite navegar a formulario de creación y detalle de productos.
+ * @remarks Tabla con búsqueda y pestañas por estado; alta y edición se hacen en un modal.
  * @author FullTank Platform
  */
 @Component({
   selector: 'app-product-inventory',
   standalone: true,
   imports: [
-    MatDialogModule,
-    CommonModule,
-    MatTableModule,
-    MatButtonModule,
-    MatIconModule,
-    MatChipsModule,
-    MatTooltipModule,
-    MatProgressSpinnerModule,
-    RouterModule,
-    TranslatePipe,
+    MoneyPipe, FuelUnitPipe, MatDialogModule, MatButtonModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule, TranslatePipe,
   ],
   templateUrl: './product-inventory.html',
   styleUrl: './product-inventory.css',
@@ -49,17 +41,22 @@ export class ProductInventory implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly providerNames = signal<Record<number, string>>({});
   private confirming = false;
+  private formOpen = false;
 
-  protected readonly displayedColumns: string[] = [
-    'name',
-    ...(this.iam.isBuyer() ? ['provider'] : []),
-    'fuelType',
-    'pricePerUnit',
-    'availableStock',
-    'unit',
-    'active',
-    ...(this.isProvider() ? ['actions'] : []),
-  ];
+  protected readonly search = signal('');
+  protected readonly filter = signal<StatusFilter>('all');
+  protected readonly filters: StatusFilter[] = ['all', 'active', 'inactive'];
+  protected readonly isBuyer = this.iam.isBuyer;
+
+  private matches(p: FuelProduct, filter: StatusFilter): boolean {
+    return filter === 'all' || (filter === 'active') === p.active;
+  }
+  protected count(filter: StatusFilter): number { return this.store.productList().filter(p => this.matches(p, filter)).length; }
+  protected readonly rows = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    return this.store.productList().filter(p => this.matches(p, this.filter()) && (!q || p.name.toLowerCase().includes(q)));
+  });
+  protected clearFilters(): void { this.search.set(''); this.filter.set('all'); }
 
   ngOnInit(): void {
     if (this.iam.isBuyer()) {
@@ -78,6 +75,16 @@ export class ProductInventory implements OnInit {
 
   private loadProducts(): void {
     this.store.loadAllProducts(this.iam.isProvider() ? this.iam.providerId() ?? undefined : undefined);
+  }
+
+  /** Alta (sin producto) o edición en el mismo modal. */
+  protected openForm(product?: FuelProduct): void {
+    if (!this.isProvider() || this.formOpen) return;
+    this.formOpen = true;
+    this.dialog.open(ProductForm, {
+      data: { product },
+      width: '620px', maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100dvh - 32px)', autoFocus: 'input',
+    }).afterClosed().subscribe(() => { this.formOpen = false; });
   }
 
   protected saveStock(productId: number): void {

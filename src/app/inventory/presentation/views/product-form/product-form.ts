@@ -1,28 +1,26 @@
-import { Component, DestroyRef, ElementRef, OnInit, effect, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCardModule } from '@angular/material/card';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { InventoryStore } from '../../../application/inventory.store';
 import { IamStore } from '../../../../iam/application/iam.store';
 import {
   CreateProductPayload,
   UpdateProductPayload,
+  FuelProduct,
   FUEL_TYPES
 } from '../../../domain/model/fuel-product.entity';
 
 /**
- * @summary Formulario para crear y editar productos de combustible.
- * @remarks Maneja creación y actualización según presencia de productId en ruta.
- * Valida campos obligatorios y formatos numéricos.
+ * @summary Formulario modal para crear y editar productos de combustible.
+ * @remarks Edita cuando recibe `data.product`; si no, crea. Cierra el modal al guardar.
  * @author FullTank Platform
  */
 @Component({
@@ -31,14 +29,13 @@ import {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
-    MatCardModule,
     MatSlideToggleModule,
-    MatProgressSpinnerModule,
     TranslatePipe,
   ],
   templateUrl: './product-form.html',
@@ -47,38 +44,30 @@ import {
 export class ProductForm implements OnInit {
   protected readonly store = inject(InventoryStore);
   private readonly iam = inject(IamStore);
-  private readonly syncProduct = effect(() => {
-    const product = this.store.selectedProduct();
-    if (this.isEditMode && product?.id === this.productId && this.productForm) this.productForm.patchValue(product);
-  });
-  private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
   private readonly translate = inject(TranslateService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly dialogRef = inject<MatDialogRef<ProductForm, boolean>>(MatDialogRef, { optional: true });
+  private readonly product = inject<{ product?: FuelProduct } | null>(MAT_DIALOG_DATA, { optional: true })?.product ?? null;
 
   protected productForm!: FormGroup;
-  protected isEditMode = false;
-  protected productId: number | null = null;
+  protected readonly isEditMode = this.product !== null;
+  protected readonly productId = this.product?.id ?? null;
 
   protected readonly fuelTypes = FUEL_TYPES.map(value => ({ value, label: 'fuel-type.' + value.toLowerCase() }));
 
   protected readonly units = [
-    { value: 'LITERS', label: 'unit.liters' },
-    { value: 'GALLONS', label: 'unit.gallons' },
+    { value: 'LITRE', label: 'unit.liters' },
+    { value: 'GALLON', label: 'unit.gallons' },
   ];
+
+  /** No se puede cerrar con Escape o clic fuera mientras se guarda. */
+  private readonly lockClose = effect(() => { if (this.dialogRef) this.dialogRef.disableClose = this.store.isLoading(); });
 
   ngOnInit(): void {
     this.store.clearError();
-    this.productId = Number(this.route.snapshot.paramMap.get('id')) || null;
-    this.isEditMode = !!this.productId;
-
     this.initForm();
-
-    if (this.isEditMode && this.productId) {
-      this.loadProduct(this.productId);
-    }
+    if (this.product) this.productForm.patchValue(this.product);
   }
 
   private initForm(): void {
@@ -86,16 +75,11 @@ export class ProductForm implements OnInit {
       name: ['', [Validators.required, Validators.minLength(3)]],
       fuelType: ['', Validators.required],
       pricePerUnit: [0, [Validators.required, Validators.min(0.01)]],
-      unit: ['LITERS', Validators.required],
+      unit: ['LITRE', Validators.required],
       availableStock: [0, [Validators.required, Validators.min(0)]],
       capacity: [0, [Validators.required, Validators.min(0.01)]],
       active: [true],
     });
-  }
-
-  private loadProduct(productId: number): void {
-    this.store.loadProductById(productId);
-
   }
 
   protected onSubmit(): void {
@@ -127,9 +111,7 @@ export class ProductForm implements OnInit {
       active: true,
     };
 
-    this.store.createProduct(payload, () => {
-      if (!this.destroyRef.destroyed) void this.router.navigateByUrl('/fuel-products');
-    });
+    this.store.createProduct(payload, () => this.dialogRef?.close(true));
   }
 
   private updateProduct(): void {
@@ -145,13 +127,11 @@ export class ProductForm implements OnInit {
       active: this.productForm.value.active,
     };
 
-    this.store.updateProduct(this.productId, payload, () => {
-      if (!this.destroyRef.destroyed) void this.router.navigateByUrl('/fuel-products');
-    });
+    this.store.updateProduct(this.productId, payload, () => this.dialogRef?.close(true));
   }
 
   protected onCancel(): void {
-    this.router.navigateByUrl('/fuel-products');
+    this.dialogRef?.close(false);
   }
 
   protected getErrorMessage(fieldName: string): string {

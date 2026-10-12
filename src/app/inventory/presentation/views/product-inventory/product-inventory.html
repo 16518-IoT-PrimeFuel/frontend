@@ -1,41 +1,77 @@
-<div class="product-catalog-container">
-  <header class="page-header">
-    <div class="header-content">
+<main class="products">
+  <header class="dl-head">
+    <div>
       <h1>{{ (isProvider() ? 'product-inventory.title' : 'product-inventory.catalog-title') | translate }}</h1>
       <p>{{ (isProvider() ? 'product-inventory.subtitle' : 'product-inventory.catalog-subtitle') | translate }}</p>
     </div>
-    <div class="header-actions">
-      <button mat-icon-button (click)="onRefresh()" [disabled]="store.isLoading()" [attr.aria-label]="'product-inventory.refresh' | translate"><mat-icon>refresh</mat-icon></button>
+    <div class="dl-actions">
+      <label class="dl-search-box"><mat-icon aria-hidden="true">search</mat-icon><input type="search" [value]="search()" (input)="search.set($any($event.target).value)" [placeholder]="'product-inventory.search' | translate" [attr.aria-label]="'product-inventory.search' | translate" /></label>
+      <button mat-icon-button type="button" (click)="onRefresh()" [disabled]="store.isLoading()" [attr.aria-label]="'product-inventory.refresh' | translate"><mat-icon>refresh</mat-icon></button>
       @if (isProvider()) {
-        <button mat-raised-button color="primary" routerLink="/fuel-products/product-form"><mat-icon>add</mat-icon>{{ 'product-inventory.add-button' | translate }}</button>
+        <button mat-flat-button type="button" (click)="openForm()"><mat-icon aria-hidden="true">add</mat-icon>{{ 'product-inventory.add-button' | translate }}</button>
       }
     </div>
   </header>
-  @if (store.isLoading()) { <div class="loading-shade"><mat-spinner diameter="50"></mat-spinner></div> }
-  @if (store.error()) { <div class="error-container"><mat-icon>error_outline</mat-icon><p>{{ store.error() | translate }}</p></div> }
-  <div class="table-container mat-elevation-z2">
-    <table mat-table [dataSource]="store.productList()">
-      <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.name' | translate }}</th><td mat-cell *matCellDef="let p" class="bold-text">{{ p.name }}</td></ng-container>
-      <ng-container matColumnDef="provider"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.provider' | translate }}</th><td mat-cell *matCellDef="let p">{{ providerNames()[p.providerId] || ('product-inventory.fields.provider' | translate) + ' #' + p.providerId }}</td></ng-container>
-      <ng-container matColumnDef="fuelType"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.type' | translate }}</th><td mat-cell *matCellDef="let p">{{ ('fuel-type.' + p.fuelType.toLowerCase()) | translate }}</td></ng-container>
-      <ng-container matColumnDef="pricePerUnit"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.price' | translate }}</th><td mat-cell *matCellDef="let p">S/ {{ p.pricePerUnit | number:'1.2-2' }} / {{ p.unit }}</td></ng-container>
-      <ng-container matColumnDef="availableStock"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.available' | translate }}</th><td mat-cell *matCellDef="let p">
-        @if (isProvider()) {
-          <input type="number" min="0" [max]="p.capacity" [value]="p.availableStock" (input)="stockValues[p.id] = $any($event.target).valueAsNumber" [attr.aria-label]="'product-inventory.stock-input' | translate">
-          <button mat-button (click)="saveStock(p.id)" [disabled]="store.isLoading() || store.mutatingId() !== null">{{ 'product-inventory.update-stock' | translate }}</button>
-        } @else { {{ p.availableStock }} {{ p.unit }} }
-      </td></ng-container>
-      <ng-container matColumnDef="unit"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.unit' | translate }}</th><td mat-cell *matCellDef="let p">{{ p.unit }}</td></ng-container>
-      <ng-container matColumnDef="active"><th mat-header-cell *matHeaderCellDef>{{ 'product-inventory.fields.status' | translate }}</th><td mat-cell *matCellDef="let p">{{ (p.active ? 'status.active' : 'status.inactive') | translate }}</td></ng-container>
-      <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let p">
-        <button mat-icon-button [routerLink]="['/fuel-products/product-form', p.id]" color="primary" [matTooltip]="'product-inventory.edit-tooltip' | translate" [attr.aria-label]="'product-inventory.edit-tooltip' | translate"><mat-icon>edit</mat-icon></button>
-        <button mat-icon-button color="warn" (click)="onDelete(p.id)" [disabled]="store.isLoading() || store.mutatingId() !== null" [matTooltip]="'product-inventory.delete-tooltip' | translate" [attr.aria-label]="'product-inventory.delete-tooltip' | translate"><mat-icon>delete</mat-icon></button>
-      </td></ng-container>
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr><tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-      <tr class="mat-row" *matNoDataRow><td class="mat-cell" [attr.colspan]="displayedColumns.length" style="text-align:center;padding:2rem">{{ 'product-inventory.empty' | translate }}</td></tr>
-    </table>
+
+  @if (store.error()) { <p class="dl-error" role="alert">{{ store.error() | translate }}</p> }
+
+  <div class="dl-chips" role="group" [attr.aria-label]="'product-inventory.filters' | translate">
+    @for (f of filters; track f) {
+      <button type="button" class="dl-chip" [attr.aria-pressed]="filter() === f" (click)="filter.set(f)">{{ 'product-inventory.filter-' + f | translate }} <span>{{ count(f) }}</span></button>
+    }
   </div>
-</div>
+
+  @if (store.isLoading() && !store.productList().length) {
+    <div class="dl-empty" role="status"><mat-spinner diameter="32" /></div>
+  } @else if (!store.productList().length) {
+    <div class="dl-empty">
+      <mat-icon aria-hidden="true">local_gas_station</mat-icon>
+      <p>{{ 'product-inventory.empty' | translate }}</p>
+      @if (isProvider()) { <p>{{ 'product-inventory.empty-hint' | translate }}</p><button mat-stroked-button type="button" (click)="openForm()">{{ 'product-inventory.add-button' | translate }}</button> }
+    </div>
+  } @else if (!rows().length) {
+    <div class="dl-empty"><mat-icon aria-hidden="true">search_off</mat-icon><p>{{ 'product-inventory.no-match' | translate }}</p><button mat-stroked-button type="button" (click)="clearFilters()">{{ 'product-inventory.clear-filters' | translate }}</button></div>
+  } @else {
+    <div class="dl-wrap">
+      <table class="dl-table" [attr.aria-label]="'product-inventory.title' | translate">
+        <thead><tr>
+          <th scope="col">{{ 'product-inventory.fields.name' | translate }}</th>
+          @if (isBuyer()) { <th scope="col">{{ 'product-inventory.fields.provider' | translate }}</th> }
+          <th scope="col">{{ 'product-inventory.fields.type' | translate }}</th>
+          <th scope="col">{{ 'product-inventory.fields.price' | translate }}</th>
+          <th scope="col">{{ 'product-inventory.fields.available' | translate }}</th>
+          <th scope="col">{{ 'product-inventory.fields.status' | translate }}</th>
+          @if (isProvider()) { <th scope="col">{{ 'product-inventory.fields.actions' | translate }}</th> }
+        </tr></thead>
+        <tbody>
+          @for (p of rows(); track p.id) {
+            <tr>
+              <td [attr.data-label]="'product-inventory.fields.name' | translate"><strong>{{ p.name }}</strong></td>
+              @if (isBuyer()) { <td [attr.data-label]="'product-inventory.fields.provider' | translate">{{ providerNames()[p.providerId] || ('product-inventory.fields.provider' | translate) + ' #' + p.providerId }}</td> }
+              <td [attr.data-label]="'product-inventory.fields.type' | translate">{{ ('fuel-type.' + p.fuelType.toLowerCase()) | translate }}</td>
+              <td class="nw" [attr.data-label]="'product-inventory.fields.price' | translate">{{ p.pricePerUnit | money }} / {{ p.unit | fuelUnit }}</td>
+              <td class="nw" [attr.data-label]="'product-inventory.fields.available' | translate">
+                @if (isProvider()) {
+                  <span class="stock-edit">
+                    <input type="number" min="0" [max]="p.capacity" [value]="p.availableStock" (input)="stockValues[p.id] = $any($event.target).valueAsNumber" [attr.aria-label]="'product-inventory.stock-input' | translate">
+                    <button mat-button type="button" (click)="saveStock(p.id)" [disabled]="store.isLoading() || store.mutatingId() !== null">{{ 'product-inventory.update-stock' | translate }}</button>
+                  </span>
+                } @else { {{ p.availableStock }} {{ p.unit | fuelUnit }} }
+              </td>
+              <td [attr.data-label]="'product-inventory.fields.status' | translate"><span class="dl-badge" [class.st-approved]="p.active">{{ (p.active ? 'status.active' : 'status.inactive') | translate }}</span></td>
+              @if (isProvider()) {
+                <td class="row-actions">
+                  <button mat-icon-button type="button" (click)="openForm(p)" [matTooltip]="'product-inventory.edit-tooltip' | translate" [attr.aria-label]="('product-inventory.edit-tooltip' | translate) + ': ' + p.name"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button type="button" color="warn" (click)="onDelete(p.id)" [disabled]="store.isLoading() || store.mutatingId() !== null" [matTooltip]="'product-inventory.delete-tooltip' | translate" [attr.aria-label]="('product-inventory.delete-tooltip' | translate) + ': ' + p.name"><mat-icon>delete</mat-icon></button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</main>
 
 <ng-template #confirmDialog>
   <h2 mat-dialog-title>{{ 'confirm.title' | translate }}</h2>
