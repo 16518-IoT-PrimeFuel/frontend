@@ -29,7 +29,7 @@
         <mat-icon>mark_email_unread</mat-icon>
         {{ 'notification-list.show-unread' | translate }}
       </button>
-      <button mat-icon-button (click)="onRefresh()" [disabled]="store.isLoading()">
+      <button mat-icon-button (click)="onRefresh()" [disabled]="store.isLoading()" [attr.aria-label]="'notification-list.refresh' | translate">
         <mat-icon>refresh</mat-icon>
       </button>
       <button
@@ -51,9 +51,10 @@
   }
 
   @if (store.error()) {
-    <div class="error-container">
+    <div class="error-container" role="alert">
       <mat-icon>error_outline</mat-icon>
       <p>{{ store.error() | translate }}</p>
+      <button mat-button type="button" [disabled]="store.isLoading()" (click)="onRefresh()">{{ 'dashboard.retry' | translate }}</button>
     </div>
   }
 
@@ -65,10 +66,12 @@
   }
 
   <div class="notifications-panel">
-    @if (store.notificationList().length === 0 && !store.isLoading()) {
+    @if (store.notificationList().length === 0 && !store.isLoading() && !store.error()) {
       <div class="empty-state">
         <mat-icon>notifications_off</mat-icon>
-        <p>{{ 'notification-list.empty' | translate }}</p>
+        <p>{{ (filterMode === 'unread' ? 'notification-list.empty-unread' : 'notification-list.empty') | translate }}</p>
+        @if (filterMode === 'unread') { <button mat-button type="button" (click)="onShowAll()">{{ 'notification-list.show-all' | translate }}</button> }
+        <a mat-stroked-button routerLink="/ordering/order-list">{{ 'notification-list.view-orders' | translate }}</a>
       </div>
     } @else {
       @for (notification of store.notificationList(); track trackById($index, notification)) {
@@ -76,8 +79,6 @@
           class="notification-card"
           [class.unread]="!notification.read"
           [class]="getCategoryClass(notification)"
-          [class.clickable]="linkFor(notification)"
-          (click)="open(notification)"
         >
           <div class="notification-icon">
             <mat-icon>{{ getIconFor(notification) }}</mat-icon>
@@ -93,24 +94,22 @@
                   {{ 'notification-type.' + notification.type.toLowerCase() | translate }}
                 </mat-chip>
               </mat-chip-set>
-              <span class="notification-time">{{ timeAgo(notification.createdAt) }}</span>
+              <time class="notification-time" [attr.datetime]="notification.createdAt">{{ notification.createdAt | limaDate }}</time>
             </div>
 
             <h2 class="notification-message">{{ notification.title }}</h2>
             <p>{{ notification.message }}</p>
 
-            @if (notification.referenceId && referenceLabel(notification); as label) {
+            @if (linkFor(notification)) {
               <p class="notification-meta">
-                <mat-icon>tag</mat-icon>
-                {{ label | translate }}:
-                <code>{{ notification.referenceId }}</code>
+                <button mat-button type="button" (click)="open(notification)">{{ (referenceLabel(notification) ?? 'notification-list.view-orders') | translate }}</button>
               </p>
             }
           </div>
 
           <div class="notification-actions">
             @if (!notification.read) {
-            <button mat-icon-button (click)="onToggleRead(notification)" [matTooltip]="'notification-list.mark-read-tooltip' | translate">
+            <button mat-icon-button (click)="onToggleRead(notification)" [matTooltip]="'notification-list.mark-read-tooltip' | translate" [attr.aria-label]="'notification-list.mark-read-tooltip' | translate" [disabled]="store.isLoading()">
               <mat-icon>
                 mark_email_read
               </mat-icon>

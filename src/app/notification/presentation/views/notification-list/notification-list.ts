@@ -13,6 +13,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { IamStore } from '../../../../iam/application/iam.store';
 import { NotificationStore } from '../../../application/notification.store';
 import { Notification } from '../../../domain/model/notification.entity';
+import { LimaDatePipe } from '../../../../shared/presentation/pipe/lima-date.pipe';
 
 @Component({
   selector: 'app-notification-list',
@@ -29,6 +30,7 @@ import { Notification } from '../../../domain/model/notification.entity';
     MatDividerModule,
     RouterModule,
     TranslatePipe,
+    LimaDatePipe,
   ],
   templateUrl: './notification-list.html',
   styleUrl: './notification-list.css',
@@ -104,15 +106,18 @@ export class NotificationList implements OnInit {
 
   /** Rótulo i18n de la referencia; null si el tipo no tiene un destino conocido. */
   protected referenceLabel(n: Notification): string | null {
-    if (n.type === 'ORDER_ACCEPTED' || n.type === 'ORDER_REJECTED' || n.isRequestEvent()) return 'notification-list.fields.request';
-    if (n.isDeliveryEvent()) return 'notification-list.fields.delivery';
+    if (n.type === 'ORDER_ACCEPTED' || n.type === 'ORDER_REJECTED' || n.isRequestEvent()) return 'notification-list.view-request';
+    if (n.isDeliveryEvent() || n.type === 'ORDER_DISPATCHED') return this.iam.role() === 'PROVIDER' ? 'notification-list.view-delivery' : 'notification-list.view-orders';
     return null;
   }
 
-  /** ORDER_ACCEPTED/REJECTED referencian la solicitud (agregado del evento). La entrega solo tiene pantalla para PROVIDER (B4). */
+  // Delivery events, including ORDER_DISPATCHED, reference a delivery; buyers cannot resolve its order yet.
   protected linkFor(n: Notification): string[] | null {
-    if (n.type === 'ORDER_ACCEPTED' || n.type === 'ORDER_REJECTED' || n.isRequestEvent()) return ['/ordering/request-list'];
-    if (n.isDeliveryEvent() && n.referenceId && this.iam.role() === 'PROVIDER') return ['/fulfillment/delivery-detail', String(n.referenceId)];
+    if (n.type === 'ORDER_ACCEPTED' || n.type === 'ORDER_REJECTED' || n.isRequestEvent()) return n.referenceId && Number.isSafeInteger(n.referenceId) && n.referenceId > 0 ? ['/ordering/request-detail', String(n.referenceId)] : ['/ordering/request-list'];
+    if (n.isDeliveryEvent() || n.type === 'ORDER_DISPATCHED') {
+      if (this.iam.role() === 'BUYER') return ['/ordering/order-list'];
+      if (this.iam.role() === 'PROVIDER' && Number.isSafeInteger(n.referenceId) && n.referenceId! > 0) return ['/fulfillment/delivery-detail', String(n.referenceId)];
+    }
     return null;
   }
 
@@ -121,10 +126,6 @@ export class NotificationList implements OnInit {
     if (!link) return;
     this.onMarkAsRead(n);
     this.router.navigate(link);
-  }
-
-  protected timeAgo(createdAt: string): string {
-    return new Date(createdAt).toLocaleString();
   }
 
   protected trackById(_index: number, notification: Notification): number {

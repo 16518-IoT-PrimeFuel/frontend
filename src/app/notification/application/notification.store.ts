@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { NotificationApi } from '../infrastructure/notification-api';
 import { Notification } from '../domain/model/notification.entity';
+import { apiErrorKey } from '../../shared/infrastructure/api-error';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationStore {
@@ -48,7 +49,7 @@ export class NotificationStore {
   refreshUnreadCount(): void {
     this.api.getUnreadNotifications().subscribe({
       next: (items) => this.unread.set(items.length),
-      error: (error) => this.errorMessage.set(error.message || 'errors.generic'),
+      error: (error) => this.errorMessage.set(apiErrorKey(error)),
     });
   }
 
@@ -82,8 +83,8 @@ export class NotificationStore {
 
   clearMessages(): void { this.errorMessage.set(''); this.successMessage.set(''); }
 
-  private fail(error: { message?: string }): void {
-    this.errorMessage.set(error.message || 'errors.generic');
+  private fail(error: unknown): void {
+    this.errorMessage.set(apiErrorKey(error));
     this.loading.set(false);
   }
 }

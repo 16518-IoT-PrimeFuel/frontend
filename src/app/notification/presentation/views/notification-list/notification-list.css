@@ -36,7 +36,7 @@
 
 .header-content p {
   margin: 4px 0 0;
-  color: #7f8c8d;
+  color: #4b5563;
 }
 
 .header-actions {
@@ -62,14 +62,14 @@
   gap: 16px;
   padding: 16px;
   align-items: flex-start;
-  border-left: 4px solid #e2e8f0;
+  border-left: 1px solid #e2e8f0;
   background: white;
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .notification-card.unread {
   background: #f8fafc;
-  border-left-width: 4px;
+  border-left-width: 1px;
 }
 
 .notification-card.category-order.unread {
@@ -146,7 +146,7 @@
 }
 
 .notification-time {
-  color: #94a3b8;
+  color: #4b5563;
   font-size: 12px;
 }
 
@@ -257,7 +257,7 @@ mat-chip.payment-registered {
   padding: 64px 24px;
   background: white;
   border-radius: 8px;
-  color: #94a3b8;
+  color: #4b5563;
   gap: 12px;
 }
 
@@ -267,4 +267,8 @@ mat-chip.payment-registered {
   width: 48px;
 }
 
-.notification-card.clickable { cursor: pointer; }
+
+
+.error-container{flex-wrap:wrap}
+.notification-list-container :is(a,button):focus-visible{outline:2px solid #1e3a8a;outline-offset:3px}
+@media(max-width:600px){.notification-list-container{padding:0}.notification-card{grid-template-columns:1fr auto}.notification-icon{display:none}.header-actions{gap:8px}}
