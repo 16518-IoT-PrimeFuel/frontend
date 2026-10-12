@@ -50,20 +50,16 @@ export class Layout implements OnInit {
   ngOnInit(): void { this.notifications.refreshUnreadCount(); }
 
   options = [
+    { label: 'nav.dashboard', icon: 'dashboard', link: '/dashboard', roles: ['BUYER', 'PROVIDER', 'ADMIN'] },
     { label: 'inventory.catalog', icon: 'local_gas_station', link: '/fuel-products', roles: ['BUYER'] },
     { label: 'nav.equipment', icon: 'oil_barrel', link: '/tanks', roles: ['BUYER'] },
     { label: 'nav.clients', icon: 'groups', link: '/clients', roles: ['PROVIDER'] },
     { label: 'nav.payments', icon: 'payments', link: '/payments', roles: ['PROVIDER'] },
-    { label: 'nav.dashboard', icon: 'dashboard', link: '/dashboard', roles: ['BUYER', 'PROVIDER'] },
     {
       label: 'nav.inventory',
       icon: 'inventory_2',
       link: '/fuel-products',
       roles: ['PROVIDER'],
-      children: [
-        { label: 'inventory.product-inventory', link: '/fuel-products', roles: ['PROVIDER'] },
-        { label: 'inventory.add-product', link: '/fuel-products/product-form', roles: ['PROVIDER'] },
-      ]
     },
     {
       label: 'nav.ordering',
@@ -72,7 +68,6 @@ export class Layout implements OnInit {
       roles: ['BUYER', 'PROVIDER'],
       children: [
         { label: 'ordering.requests', link: '/ordering/request-list' },
-        { label: 'ordering.create-request', link: '/ordering/request-form', roles: ['BUYER'] },
         { label: 'ordering.orders', link: '/ordering/order-list' },
         { label: 'payment-history.title', link: '/ordering/payment-history', roles: ['BUYER'] },
       ],
@@ -87,12 +82,6 @@ export class Layout implements OnInit {
         { label: 'fulfillment.vehicles', link: '/fulfillment/tanker-list' },
         { label: 'fulfillment.drivers', link: '/fulfillment/driver-list' },
       ],
-    },
-    {
-      label: 'nav.reports',
-      icon: 'analytics',
-      link: '/analytics',
-      roles: ['BUYER', 'PROVIDER', 'ADMIN'],
     },
     { label: 'nav.admin', icon: 'admin_panel_settings', link: '/admin', roles: [], admin: true },
   ];

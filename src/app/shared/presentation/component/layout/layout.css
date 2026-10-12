@@ -15,6 +15,9 @@
   color: #1e3a8a;
 }
 
+.toolbar-brand { display: flex; align-items: center; border-radius: 8px; text-decoration: none; }
+.toolbar-brand:focus-visible { outline: 2px solid #1e3a8a; outline-offset: 4px; }
+
 .toolbar img {
   height: 40px;
   width: auto;
