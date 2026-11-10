@@ -1179,6 +1179,8 @@
     "status-low": "Nivel bajo",
     "status-ok": "Nivel normal",
     "gauge-label": "{{name}}: {{percent}} % de llenado, {{level}} de {{capacity}} {{unit}}",
+    "gauge-rotate-hint": "Arrastra para girar",
+    "gauge-rotate-keys": "Usa las flechas para girar la vista e Inicio para restablecerla",
     "low-mark": "Umbral de nivel bajo: {{n}} %",
     "no-site": "Sin sitio asignado",
     "no-fuel": "Sin tipo de combustible",

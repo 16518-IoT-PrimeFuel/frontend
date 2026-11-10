@@ -21,6 +21,7 @@ import { unitKey } from '../../../infrastructure/provider-equipment.api';
 import { REFILL_POLICY_DIALOG_CONFIG, RefillPolicyDialog } from '../refill-policy-dialog/refill-policy-dialog';
 import { FUEL_TYPES } from '../../../../inventory/domain/model/fuel-product.entity';
 
+import { TankGauge3d } from '../../component/tank-gauge-3d/tank-gauge-3d';
 import { TankMap } from './tank-map';
 import { SiteLocationDialog } from './site-location-dialog';
 import { lockMapDialogScroll } from './tank-map-canvas';
@@ -31,7 +32,7 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
 
 @Component({
   selector: 'app-tank-list', standalone: true, providers: [EquipmentStore],
-  imports: [TankMap, BaseChartDirective, DatePipe, DecimalPipe, FormsModule, RouterLink, TranslatePipe, MatIconModule, MatButtonModule, MatTabsModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, MatSelectModule],
+  imports: [TankGauge3d, TankMap, BaseChartDirective, DatePipe, DecimalPipe, FormsModule, RouterLink, TranslatePipe, MatIconModule, MatButtonModule, MatTabsModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, MatSelectModule],
   template: `
     <main class="tk">
       @if (store.error()) { <p class="dl-error tk-error" role="alert"><span>{{ store.error() | translate }}</span><button mat-button type="button" (click)="store.load()">{{ 'equipment.retry' | translate }}</button></p> }
@@ -101,14 +102,7 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
                 <mat-tab [label]="'equipment.tab-level' | translate">
                   <div class="tk-tab" [class.low]="isLow(item)">
                     <h3>{{ 'equipment.fuel-level' | translate }}</h3>
-                    <div class="tk-stage"><div class="tk-gauge" role="img" [attr.aria-label]="'equipment.gauge-label' | translate:{ name: item.name, percent: percent(item), level: item.currentLevel, capacity: item.capacity, unit: (unit(item.unit) | translate) }">
-                      <img src="/tank-placeholder.webp" alt="" width="1400" height="574">
-                      <div class="tk-load">
-                        <span class="fuel" [style.width.%]="percent(item)"></span>
-                        @if (store.policies()[item.id]; as policy) { <span class="low-mark" [style.left.%]="policy.lowLevelPercent"></span> }
-                        <span class="pct" [class.out]="percent(item) < 22" [style.left.%]="percent(item) < 22 ? percent(item) : percent(item) / 2">{{ percent(item) }}%</span>
-                      </div>
-                    </div></div>
+                    <app-tank-gauge-3d [percent]="percent(item)" [lowPercent]="store.policies()[item.id]?.lowLevelPercent ?? null" [low]="isLow(item)" [label]="'equipment.gauge-label' | translate:{ name: item.name, percent: percent(item), level: item.currentLevel, capacity: item.capacity, unit: (unit(item.unit) | translate) }" />
                     <dl class="tk-tiles">
                       <div><dt>{{ 'equipment.tile-fuel' | translate }}</dt><dd>{{ item.fuelType ? ('fuel-type.' + item.fuelType.toLowerCase() | translate) : ('equipment.no-fuel' | translate) }}</dd></div>
                       <div><dt>{{ 'equipment.current-level' | translate }}</dt><dd>{{ item.currentLevel | number:'1.0-2' }} <small>{{ unit(item.unit) | translate }}</small></dd></div>
@@ -212,15 +206,6 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
     .tk-back mat-icon{width:20px;height:20px;font-size:20px}
     .tk-tab{display:grid;gap:16px;padding-top:20px}
     .tk-tab h3:not(:first-child){margin-top:8px}
-    .tk-stage{padding:16px;border-radius:12px;background:#f4f6f9}
-    .tk-gauge{position:relative;width:100%;max-width:620px;margin:0 auto}
-    .tk-gauge img{display:block;width:100%;height:auto;mix-blend-mode:multiply}
-    .tk-load{position:absolute;left:27.9%;top:10.7%;width:66.5%;height:57.5%}
-    .tk-load .fuel{position:absolute;inset:0 auto 0 0;background:#1e3a8a;mix-blend-mode:multiply;transition:width .6s cubic-bezier(.16,1,.3,1)}
-    .tk-tab.low .fuel{background:#b45309}
-    .tk-load .low-mark{position:absolute;top:0;bottom:0;border-left:2px dashed #7a4100}
-    .tk-load .pct{position:absolute;top:50%;transform:translate(-50%,-50%);color:#fff;font-size:clamp(1.125rem,3.2cqi,1.75rem);font-weight:500;font-variant-numeric:tabular-nums}
-    .tk-load .pct.out{transform:translate(10px,-50%);color:#1f2d3d}
     .tk-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0}
     .tk-tiles div{padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px}
     .tk-tiles dt,.tk-facts dt{color:#4b5563;font-size:.8125rem}
@@ -254,7 +239,7 @@ const emptyTank = () => ({ name: '', siteId: null as number | null, fuelType: ''
       .site-form{grid-template-columns:minmax(0,1fr)}
       .tk-detail-head .tk-actions,.tk-detail-head .tk-actions a,.tk-detail-head .tk-actions button{width:100%}
     }
-    @media (prefers-reduced-motion:reduce){.tk-card,.tk-load .fuel{transition:none}}
+    @media (prefers-reduced-motion:reduce){.tk-card{transition:none}}
   `],
 })
 export class TankList implements OnInit {

@@ -1179,6 +1179,8 @@
     "status-low": "Low level",
     "status-ok": "Normal level",
     "gauge-label": "{{name}}: {{percent}}% full, {{level}} of {{capacity}} {{unit}}",
+    "gauge-rotate-hint": "Drag to rotate",
+    "gauge-rotate-keys": "Use the arrow keys to rotate the view and Home to reset it",
     "low-mark": "Low-level threshold: {{n}}%",
     "no-site": "No site assigned",
     "no-fuel": "No fuel type",
