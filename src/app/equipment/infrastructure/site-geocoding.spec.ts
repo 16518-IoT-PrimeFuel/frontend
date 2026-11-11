@@ -68,8 +68,20 @@ describe('Mapbox v6 address confidence', () => {
   });
   it('does not assign a location to ambiguous or weak matches', () => {
     expect(addressLocation([address(), address('high')])).toEqual({ state: 'unavailable' });
-    expect(addressLocation([address('low')])).toEqual({ state: 'unavailable' });
     expect(addressLocation([])).toEqual({ state: 'unavailable' });
+  });
+  it('keeps a single plausible low-confidence address as approximate', () => {
+    const low = (street: string, place: string): GeocodingFeature => {
+      const feature = address('low', 'interpolated');
+      feature.properties!.match_code = { confidence: 'low', address_number: 'plausible', street, place, postcode: 'unmatched' };
+      return feature;
+    };
+    expect(addressLocation([low('matched', 'matched')])).toEqual({ state: 'approximate', coordinates: [1, 2] });
+    expect(addressLocation([low('unmatched', 'matched'), low('unmatched', 'unmatched')]).state).toBe('approximate');
+    expect(addressLocation([low('matched', 'matched'), low('matched', 'unmatched')]).state).toBe('approximate');
+    expect(addressLocation([low('unmatched', 'unmatched')])).toEqual({ state: 'unavailable' });
+    expect(addressLocation([low('matched', 'matched'), low('matched', 'matched')])).toEqual({ state: 'unavailable' });
+    expect(addressLocation([low('matched', 'unmatched'), low('matched', 'unmatched')])).toEqual({ state: 'unavailable' });
   });
   it('rejects cities and malformed/out-of-range coordinates', () => {
     const city = address(); city.properties!.feature_type = 'place';
