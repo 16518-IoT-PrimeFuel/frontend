@@ -10,6 +10,24 @@
     <label class="inbox-search"><mat-icon aria-hidden="true">search</mat-icon><input type="search" [ngModel]="search()" (ngModelChange)="search.set($event)" [placeholder]="'request-list.search' | translate" [attr.aria-label]="'request-list.search' | translate"></label>
     <label class="inbox-check"><input type="checkbox" [ngModel]="incompleteOnly()" (ngModelChange)="incompleteOnly.set($event)">{{ 'request-list.incomplete-only' | translate }} <span>{{ incompleteCount() }}</span></label>
   </div>
+  <div class="inbox-fields">
+    @if (store.isProvider()) {
+      <label>{{ 'request-list.customer' | translate }}
+        <select [value]="customer() ?? ''" (change)="setCustomer($any($event.target).value)">
+          <option value="">{{ 'request-list.all-customers' | translate }}</option>
+          @for (item of customers(); track item.id) { <option [value]="item.id" [selected]="customer() === item.id">{{ item.name || ('request-list.customer' | translate) + ' #' + item.id }}</option> }
+        </select>
+      </label>
+    }
+    <label>{{ 'request-list.delivery-from' | translate }}
+      <input type="date" [value]="from()" [max]="to() || null" (change)="from.set($any($event.target).value)">
+    </label>
+    <label>{{ 'request-list.delivery-to' | translate }}
+      <input type="date" [value]="to()" [min]="from() || null" (change)="to.set($any($event.target).value)">
+    </label>
+    @if (filtering()) { <button mat-button type="button" (click)="clearFilters()">{{ 'request-list.clear' | translate }}</button> }
+  </div>
+  @if (rangeInvalid()) { <p class="inbox-range-error" role="alert">{{ 'request-list.invalid-range' | translate }}</p> }
   <div class="inbox-filters" role="group" [attr.aria-label]="'request-list.filter-status' | translate">
     <button type="button" [attr.aria-pressed]="!status()" (click)="status.set('')">{{ 'request-list.all-statuses' | translate }} <span>{{ store.requests().length }}</span></button>
     @for (item of counts(); track item.value) { <button type="button" [attr.aria-pressed]="status() === item.value" (click)="status.set(item.value)">{{ 'request-status.' + item.value.toLowerCase() | translate }} <span>{{ item.count }}</span></button> }
@@ -23,7 +41,7 @@
     <div class="inbox-table-wrap"><table class="inbox-table"><caption>{{ 'request-list.table-label' | translate }}</caption><thead><tr><th>{{ (store.isProvider() ? 'request-list.customer' : 'request-list.provider') | translate }}</th><th>{{ 'request-list.product' | translate }}</th><th>{{ 'request-list.delivery-date' | translate }}</th><th>{{ 'request-list.status' | translate }}</th><th>{{ 'request-list.information' | translate }}</th><th>{{ 'request-list.actions' | translate }}</th></tr></thead>
       <tbody>@for (request of filtered(); track request.id) {
         <tr [class.expanded]="expandedId() === request.id">
-          <td [attr.data-label]="(store.isProvider() ? 'request-list.customer' : 'request-list.provider') | translate"><strong>{{ store.isProvider() ? ('request-list.customer' | translate) + ' #' + (request.customerAccountId || '—') : (store.providerNames()[request.providerId] || ('request-list.provider' | translate) + ' #' + request.providerId) }}</strong><small>{{ 'request-list.reference' | translate }} #{{ request.id }}</small></td>
+          <td [attr.data-label]="(store.isProvider() ? 'request-list.customer' : 'request-list.provider') | translate"><strong>{{ store.isProvider() ? (store.customerNames()[request.customerAccountId] || ('request-list.customer' | translate) + ' #' + (request.customerAccountId || '—')) :(store.providerNames()[request.providerId] || ('request-list.provider' | translate) + ' #' + request.providerId) }}</strong><small>{{ 'request-list.reference' | translate }} #{{ request.id }}</small></td>
           <td [attr.data-label]="'request-list.product' | translate"><strong>{{ store.productNames()[request.fuelProductId] || ('request-list.product' | translate) + ' #' + request.fuelProductId }}</strong><small>{{ request.quantity }} {{ request.unit | fuelUnit }} · {{ request.unitPrice != null ? (request.unitPrice | money) : '—' }} / {{ request.unit | fuelUnit }}</small></td>
           <td [attr.data-label]="'request-list.delivery-date' | translate"><strong>{{ missing(request).includes('date') ? '—' : (request.deliveryDate | date:'mediumDate':undefined:locale()) }}</strong><small>{{ request.deliveryAddress || ('request-list.missing.address' | translate) }}</small></td>
           <td [attr.data-label]="'request-list.status' | translate"><span class="inbox-status st-{{ statusKey(request) }}">{{ 'request-status.' + statusKey(request) | translate }}</span>@if (request.source === 'AUTOMATIC') { <small>{{ 'request-list.automatic' | translate }}</small> }</td>
