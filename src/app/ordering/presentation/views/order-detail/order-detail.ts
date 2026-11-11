@@ -150,11 +150,18 @@ export class OrderDetail {
   confirm(id: number): void { this.confirmAction(id, 'confirm'); }
   cancelOrder(id: number): void { this.confirmAction(id, 'cancel'); }
   receive(id: number): void { this.confirmAction(id, 'receive'); }
+  /** El pedido es de la empresa del comprador o del distribuidor en sesión; sin esto no se ofrece ninguna acción. */
+  owns(order: Pick<Order, 'companyId' | 'providerId'>): boolean {
+    if (this.isBuyer) { const companyId = this.iam.companyId(); return companyId !== null && order.companyId === companyId; }
+    if (!this.iam.isProvider()) return false;
+    const providerId = this.iam.providerId();
+    return providerId !== null && order.providerId === providerId;
+  }
   private canAct(id: number, action: 'confirm' | 'cancel' | 'receive'): boolean {
     const order = this.order();
-    return order?.id === id && !this.store.loading() && !this.assignmentSubmitting() && !this.paying()
+    return order?.id === id && this.owns(order) && !this.store.loading() && !this.assignmentSubmitting() && !this.paying()
       && (action === 'confirm' ? this.isBuyer && order.status === 'PENDING'
-        : action === 'receive' ? this.isBuyer && order.companyId === this.iam.companyId() && order.status === 'DISPATCHED'
+        : action === 'receive' ? this.isBuyer && order.status === 'DISPATCHED'
         : ['PENDING', 'CONFIRMED'].includes(order.status));
   }
   private confirmAction(id: number, action: 'confirm' | 'cancel' | 'receive'): void {

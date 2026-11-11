@@ -63,10 +63,10 @@
         @if (canReassign()) { <p class="delivery-notice" role="status">{{ (latestDelivery()?.physicalState === 'FAILED' ? 'order-detail.delivery-failed' : 'order-detail.delivery-cancelled') | translate }}</p> }
       }
       <div class="actions">
-        @if (isBuyer && o.status === 'DISPATCHED') { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="receive(o.id)">{{ 'order-detail.receive' | translate }}</button> }
-        @if (isBuyer && o.status === 'PENDING') { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="confirm(o.id)">{{ 'order-detail.confirm' | translate }}</button> }
+        @if (isBuyer && owns(o) && o.status === 'DISPATCHED') { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="receive(o.id)">{{ 'order-detail.receive' | translate }}</button> }
+        @if (isBuyer && owns(o) && o.status === 'PENDING') { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="confirm(o.id)">{{ 'order-detail.confirm' | translate }}</button> }
         @if (canAssign()) { <button mat-raised-button color="primary" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="openAssignment()">{{ (canReassign() ? 'order-detail.reassign' : 'fulfillment.assign') | translate }}</button> }
-        @if (o.status === 'PENDING' || o.status === 'CONFIRMED') { <button mat-button color="warn" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="cancelOrder(o.id)">{{ 'order-detail.cancel' | translate }}</button> }
+        @if (owns(o) && (o.status === 'PENDING' || o.status === 'CONFIRMED')) { <button mat-button color="warn" [disabled]="store.loading() || paying() || assignmentSubmitting()" (click)="cancelOrder(o.id)">{{ 'order-detail.cancel' | translate }}</button> }
       </div>
       @if (['PENDING_PAYMENT', 'PAID', 'IN_PROGRESS', 'DELIVERED'].includes(o.status)) {
         <section class="payment">
