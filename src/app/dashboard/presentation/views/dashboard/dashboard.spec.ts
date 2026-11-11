@@ -73,7 +73,7 @@ describe('Dashboard', () => {
     expect(component.productRows().map(r => [r.name, r.amount, r.quantity, r.share])).toEqual([['GLP', 30, 8, 100], ['Diesel B5', 15, 6, 50]]);
     expect(component.inTransit().map(r => r.order.id)).toEqual([2]);
     expect(component.recent().map(r => r.order.id)).toEqual([4, 3, 2, 1]);
-    expect(component.rings().map(r => [r.count, r.percent])).toEqual([[1, 25], [2, 50], [1, 25]]);
+    expect(component.rings().map(r => [r.label.split('ring-')[1], r.count, r.percent])).toEqual([['pending', 1, 25], ['approved', 0, 0], ['dispatched', 1, 25], ['finished', 1, 25], ['rejected', 1, 25]]);
     expect(component.donuts().map(d => [d.id, d.center])).toEqual([['payments', 3], ['orders', 4], ['products', 2]]);
   });
 

@@ -46,7 +46,15 @@ interface Donut { id: string; title: string; link: string; linkLabel: string; ca
 
 const LIST_LIMIT = 5;
 const IN_TRANSIT: OrderStatus[] = ['DISPATCHED', 'IN_PROGRESS'];
-const ACTIVE_DELIVERY = ['ASSIGNED', 'STARTED', 'ARRIVED', 'DELIVERING'];
+/** Etapas del pedido para el comprador. Un pedido no tiene estado "rechazado": el bucket agrupa los cancelados. */
+const BUYER_STAGES: { label: string; color: string; statuses: OrderStatus[] }[] = [
+  { label: 'dashboard.ring-pending', color: '#f59e0b', statuses: ['PENDING'] },
+  { label: 'dashboard.ring-approved', color: '#3b82f6', statuses: ['CONFIRMED'] },
+  { label: 'dashboard.ring-dispatched', color: '#1e3a8a', statuses: ['DISPATCHED', 'IN_PROGRESS'] },
+  { label: 'dashboard.ring-finished', color: '#15803d', statuses: ['PENDING_PAYMENT', 'PAID', 'DELIVERED'] },
+  { label: 'dashboard.ring-rejected', color: '#b91c1c', statuses: ['CANCELLED'] },
+];
+const ACTIVE_DELIVERY =['ASSIGNED', 'STARTED', 'ARRIVED', 'DELIVERING'];
 const TANK_LIMIT = 8;
 const PRODUCT_COLORS = ['#1e3a8a', '#3b82f6', '#93c5fd', '#f59e0b', '#94a3b8'];
 
@@ -138,16 +146,20 @@ export class Dashboard {
     ];
   });
 
-  /** Reparto de pedidos: entregados, en curso (el resto) y cancelados. Porcentajes sobre el total de pedidos. */
+  /**
+   * Reparto de pedidos sobre el total. Comprador: las cinco etapas del flujo (ver `BUYER_STAGES`).
+   * Distribuidor: entregados, en curso (el resto) y cancelados.
+   */
   readonly rings = computed(() => {
     const rows = this.orders().data, total = rows.length;
-    const delivered = rows.filter(order => order.status === 'DELIVERED').length;
-    const cancelled = rows.filter(order => order.status === 'CANCELLED').length;
-    return [
+    const count = (statuses: OrderStatus[]) => rows.filter(order => statuses.includes(order.status)).length;
+    const delivered = count(['DELIVERED']), cancelled = count(['CANCELLED']);
+    const rings = this.isBuyer ? BUYER_STAGES.map(stage => ({ label: stage.label, color: stage.color, count: count(stage.statuses) })) : [
       { label: 'dashboard.ring-delivered', color: '#15803d', count: delivered },
       { label: 'dashboard.ring-active', color: '#1e3a8a', count: total - delivered - cancelled },
       { label: 'dashboard.ring-cancelled', color: '#b91c1c', count: cancelled },
-    ].map(ring => ({ ...ring, percent: total ? Math.round(ring.count / total * 100) : 0 }));
+    ];
+    return rings.map(ring => ({ ...ring, percent: total ? Math.round(ring.count / total * 100) : 0 }));
   });
 
   // ── Gráfico ─────────────────────────────────────────────────────────────────
