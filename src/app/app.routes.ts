@@ -35,6 +35,9 @@ const adminRoutes = () => import('./admin/presentation/admin-routes').then((m) =
 const providerPaymentRoutes = () =>
   import('./ordering/presentation/provider-payments-routes').then((m) => m.providerPaymentRoutes);
 
+const telemetryRoutes = () =>
+  import('./telemetry/presentation/telemetry-routes').then((m) => m.telemetryRoutes);
+
 const baseTitle = 'FullTank';
 
 export const routes: Routes = [
@@ -61,6 +64,7 @@ export const routes: Routes = [
   { path: 'tanks', canActivate: [authGuard, buyerGuard], loadChildren: equipmentRoutes },
   { path: 'payments', canActivate: [authGuard, providerGuard], loadChildren: providerPaymentRoutes },
   { path: 'clients', canActivate: [authGuard, providerGuard], loadChildren: providerClientRoutes },
+  { path: 'mqtt-monitor', canActivate: [authGuard, dashboardGuard], loadChildren: telemetryRoutes, title: `MQTT monitor - ${baseTitle}` },
   { path: '', redirectTo: '/home', pathMatch: 'full' },
   { path: '**', loadComponent: pageNotFound, title: `Page Not Found - ${baseTitle}` },
 ];

@@ -83,6 +83,7 @@ export class Layout implements OnInit {
         { label: 'fulfillment.drivers', link: '/fulfillment/driver-list' },
       ],
     },
+    { label: 'nav.mqtt-monitor', icon: 'sensors', link: '/mqtt-monitor', roles: ['BUYER', 'PROVIDER', 'ADMIN'] },
     { label: 'nav.admin', icon: 'admin_panel_settings', link: '/admin', roles: [], admin: true },
   ];
 
