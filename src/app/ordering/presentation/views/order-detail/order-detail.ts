@@ -46,9 +46,10 @@ export class OrderDetail {
   readonly latestDelivery = signal<ProviderDelivery | null>(null);
   readonly deliveryLoading = signal(false);
   readonly deliveryReadError = signal(false);
-  readonly canReassign = computed(() => !this.isBuyer && this.order()?.status === 'CONFIRMED'
+  readonly canReassign = computed(() => !this.isBuyer && this.ownsCurrent() && this.order()?.status === 'CONFIRMED'
     && ['FAILED', 'CANCELLED'].includes(this.latestDelivery()?.physicalState ?? ''));
-  readonly canAssign = computed(() => !this.isBuyer && ['PENDING', 'CONFIRMED'].includes(this.order()?.status ?? '')
+  /** Solo el distribuidor dueño del pedido asigna la entrega; `openAssignment`, `reviewAssignment` y `assign` pasan por aquí. */
+  readonly canAssign = computed(() => !this.isBuyer && this.ownsCurrent() && ['PENDING', 'CONFIRMED'].includes(this.order()?.status ?? '')
     && !this.deliveryLoading() && !this.deliveryReadError() && (!this.latestDelivery() || this.canReassign()));
   private readonly routeChanged = new Subject<void>();
   private readonly orderId = signal(0);
@@ -97,7 +98,7 @@ export class OrderDetail {
     this.destroyRef.onDestroy(() => this.dialogRef?.close());
     effect(() => {
       const order = this.order();
-      if (order && !this.isBuyer && order.status === 'CONFIRMED' && this.deliveryOrderLoaded !== order.id) this.loadDeliveryHistory();
+      if (order && !this.isBuyer && this.owns(order) && order.status === 'CONFIRMED' && this.deliveryOrderLoaded !== order.id) this.loadDeliveryHistory();
       if (order && this.isBuyer && this.companyName() === null) this.api.buyerCompany(order.companyId).pipe(takeUntil(this.routeChanged), takeUntilDestroyed(this.destroyRef)).subscribe({ next: company => this.companyName.set(company.name), error: () => undefined });
       if (!order || !['PENDING_PAYMENT', 'PAID', 'IN_PROGRESS', 'DELIVERED'].includes(order.status) || this.paymentOrderLoaded === order.id) return;
       this.paymentOrderLoaded = order.id;
@@ -150,6 +151,7 @@ export class OrderDetail {
   confirm(id: number): void { this.confirmAction(id, 'confirm'); }
   cancelOrder(id: number): void { this.confirmAction(id, 'cancel'); }
   receive(id: number): void { this.confirmAction(id, 'receive'); }
+  private ownsCurrent(): boolean { const order = this.order(); return !!order && this.owns(order); }
   /** El pedido es de la empresa del comprador o del distribuidor en sesión; sin esto no se ofrece ninguna acción. */
   owns(order: Pick<Order, 'companyId' | 'providerId'>): boolean {
     if (this.isBuyer) { const companyId = this.iam.companyId(); return companyId !== null && order.companyId === companyId; }
@@ -294,7 +296,7 @@ export class OrderDetail {
       && !this.tankerBlockReason(this.selectedTanker) && Number.isFinite(start) && Number.isFinite(end) && start < end;
   }
   reviewAssignment(): void {
-    if (!this.assignmentValid || this.assignmentSubmitting()) return;
+    if (!this.canAssign() || !this.assignmentValid || this.assignmentSubmitting()) return;
     this.assignmentCommandId = crypto.randomUUID();
     this.assignmentReview.set(true);
     this.assignmentError = '';
