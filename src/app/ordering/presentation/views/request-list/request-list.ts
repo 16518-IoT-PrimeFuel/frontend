@@ -53,11 +53,24 @@ export class RequestList {
   readonly statuses = ['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED'];
   readonly counts = computed(() => this.statuses.map(value => ({ value, count: this.store.requests().filter(request => request.status === value).length })));
   readonly incompleteCount = computed(() => this.store.requests().filter(row => missingRequestFields(row).length).length);
+  /** Cuenta de cliente (`customerAccountId`) elegida por el distribuidor; `null` = todos. */
+  readonly customer = signal<number | null>(null);
+  /** Rango sobre `deliveryDate` (YYYY-MM-DD): la solicitud no trae fecha de creación. */
+  readonly from = signal('');
+  readonly to = signal('');
+  readonly rangeInvalid = computed(() => !!this.from() && !!this.to() && this.from() > this.to());
+  readonly customers = computed(() => [...new Set(this.store.requests().map(row => row.customerAccountId).filter(id => id > 0))]
+    .map(id => ({ id, name: this.store.customerNames()[id] ?? null }))
+    .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '') || a.id - b.id));
+  readonly filtering = computed(() => !!this.search().trim() || !!this.status() || this.incompleteOnly() || this.customer() !== null || !!this.from() || !!this.to());
   readonly filtered = computed(() => {
-    const search = this.search().trim().toLocaleLowerCase();
+    const search = this.search().trim().toLocaleLowerCase(), customer = this.customer(), from = this.from(), to = this.to();
+    const dated = (from || to) && !this.rangeInvalid();
     return this.store.requests().filter(row => (!this.status() || row.status === this.status())
       && (!this.incompleteOnly() || missingRequestFields(row).length > 0)
-      && (!search || [row.id, row.customerAccountId, row.deliveryAddress, this.store.productNames()[row.fuelProductId], this.store.providerNames()[row.providerId]].join(' ').toLocaleLowerCase().includes(search)))
+      && (customer === null || row.customerAccountId === customer)
+      && (!dated || (/^\d{4}-\d{2}-\d{2}$/.test(row.deliveryDate ?? '') && (!from || row.deliveryDate >= from) && (!to || row.deliveryDate <= to)))
+      && (!search || [row.id, row.customerAccountId, this.store.customerNames()[row.customerAccountId], row.deliveryAddress, this.store.productNames()[row.fuelProductId], this.store.providerNames()[row.providerId]].join(' ').toLocaleLowerCase().includes(search)))
       .sort((a, b) => b.id - a.id);
   });
   readonly missing = missingRequestFields;
@@ -69,7 +82,8 @@ export class RequestList {
     this.destroyRef.onDestroy(() => this.dialogRef?.close());
   }
   refresh(): void { if (!this.store.loading()) { this.store.loadRequests(); this.store.loadNames(); } }
-  clearFilters(): void { this.search.set(''); this.status.set(''); this.incompleteOnly.set(false); }
+  clearFilters(): void { this.search.set(''); this.status.set(''); this.incompleteOnly.set(false); this.customer.set(null); this.from.set(''); this.to.set(''); }
+  setCustomer(value: string): void { this.customer.set(value ? Number(value) : null); }
   toggleTracking(id: number): void { this.expandedId.set(this.expandedId() === id ? null : id); this.decision.set(null); this.rejectionReason = ''; }
   canDecide(row: Request): boolean { return this.store.isProvider() && this.iam.providerId() === row.providerId && row.status === 'PENDING' && !this.store.loading(); }
   prepareDecision(action: 'accept' | 'reject'): void { this.decision.set(action); this.rejectionReason = ''; }

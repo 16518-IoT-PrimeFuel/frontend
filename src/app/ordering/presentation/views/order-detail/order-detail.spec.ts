@@ -23,6 +23,9 @@ describe('OrderDetail', () => {
 
     fixture = TestBed.createComponent(OrderDetail);
     component = fixture.componentInstance;
+    // Sesión de distribuidor dueña de los pedidos de prueba (providerId 2).
+    vi.spyOn((component as any).iam, 'isProvider').mockReturnValue(true);
+    vi.spyOn((component as any).iam, 'providerId').mockReturnValue(2);
     await fixture.whenStable();
   });
 
@@ -115,7 +118,7 @@ describe('OrderDetail', () => {
   });
 
   const prepareAssignment = (view: any) => {
-    view.order = () => ({ id: 30, requestId: 4, status: 'CONFIRMED', scheduledDate: '2026-10-02' });
+    view.order = () => ({ id: 30, requestId: 4, providerId: 2, status: 'CONFIRMED', scheduledDate: '2026-10-02' });
     vi.spyOn(view.fulfillment, 'getEligibleDrivers').mockReturnValue(of([{ id: 2, firstName: 'Ana', lastName: 'Diaz' }]));
     const tankers = [{ id: 1, licensePlate: 'SMALL', capacity: 100, unit: 'GALLONS' }, { id: 2, licensePlate: 'BIG', capacity: 500, unit: 'LITERS' }, { id: 3, licensePlate: 'INACTIVE', capacity: 1000, unit: 'LITERS' }];
     vi.spyOn(view.fulfillment, 'getTankers').mockReturnValue(of(tankers));
@@ -159,6 +162,7 @@ describe('OrderDetail', () => {
     let order = { id: 30, companyId: 4, status: 'PENDING' };
     view.order = () => order;
     view.isBuyer = true;
+    vi.spyOn(view.iam, 'companyId').mockReturnValue(4);
     let closed = new Subject<unknown>();
     const open = vi.spyOn(view.dialog, 'open').mockImplementation(() => { closed = new Subject(); return { afterClosed: () => closed, close: vi.fn() }; });
     const cancel = vi.spyOn(view.store, 'cancelOrder').mockImplementation(() => {});
@@ -187,6 +191,49 @@ describe('OrderDetail', () => {
     view.isBuyer = false;
     view.confirm(30);
     expect(open).toHaveBeenCalledTimes(5);
+  });
+
+  it('offers no confirm, cancel or receive action on an order of another company or provider', () => {
+    const view = component as any;
+    let order: any = { id: 30, companyId: 99, providerId: 2, status: 'PENDING' };
+    view.order = () => order;
+    view.isBuyer = true;
+    vi.spyOn(view.iam, 'companyId').mockReturnValue(4);
+    const open = vi.spyOn(view.dialog, 'open');
+    view.confirm(30); view.cancelOrder(30);
+    order = { ...order, status: 'DISPATCHED' };
+    view.receive(30);
+    expect([view.owns(order), view.owns({ ...order, companyId: 4 })]).toEqual([false, true]);
+    view.isBuyer = false;
+    vi.spyOn(view.iam, 'isProvider').mockReturnValue(true);
+    vi.spyOn(view.iam, 'providerId').mockReturnValue(7);
+    order = { ...order, status: 'CONFIRMED' };
+    view.cancelOrder(30);
+    expect(open).not.toHaveBeenCalled();
+    expect([view.owns(order), view.owns({ ...order, providerId: 7 })]).toEqual([false, true]);
+    vi.spyOn(view.iam, 'companyId').mockReturnValue(null);
+    view.isBuyer = true;
+    expect(view.owns({ companyId: null, providerId: 7 })).toBe(false);
+  });
+
+  it('does not let a provider assign or reassign a delivery on an order of another provider', () => {
+    const view = component as any;
+    vi.spyOn(view.fulfillment, 'deliveries').mockReturnValue(of([{ id: 1, orderId: 30, physicalState: 'FAILED' }]));
+    const recommend = vi.spyOn(view, 'loadRecommendation').mockImplementation(() => {});
+    const assign = vi.spyOn(view.fulfillment, 'assignDelivery');
+    view.orderId.set(30);
+    view.store.ordersState.set([{ id: 30, companyId: 4, providerId: 9, fuelProductId: 1, status: 'CONFIRMED', requestedQuantity: 400, totalPrice: 100, deliveryAddress: 'Av. Lima' }]);
+    fixture.detectChanges();
+    expect([view.canAssign(), view.canReassign()]).toEqual([false, false]);
+    view.openAssignment();
+    expect(view.assigning()).toBe(false);
+    view.assignmentReview.set(true);
+    view.assign(30);
+    expect(recommend).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).not.toContain('fulfillment.assign');
+    view.store.ordersState.set([{ ...view.order(), providerId: 2 }]);
+    expect(view.canAssign()).toBe(true);
   });
 
   it('shows the result of the order action inline', () => {

@@ -21,6 +21,7 @@ function setup(provider = true, rows: Request[] = [valid], notice?: string) {
   http.expectOne(`${base}/replenishment-requests${provider ? '/inbox' : ''}`).flush(rows);
   http.expectOne(`${base}/provider-companies${provider ? '/10' : ''}`).flush(provider ? { id: 10, name: 'Distribuidor Sur' } : [{ id: 10, name: 'Distribuidor Sur' }]);
   http.expectOne(`${base}/fuel-products${provider ? '/provider/10' : ''}`).flush([{ id: 5, name: 'Diesel Sur' }]);
+  if (provider) http.expectOne(`${base}/provider/buyer-companies`).flush([{ id: 7, name: 'Grifo Norte', sites: [{ id: 1, customerAccountId: 303, name: 'Sede', address: null }] }]);
   fixture.detectChanges();
   return { fixture, http, component: fixture.componentInstance };
 }
@@ -35,6 +36,18 @@ describe('request inbox and inline tracking', () => {
     expect(fixture.nativeElement.querySelector('input[type="number"]')).toBeNull();
     component.search.set('norte'); expect(component.filtered().map(row => row.id)).toEqual([2]);
     component.clearFilters(); component.status.set('PENDING'); expect(component.filtered().map(row => row.id)).toEqual([1]);
+  });
+  it('filters by customer account and by delivery date range, and names known customers', () => {
+    const { component, fixture } = setup(true, [valid, { ...valid, id: 2, customerAccountId: 303, deliveryDate: '2026-10-20' }, { ...valid, id: 3, customerAccountId: 303, deliveryDate: 'pronto' }]);
+    expect(component.customers()).toEqual([{ id: 101, name: null }, { id: 303, name: 'Grifo Norte' }]);
+    expect(fixture.nativeElement.textContent).toContain('Grifo Norte');
+    component.customer.set(303); expect(component.filtered().map(row => row.id)).toEqual([3, 2]);
+    component.search.set('grifo'); expect(component.filtered().map(row => row.id)).toEqual([3, 2]);
+    component.clearFilters(); expect(component.filtered().length).toBe(3);
+    component.from.set('2026-10-02'); component.to.set('2026-10-19'); expect(component.filtered().map(row => row.id)).toEqual([1]);
+    component.from.set('2026-10-03'); component.to.set(''); expect(component.filtered().map(row => row.id)).toEqual([2]);
+    component.to.set('2026-10-01'); expect(component.rangeInvalid()).toBe(true); expect(component.filtered().length).toBe(3);
+    component.clearFilters(); expect([component.customer(), component.from(), component.to(), component.filtering()]).toEqual([null, '', '', false]);
   });
   it('shows inline status, rejection reason and linked order tracking', () => {
     const { component, fixture } = setup(true, [{ ...valid, status: 'ACCEPTED', orderId: 30 }]);

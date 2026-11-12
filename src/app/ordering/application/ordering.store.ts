@@ -5,11 +5,13 @@ import { Request, CreateRequest } from '../domain/model/request.entity';
 import { Order } from '../domain/model/order.entity';
 import { OrderingApi, Payment } from '../infrastructure/ordering-api';
 import { IamStore } from '../../iam/application/iam.store';
+import { ProviderEquipmentApi } from '../../equipment/infrastructure/provider-equipment.api';
 import { apiErrorKey } from '../../shared/infrastructure/api-error';
 
 @Injectable({ providedIn: 'root' })
 export class OrderingStore {
   private readonly api = inject(OrderingApi);
+  private readonly providerEquipment = inject(ProviderEquipmentApi);
   private readonly destroyRef = inject(DestroyRef);
   private activeRequests = 0;
   private orderRequest?: Subscription;
@@ -26,6 +28,8 @@ export class OrderingStore {
   readonly error = this.errorState.asReadonly();
   readonly providerNames = signal<Record<number, string | undefined>>({});
   readonly productNames = signal<Record<number, string | undefined>>({});
+  /** Empresa compradora por cuenta de cliente (`customerAccountId`); solo se carga para el distribuidor. */
+  readonly customerNames = signal<Record<number, string | undefined>>({});
   readonly notice = signal('');
   readonly refundingId = signal<number | null>(null);
   readonly refundError = signal('');
@@ -39,6 +43,8 @@ export class OrderingStore {
       if (id === null) return;
       this.api.provider(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: row => this.providerNames.set({ [row.id]: row.name }), error: () => undefined });
       this.api.products(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: rows => this.productNames.set(Object.fromEntries(rows.map(row => [row.id, row.name]))), error: () => undefined });
+      this.providerEquipment.buyerCompanies().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: rows => this.customerNames.set(Object.fromEntries(rows.flatMap(row => row.sites.map(site => [site.customerAccountId, row.name])))), error: () => undefined });
       return;
     }
     this.api.providers().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: rows => this.providerNames.set(Object.fromEntries(rows.map(row => [row.id, row.name]))), error: () => undefined });

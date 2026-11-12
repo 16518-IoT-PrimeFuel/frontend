@@ -20,14 +20,7 @@
       <mat-tab [label]="'equipment.tab-level' | translate">
         <div class="tk-tab" [class.low]="t.critical">
                     <h2>{{ 'equipment.fuel-level' | translate }}</h2>
-                    <div class="tk-stage"><div class="tk-gauge" role="img" [attr.aria-label]="'equipment.gauge-label' | translate:{ name: t.name, percent: percent(), level: t.currentLevel, capacity: t.capacity, unit: (unitKey(t.unit) | translate) }">
-                      <img src="/tank-placeholder.webp" alt="" width="1400" height="574">
-                      <div class="tk-load">
-                        <span class="fuel" [style.width.%]="percent()"></span>
-                        <span class="low-mark" [style.left.%]="t.lowLevelPercent"></span>
-                        <span class="pct" [class.out]="percent() < 22" [style.left.%]="percent() < 22 ? percent() : percent() / 2">{{ percent() }}%</span>
-                      </div>
-                    </div></div>
+                    <app-tank-gauge-3d [percent]="percent()" [lowPercent]="t.lowLevelPercent" [low]="t.critical" [label]="'equipment.gauge-label' | translate:{ name: t.name, percent: percent(), level: t.currentLevel, capacity: t.capacity, unit: (unitKey(t.unit) | translate) }" />
                     <dl class="tk-tiles">
                       <div><dt>{{ 'equipment.tile-fuel' | translate }}</dt><dd>{{ t.fuelType ? ('fuel-type.' + t.fuelType.toLowerCase() | translate) : ('equipment.no-fuel' | translate) }}</dd></div>
                       <div><dt>{{ 'equipment.current-level' | translate }}</dt><dd>{{ t.currentLevel | number:'1.0-2' }} <small>{{ unitKey(t.unit) | translate }}</small></dd></div>

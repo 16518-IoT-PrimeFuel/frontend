@@ -79,7 +79,7 @@ describe('TankList', () => {
       expect(element.querySelector('.tk-detail h2')!.textContent).toBe('T2');
       expect(element.querySelector('.tk-detail .tk-status.low')!.textContent).toContain('equipment.status-low');
       expect(element.querySelector('.tk-card:not([aria-current]) .dl-badge')).toBeNull();
-      expect(element.querySelector('.tk-load .pct')!.textContent).toBe('10%');
+      expect(element.querySelector('.tg-pct')!.textContent).toBe('10%');
       expect(element.querySelector('.tk-detail a[href*="request-form"]')!.getAttribute('href')).toContain('tankId=2');
       expect(store.loadEpisodes).toHaveBeenLastCalledWith(2);
       expect(store.loadReadings).toHaveBeenLastCalledWith(2);

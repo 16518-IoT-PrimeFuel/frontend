@@ -40,3 +40,9 @@
 .inbox-loading { padding:20px; background:#fff; }.inbox-loading div { height:44px; margin-top:12px; background:#eef2f7; border-radius:6px; }
 @media(max-width:900px) { .inbox { padding:16px; }.inbox-head,.inbox-toolbar { align-items:flex-start; flex-direction:column; }.inbox-table thead { display:none; }.inbox-table tr:not(.tracking-row) { display:grid; grid-template-columns:1fr 1fr; padding:12px; border-top:1px solid #d7dfe9; }.inbox-table td { border:0; padding:10px; }.inbox-table td::before { content:attr(data-label); display:block; margin-bottom:7px; color:#536174; font-size:12px; }.inbox-table .tracking-row td { display:block; padding:0; }.tracking { padding:18px; }.tracking-head { align-items:flex-start; flex-direction:column; } }
 @media(max-width:480px) { .inbox-table tr:not(.tracking-row) { grid-template-columns:1fr; }.inbox h1 { font-size:23px; }.inbox-head-actions { width:100%; } }
+.inbox-fields { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 16px; margin-bottom:18px; }
+.inbox-fields label { display:grid; gap:4px; font-size:12px; color:#536174; }
+.inbox-fields input, .inbox-fields select { min-height:42px; padding:0 10px; border:1px solid #aebaca; border-radius:8px; background:#fff; color:#1f2937; font:inherit; font-size:14px; }
+.inbox-fields select { min-width:200px; }
+.inbox-fields input:focus-visible, .inbox-fields select:focus-visible { outline:2px solid #1e3a8a; outline-offset:2px; }
+.inbox-range-error { margin:-8px 0 16px; color:#991b1b; font-size:14px; }

@@ -17,6 +17,7 @@ import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { CONFIRM_DIALOG_CONFIG, ConfirmDialog } from '../../../../shared/presentation/component/confirm-dialog/confirm-dialog';
 import { apiErrorKey } from '../../../../shared/infrastructure/api-error';
+import { TankGauge3d } from '../../component/tank-gauge-3d/tank-gauge-3d';
 import { LimaDatePipe } from '../../../../shared/presentation/pipe/lima-date.pipe';
 
 type Section<T> = { loading: boolean; error: boolean; data: T };
@@ -29,7 +30,7 @@ const STALE_AFTER_HOURS = 1;
 @Component({
   selector: 'app-provider-tank-detail',
   standalone: true,
-  imports: [MatTabsModule, MatIconModule, FormsModule, LimaDatePipe, BaseChartDirective, DecimalPipe, RouterLink, MatButtonModule, MatProgressSpinnerModule, TranslatePipe],
+  imports: [TankGauge3d, MatTabsModule, MatIconModule, FormsModule, LimaDatePipe, BaseChartDirective, DecimalPipe, RouterLink, MatButtonModule, MatProgressSpinnerModule, TranslatePipe],
   templateUrl: './provider-tank-detail.html',
   styleUrl: './provider-tank-detail.css',
 })

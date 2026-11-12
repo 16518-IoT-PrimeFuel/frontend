@@ -16,15 +16,30 @@ export interface GeocodingFeature {
   };
 }
 
-/** Reject administrative centroids, uncertain matches and competing plausible addresses. */
+/** Reject administrative centroids, unrelated matches and competing plausible addresses. */
 export function addressLocation(features: GeocodingFeature[]): SiteLocation {
-  const eligible = features.filter(feature => {
+  const addresses = features.filter(feature => {
     const p = feature.properties, c = feature.geometry?.coordinates;
-    return p?.feature_type === 'address' && ['exact', 'high', 'medium'].includes(p.match_code?.['confidence'] ?? '')
+    return p?.feature_type === 'address' && !!p.match_code
       && feature.geometry?.type === 'Point' && Array.isArray(c) && c.length === 2
       && c.every(Number.isFinite) && Math.abs(c[0]) <= 180 && Math.abs(c[1]) <= 90;
   });
-  if (eligible.length !== 1) return { state: 'unavailable' };
+  const eligible = addresses.filter(feature => ['exact', 'high', 'medium'].includes(feature.properties!.match_code!['confidence'] ?? ''));
+  if (eligible.length > 1) return { state: 'unavailable' };
+  if (!eligible.length) {
+    // Mapbox rates valid Peruvian addresses "low" (postcode and region never match, numbers are interpolated).
+    // Keep one as approximate only when a single candidate matches the street or district.
+    const matched = (feature: GeocodingFeature, key: string) => feature.properties!.match_code![key] === 'matched';
+    let weak = addresses.filter(feature => feature.properties!.match_code!['confidence'] === 'low'
+      && (matched(feature, 'street') || matched(feature, 'place')));
+    for (const key of ['place', 'street']) {
+      const narrowed = weak.filter(feature => matched(feature, key));
+      if (narrowed.length) weak = narrowed;
+    }
+    return weak.length === 1
+      ? { state: 'approximate', coordinates: weak[0].geometry!.coordinates as [number, number] }
+      : { state: 'unavailable' };
+  }
   const feature = eligible[0], p = feature.properties!, match = p.match_code!;
   // A precise coordinate does not turn an inferred/partial address into a precise match.
   const precise = ['exact', 'high'].includes(match['confidence'])

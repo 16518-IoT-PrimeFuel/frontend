@@ -1,0 +1,118 @@
+<section class="mq">
+  <header class="dl-head">
+    <div>
+      <h1>{{ 'mqtt-monitor.title' | translate }}@if (channel()) { · {{ channel() }} }</h1>
+      <p>{{ 'mqtt-monitor.subtitle' | translate }}</p>
+    </div>
+    <div class="mq-badges">
+      <span class="mq-badge" [class]="'mq-badge b-' + broker()" role="status">{{ 'mqtt-monitor.broker' | translate }}: {{ 'mqtt-monitor.broker-' + broker() | translate }}</span>
+      <span class="mq-badge" [class]="'mq-badge d-' + device()" role="status">{{ 'mqtt-monitor.device' | translate }}: {{ 'mqtt-monitor.device-' + device() | translate }}</span>
+    </div>
+  </header>
+
+  <section class="mq-card" aria-labelledby="mq-config">
+    <h2 id="mq-config">{{ 'mqtt-monitor.config' | translate }}</h2>
+    <form class="mq-form" (ngSubmit)="connect()">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>{{ 'mqtt-monitor.broker-url' | translate }}</mat-label>
+        <input matInput name="brokerUrl" [(ngModel)]="brokerUrl" required placeholder="wss://broker.example.com:8884/mqtt" autocomplete="off" spellcheck="false">
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>{{ 'mqtt-monitor.topic' | translate }}</mat-label>
+        <input matInput name="topicBase" [(ngModel)]="topicBase" required placeholder="empresa/tanque-01" autocomplete="off" spellcheck="false">
+      </mat-form-field>
+      <button mat-flat-button type="submit" [disabled]="broker() === 'connecting'"><mat-icon aria-hidden="true">link</mat-icon>{{ 'mqtt-monitor.connect' | translate }}</button>
+      @if (broker() !== 'disconnected') { <button mat-stroked-button type="button" (click)="disconnect()">{{ 'mqtt-monitor.disconnect' | translate }}</button> }
+    </form>
+    @if (formError()) { <p class="mq-error" role="alert">{{ formError() | translate }}</p> }
+    <p class="mq-note">{{ 'mqtt-monitor.topics-hint' | translate:{ base: base() || '…' } }}</p>
+  </section>
+
+  <div class="mq-row">
+    <section class="mq-card" aria-labelledby="mq-stats">
+      <h2 id="mq-stats">{{ 'mqtt-monitor.stats' | translate }}</h2>
+      <dl class="mq-stats">
+        <dt>{{ 'mqtt-monitor.first-entry' | translate }}</dt><dd>{{ first() ? (first()!.createdAt | date:'dd/MM/yyyy HH:mm:ss') : '—' }}</dd>
+        <dt>{{ 'mqtt-monitor.last-entry' | translate }}</dt>
+        <dd>@if (last(); as entry) { {{ entry.createdAt | date:'dd/MM/yyyy HH:mm:ss' }} ({{ 'mqtt-monitor.seconds-ago' | translate:{ n: secondsAgo() } }}) } @else { — }</dd>
+        <dt>{{ 'mqtt-monitor.entries' | translate }}</dt><dd>{{ entries().length }}</dd>
+        <dt>{{ 'mqtt-monitor.discarded' | translate }}</dt><dd>{{ discarded() }}</dd>
+      </dl>
+    </section>
+    <section class="mq-card" aria-labelledby="mq-status">
+      <h2 id="mq-status">{{ 'mqtt-monitor.status-message' | translate }}</h2>
+      <p class="mq-status" [class.alert]="last()?.status && last()?.alarm === 1" [class.normal]="last()?.status && last()?.alarm !== 1" aria-live="polite">{{ last()?.status || ('mqtt-monitor.waiting' | translate) }}</p>
+      <p class="mq-note">{{ 'mqtt-monitor.status-hint' | translate }}</p>
+    </section>
+  </div>
+
+  <section class="mq-card" aria-labelledby="mq-last">
+    <h2 id="mq-last">{{ 'mqtt-monitor.last-reading' | translate }}</h2>
+    <div class="mq-kpis">
+      <div><span>{{ 'mqtt-monitor.field-distance' | translate }}</span><strong>{{ last()?.distance != null ? (last()!.distance | number:'1.1-1') : '—' }} <small>cm</small></strong></div>
+      <div><span>{{ 'mqtt-monitor.field-level' | translate }}</span><strong>{{ last()?.level != null ? (last()!.level | number:'1.1-1') : '—' }} <small>%</small></strong>
+        <mat-progress-bar mode="determinate" [class.alarm]="last()?.alarm === 1" [value]="last()?.level ?? 0" [attr.aria-label]="'mqtt-monitor.field-level' | translate"></mat-progress-bar></div>
+      <div><span>{{ 'mqtt-monitor.field-rssi' | translate }}</span><strong>{{ last()?.rssi != null ? (last()!.rssi | number:'1.0-0') : '—' }} <small>dBm</small></strong></div>
+      <div><span>{{ 'mqtt-monitor.field-alarm' | translate }}</span><strong [class.bad]="last()?.alarm === 1" [class.ok]="last()?.alarm === 0">{{ last()?.alarm == null ? '—' : ((last()!.alarm ? 'mqtt-monitor.alarm-active' : 'mqtt-monitor.alarm-normal') | translate) }}</strong></div>
+    </div>
+  </section>
+
+  <section class="mq-card" aria-labelledby="mq-charts">
+    <div class="mq-toolbar">
+      <h2 id="mq-charts">{{ 'mqtt-monitor.charts' | translate }}</h2>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="mq-points">
+        <mat-label>{{ 'mqtt-monitor.points' | translate }}</mat-label>
+        <mat-select [value]="points()" (selectionChange)="points.set($event.value)">
+          @for (option of pointOptions; track option) { <mat-option [value]="option">{{ option || ('mqtt-monitor.all-points' | translate) }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div class="mq-charts">
+      @for (chart of charts(); track chart.field) {
+        <figure><figcaption>{{ chart.label | translate }}</figcaption>
+          <div class="mq-chart"><canvas baseChart [data]="chart.data" [options]="chart.options" type="line" [attr.aria-label]="chart.label | translate" role="img"></canvas></div>
+        </figure>
+      }
+    </div>
+  </section>
+
+  <section class="mq-card" aria-labelledby="mq-analysis">
+    <h2 id="mq-analysis">{{ 'mqtt-monitor.analysis' | translate }}</h2>
+    <div class="dl-wrap"><table class="dl-table">
+      <thead><tr><th>{{ 'mqtt-monitor.variable' | translate }}</th><th class="num">{{ 'mqtt-monitor.min' | translate }}</th><th class="num">{{ 'mqtt-monitor.max' | translate }}</th><th class="num">{{ 'mqtt-monitor.avg' | translate }}</th></tr></thead>
+      <tbody>@for (row of stats(); track row.field) {
+        <tr><td>{{ 'mqtt-monitor.field-' + row.field | translate }}</td>
+          <td class="num">{{ row.stats ? (row.stats.min | number:'1.1-1') : '—' }}</td><td class="num">{{ row.stats ? (row.stats.max | number:'1.1-1') : '—' }}</td><td class="num">{{ row.stats ? (row.stats.avg | number:'1.1-1') : '—' }}</td></tr>
+      }</tbody>
+    </table></div>
+    <dl class="mq-stats">
+      <dt>{{ 'mqtt-monitor.period' | translate }}</dt>
+      <dd>@if (first(); as from) { {{ from.createdAt | date:'dd/MM/yyyy HH:mm:ss' }} → {{ last()!.createdAt | date:'dd/MM/yyyy HH:mm:ss' }} ({{ periodMinutes() | number:'1.1-1' }} min) } @else { — }</dd>
+      <dt>{{ 'mqtt-monitor.alarm-readings' | translate }}</dt><dd>{{ entries().length ? ('mqtt-monitor.of' | translate:{ n: alarms(), total: entries().length }) : '—' }}</dd>
+      <dt>{{ 'mqtt-monitor.sends' | translate }}</dt>
+      <dd>@if (sends(); as s) { {{ s.received }} / {{ s.expected }} ({{ s.percent | number:'1.1-1' }} %) } @else { — }</dd>
+    </dl>
+    <p class="mq-note">{{ 'mqtt-monitor.sends-hint' | translate }}</p>
+  </section>
+
+  <section class="mq-card" aria-labelledby="mq-entries">
+    <div class="mq-toolbar">
+      <h2 id="mq-entries">{{ 'mqtt-monitor.latest' | translate }}</h2>
+      <div class="dl-actions">
+        <button mat-stroked-button type="button" [disabled]="!entries().length" (click)="exportCsv()"><mat-icon aria-hidden="true">download</mat-icon>{{ 'mqtt-monitor.export' | translate }}</button>
+        <button mat-button type="button" color="warn" [disabled]="!entries().length" (click)="clearHistory()">{{ 'mqtt-monitor.clear' | translate }}</button>
+      </div>
+    </div>
+    @if (recent().length) {
+      <div class="dl-wrap"><table class="dl-table">
+        <thead><tr><th>entry_id</th><th>created_at</th><th class="num">seq</th><th class="num">{{ 'mqtt-monitor.field-distance' | translate }}</th><th class="num">{{ 'mqtt-monitor.field-level' | translate }}</th><th class="num">{{ 'mqtt-monitor.field-rssi' | translate }}</th><th class="num">{{ 'mqtt-monitor.field-alarm' | translate }}</th><th>{{ 'mqtt-monitor.status-message' | translate }}</th></tr></thead>
+        <tbody>@for (entry of recent(); track entry.entryId) {
+          <tr><td>{{ entry.entryId }}</td><td class="nw">{{ entry.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</td><td class="num">{{ entry.seq ?? '—' }}</td>
+            <td class="num">{{ entry.distance != null ? (entry.distance | number:'1.1-1') : '—' }}</td><td class="num">{{ entry.level != null ? (entry.level | number:'1.1-1') : '—' }}</td>
+            <td class="num">{{ entry.rssi != null ? (entry.rssi | number:'1.0-0') : '—' }}</td><td class="num">{{ entry.alarm ?? '—' }}</td><td>{{ entry.status }}</td></tr>
+        }</tbody>
+      </table></div>
+    } @else { <p class="mq-note">{{ 'mqtt-monitor.empty' | translate }}</p> }
+    <p class="mq-note">{{ 'mqtt-monitor.storage-hint' | translate }}</p>
+  </section>
+</section>
